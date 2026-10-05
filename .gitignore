@@ -11,3 +11,5 @@ jdk17/
 jdk17.zip
 build_log.txt
 app/build/
+backend/.env
+backend/node_modules/

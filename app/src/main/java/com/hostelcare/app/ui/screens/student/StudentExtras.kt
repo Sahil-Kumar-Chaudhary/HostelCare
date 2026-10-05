@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.screens.student
+﻿package com.hostelcare.app.ui.screens.student
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.screens.auth
+﻿package com.hostelcare.app.ui.screens.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -95,14 +95,17 @@ fun SplashScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: AuthViewModel = viewModel(factory = factory)
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle(null)
+    val isSessionChecked by viewModel.isSessionChecked.collectAsStateWithLifecycle(false)
     
-    LaunchedEffect(currentUser) {
-        delay(1000)
-        if (currentUser != null) {
-            if (currentUser!!.role == Role.ADMIN) navController.navigate(Routes.ADMIN_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
-            else navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
-        } else {
-            navController.navigate(Routes.LOGIN) { popUpTo(Routes.SPLASH) { inclusive = true } }
+    LaunchedEffect(currentUser, isSessionChecked) {
+        if (isSessionChecked) {
+            delay(500)
+            if (currentUser != null) {
+                if (currentUser!!.role == Role.ADMIN) navController.navigate(Routes.ADMIN_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                else navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
+            } else {
+                navController.navigate(Routes.LOGIN) { popUpTo(Routes.SPLASH) { inclusive = true } }
+            }
         }
     }
 
@@ -232,7 +235,8 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
     LaunchedEffect(uiState) {
         if (uiState is AuthState.Success) {
             viewModel.resetState()
-            navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.LOGIN) { inclusive = true } }
+            android.widget.Toast.makeText(app, "Account created successfully", android.widget.Toast.LENGTH_LONG).show()
+            navController.popBackStack()
         }
     }
 

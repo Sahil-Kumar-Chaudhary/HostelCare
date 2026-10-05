@@ -1,19 +1,16 @@
-package com.hostelcare.app.data.repository
+﻿package com.hostelcare.app.data.repository
 
 import com.hostelcare.app.data.model.*
+import com.hostelcare.app.data.remote.ApiService
+import com.hostelcare.app.data.remote.TokenManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
-class InMemoryHostelRepository : HostelRepository {
+class InMemoryHostelRepository(private val apiService: ApiService, private val tokenManager: TokenManager) : HostelRepository {
 
-    private val users = mutableListOf<User>(
-        User(id = "admin1", name = "Admin", email = "admin@campus.edu", role = Role.ADMIN),
-        User(id = "student1", name = "Alex Johnson", email = "alex.j@campus.edu", studentId = "STU-8842", hostelBlock = "Block B", roomNumber = "B-204")
-    )
     private val currentUser = MutableStateFlow<User?>(null)
-
     private val _complaints = MutableStateFlow<List<Complaint>>(emptyList())
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     
@@ -24,63 +21,85 @@ class InMemoryHostelRepository : HostelRepository {
         Staff(id = "staff4", name = "Vikramaditya Rao", roleTitle = "Duty Electrician")
     )
 
-    init {
-        // Pre-populate some complaints for demo
-        val demoComplaint = Complaint(
-            id = "HC-8941",
-            title = "Water leakage in bathroom",
-            description = "The sink pipe has a steady drip under the basin since morning.",
-            category = ComplaintCategory.PLUMBING,
-            priority = ComplaintPriority.HIGH,
-            hostelBlock = "Block B",
-            roomNumber = "204",
-            studentId = "student1",
-            status = ComplaintStatus.IN_PROGRESS,
-            assignedStaffId = "staff1"
-        )
-        _complaints.value = listOf(demoComplaint)
-        
-        _notifications.value = listOf(
-            Notification(
-                userId = "student1",
-                complaintId = "HC-8941",
-                type = NotificationType.IN_PROGRESS,
-                title = "In Progress",
-                message = "Maintenance staff Ramesh Kumar is now in progress on your bathroom pipe issue."
-            )
-        )
-    }
-
     override suspend fun login(email: String, password: String): Result<User> {
-        // Simple mock login
-        val user = users.find { it.email == email }
-        if (user != null) {
-            currentUser.value = user
-            return Result.success(user)
+        return try {
+            val response = apiService.login(com.hostelcare.app.data.remote.LoginRequest(email, password))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                body.token?.let { tokenManager.saveToken(it) }
+                val user = body.user.toLocalUser()
+                currentUser.value = user
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Login failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        return Result.failure(Exception("Invalid credentials"))
     }
 
     override suspend fun registerStudent(user: User, password: String): Result<User> {
-        users.add(user)
-        currentUser.value = user
-        return Result.success(user)
+        return try {
+            val req = com.hostelcare.app.data.remote.RegisterRequest(
+                name = user.name,
+                studentId = user.studentId,
+                email = user.email,
+                password = password,
+                hostelBlock = user.hostelBlock,
+                roomNumber = user.roomNumber,
+                phone = user.phone
+            )
+            val response = apiService.register(req)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.user.toLocalUser())
+            } else {
+                Result.failure(Exception("Registration failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    override suspend fun getCurrentUser(): User? = currentUser.value
+    override suspend fun getCurrentUser(): User? {
+        return try {
+            val response = apiService.getProfile()
+            if (response.isSuccessful && response.body() != null) {
+                val user = response.body()!!.user.toLocalUser()
+                currentUser.value = user
+                user
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     override suspend fun logout() {
+        tokenManager.clearToken()
         currentUser.value = null
     }
 
     override suspend fun updateUser(user: User): Result<User> {
-        val index = users.indexOfFirst { it.id == user.id }
-        if (index != -1) {
-            users[index] = user
-            currentUser.value = user
-            return Result.success(user)
+        return try {
+            val req = com.hostelcare.app.data.remote.UpdateProfileRequest(
+                name = user.name,
+                email = user.email,
+                hostelBlock = user.hostelBlock,
+                roomNumber = user.roomNumber,
+                phone = user.phone
+            )
+            val response = apiService.updateProfile(req)
+            if (response.isSuccessful && response.body() != null) {
+                val updated = response.body()!!.user.toLocalUser()
+                currentUser.value = updated
+                Result.success(updated)
+            } else {
+                Result.failure(Exception("Update failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        return Result.failure(Exception("User not found"))
     }
 
     override fun currentUserFlow(): Flow<User?> = currentUser
@@ -99,15 +118,6 @@ class InMemoryHostelRepository : HostelRepository {
 
     override suspend fun submitComplaint(complaint: Complaint): Result<Complaint> {
         _complaints.update { it + complaint }
-        // Create notification
-        val notif = Notification(
-            userId = complaint.studentId,
-            complaintId = complaint.id,
-            type = NotificationType.SUBMITTED,
-            title = "Complaint Submitted",
-            message = "Your complaint '${complaint.title}' has been received."
-        )
-        _notifications.update { listOf(notif) + it }
         return Result.success(complaint)
     }
 
@@ -116,58 +126,23 @@ class InMemoryHostelRepository : HostelRepository {
         status: ComplaintStatus,
         resolutionNote: String?
     ): Result<Unit> {
-        var complaintStudentId = ""
-        var complaintTitle = ""
         _complaints.update { list ->
             list.map {
                 if (it.id == id) {
-                    complaintStudentId = it.studentId
-                    complaintTitle = it.title
                     it.copy(status = status, resolutionNote = resolutionNote ?: it.resolutionNote)
                 } else it
             }
-        }
-        
-        // Notification
-        if (complaintStudentId.isNotEmpty()) {
-            val type = when(status) {
-                ComplaintStatus.RESOLVED -> NotificationType.RESOLVED
-                ComplaintStatus.IN_PROGRESS -> NotificationType.IN_PROGRESS
-                else -> NotificationType.ADVISORY
-            }
-            val msg = if (status == ComplaintStatus.RESOLVED) "Your complaint has been marked as Resolved." else "Complaint status changed to $status."
-            val notif = Notification(
-                userId = complaintStudentId,
-                complaintId = id,
-                type = type,
-                title = "Status Update",
-                message = msg
-            )
-            _notifications.update { listOf(notif) + it }
         }
         return Result.success(Unit)
     }
 
     override suspend fun assignStaffToComplaint(complaintId: String, staffId: String): Result<Unit> {
-        var complaintStudentId = ""
-        val staff = staffList.find { it.id == staffId }
         _complaints.update { list ->
             list.map {
                 if (it.id == complaintId) {
-                    complaintStudentId = it.studentId
                     it.copy(assignedStaffId = staffId, status = ComplaintStatus.ASSIGNED)
                 } else it
             }
-        }
-        if (complaintStudentId.isNotEmpty() && staff != null) {
-            val notif = Notification(
-                userId = complaintStudentId,
-                complaintId = complaintId,
-                type = NotificationType.ASSIGNED,
-                title = "Staff Assigned",
-                message = "Your complaint has been assigned to ${staff.name} (${staff.roleTitle})."
-            )
-            _notifications.update { listOf(notif) + it }
         }
         return Result.success(Unit)
     }

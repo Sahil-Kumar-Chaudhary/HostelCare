@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.screens.student
+﻿package com.hostelcare.app.ui.screens.student
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -108,19 +108,43 @@ class StudentViewModel(
         }
     }
 
+    private val _updateProfileState = MutableStateFlow<UpdateProfileState>(UpdateProfileState.Idle)
+    val updateProfileState: StateFlow<UpdateProfileState> = _updateProfileState.asStateFlow()
+
     fun updateProfile(name: String, email: String, hostelBlock: String, roomNumber: String, phone: String = "", profilePhotoUri: String? = null) {
         viewModelScope.launch {
-            val current = repository.getCurrentUser() ?: return@launch
+            _updateProfileState.value = UpdateProfileState.Loading
+            val current = repository.getCurrentUser()
+            if (current == null) {
+                _updateProfileState.value = UpdateProfileState.Error("Session expired")
+                return@launch
+            }
             val updated = current.copy(name = name, email = email, hostelBlock = hostelBlock, roomNumber = roomNumber, phone = phone, profilePhotoUri = profilePhotoUri)
-            repository.updateUser(updated)
+            val result = repository.updateUser(updated)
+            if (result.isSuccess) {
+                _updateProfileState.value = UpdateProfileState.Success
+            } else {
+                _updateProfileState.value = UpdateProfileState.Error(result.exceptionOrNull()?.message ?: "Update failed")
+            }
         }
     }
+
+    fun resetUpdateState() {
+        _updateProfileState.value = UpdateProfileState.Idle
+    }
+}
+
+sealed class UpdateProfileState {
+    object Idle : UpdateProfileState()
+    object Loading : UpdateProfileState()
+    object Success : UpdateProfileState()
+    data class Error(val message: String) : UpdateProfileState()
 }
 
 sealed class NewComplaintState {
     object Idle : NewComplaintState()
     object Analyzing : NewComplaintState()
-    data class AnalysisComplete(val result: AiAnalysisResult) : NewComplaintState()
+    data class AnalysisComplete(val result: com.hostelcare.app.data.model.AiAnalysisResult) : NewComplaintState()
     object Submitting : NewComplaintState()
     object Success : NewComplaintState()
     data class Error(val message: String) : NewComplaintState()

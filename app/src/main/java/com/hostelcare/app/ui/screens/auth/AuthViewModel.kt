@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.screens.auth
+﻿package com.hostelcare.app.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +11,14 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel(private val repository: HostelRepository) : ViewModel() {
     val currentUser = repository.currentUserFlow()
+    val isSessionChecked = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch {
+            repository.getCurrentUser()
+            isSessionChecked.value = true
+        }
+    }
 
     private val _uiState = MutableStateFlow<AuthState>(AuthState.Idle)
     val uiState: StateFlow<AuthState> = _uiState.asStateFlow()
