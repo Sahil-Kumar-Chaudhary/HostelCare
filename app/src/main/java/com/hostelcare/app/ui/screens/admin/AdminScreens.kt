@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +18,7 @@ import com.hostelcare.app.AppViewModelFactory
 import com.hostelcare.app.HostelCareApp
 import com.hostelcare.app.data.model.ComplaintStatus
 import com.hostelcare.app.ui.navigation.Routes
+import com.hostelcare.app.ui.screens.student.StatCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +37,7 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.List, "Complaints") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.List, "Complaints") },
                     label = { Text("Complaints") },
                     selected = true,
                     onClick = { navController.navigate(Routes.ADMIN_COMPLAINTS) }
@@ -55,9 +56,9 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                com.hostelcare.app.ui.screens.student.StatCard("Pending", pendingCount.toString())
-                com.hostelcare.app.ui.screens.student.StatCard("In Action", inProgressCount.toString())
-                com.hostelcare.app.ui.screens.student.StatCard("Resolved", resolvedCount.toString())
+                StatCard("Pending", pendingCount.toString())
+                StatCard("In Action", inProgressCount.toString())
+                StatCard("Resolved", resolvedCount.toString())
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text("Needs Attention", style = MaterialTheme.typography.titleMedium)

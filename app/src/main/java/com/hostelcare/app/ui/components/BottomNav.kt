@@ -2,7 +2,7 @@ package com.hostelcare.app.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -29,7 +29,7 @@ fun StudentBottomNavigation(navController: NavController, currentRoute: String) 
             }
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.List, contentDescription = "Complaints") },
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Complaints") },
             label = { Text("Complaints") },
             selected = currentRoute == Routes.MY_COMPLAINTS,
             onClick = {
