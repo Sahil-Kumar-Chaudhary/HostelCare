@@ -106,10 +106,10 @@ class StudentViewModel(
         }
     }
 
-    fun updateProfile(name: String, email: String, hostelBlock: String, roomNumber: String) {
+    fun updateProfile(name: String, email: String, hostelBlock: String, roomNumber: String, phone: String = "", profilePhotoUri: String? = null) {
         viewModelScope.launch {
             val current = repository.getCurrentUser() ?: return@launch
-            val updated = current.copy(name = name, email = email, hostelBlock = hostelBlock, roomNumber = roomNumber)
+            val updated = current.copy(name = name, email = email, hostelBlock = hostelBlock, roomNumber = roomNumber, phone = phone, profilePhotoUri = profilePhotoUri)
             repository.updateUser(updated)
         }
     }

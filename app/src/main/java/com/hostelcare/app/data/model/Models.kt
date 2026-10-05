@@ -11,6 +11,8 @@ data class User(
     val studentId: String = "",
     val hostelBlock: String = "",
     val roomNumber: String = "",
+    val phone: String = "",
+    val profilePhotoUri: String? = null,
     val role: Role = Role.STUDENT
 )
 

@@ -18,6 +18,7 @@ object Routes {
     const val NOTIFICATIONS = "notifications"
     const val PROFILE = "profile"
     const val EDIT_PROFILE = "edit_profile"
+    const val CHANGE_PASSWORD = "change_password"
     const val FEEDBACK = "feedback/{complaintId}"
 
     const val ADMIN_LOGIN = "admin_login"
@@ -74,6 +75,9 @@ fun HostelCareAppNavHost(
         }
         composable(Routes.EDIT_PROFILE) {
             com.hostelcare.app.ui.screens.student.EditProfileScreen(navController, appContainer)
+        }
+        composable(Routes.CHANGE_PASSWORD) {
+            com.hostelcare.app.ui.screens.student.ChangePasswordScreen(navController)
         }
         composable(Routes.FEEDBACK) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("complaintId") ?: ""
