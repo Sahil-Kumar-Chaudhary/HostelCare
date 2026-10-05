@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.hostelcare.app.AppViewModelFactory
@@ -19,6 +20,8 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: StudentViewModel = viewModel(factory = factory)
     
+    val user by viewModel.currentUser.collectAsStateWithLifecycle(null)
+
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(ComplaintCategory.OTHER) }
@@ -66,7 +69,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                         category = category,
                         hostelBlock = hostelBlock,
                         roomNumber = roomNumber,
-                        studentId = viewModel.currentUser.value?.id ?: ""
+                        studentId = user?.id ?: ""
                     )
                     viewModel.startNewComplaint(complaint)
                     navController.navigate(Routes.AI_REVIEW)
