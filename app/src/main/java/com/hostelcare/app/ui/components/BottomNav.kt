@@ -49,3 +49,33 @@ fun StudentBottomNavigation(navController: NavController, currentRoute: String) 
         )
     }
 }
+@Composable
+fun AdminBottomNavigation(navController: NavController, currentRoute: String) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 8.dp
+    ) {
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            label = { Text("Home") },
+            selected = currentRoute == Routes.ADMIN_HOME,
+            onClick = { if (currentRoute != Routes.ADMIN_HOME) navController.navigate(Routes.ADMIN_HOME) { popUpTo(Routes.ADMIN_HOME) { inclusive = true } } },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Complaints") },
+            label = { Text("Complaints") },
+            selected = currentRoute == Routes.ADMIN_COMPLAINTS,
+            onClick = { if (currentRoute != Routes.ADMIN_COMPLAINTS) navController.navigate(Routes.ADMIN_COMPLAINTS) },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+            label = { Text("Profile") },
+            selected = currentRoute == "admin_profile",
+            onClick = { if (currentRoute != "admin_profile") navController.navigate("admin_profile") },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
+        )
+    }
+}

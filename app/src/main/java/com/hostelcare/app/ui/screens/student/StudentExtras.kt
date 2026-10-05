@@ -462,32 +462,23 @@ fun ChangePasswordScreen(navController: NavController) {
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(20.dp)) {
             ProfileFormField("Current Password") {
-                OutlinedTextField(
+                CustomTextField(
                     value = currentPassword, onValueChange = { currentPassword = it },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue),
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                    placeholder = "Enter current password", isPassword = true
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
             ProfileFormField("New Password") {
-                OutlinedTextField(
+                CustomTextField(
                     value = newPassword, onValueChange = { newPassword = it },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue),
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                    placeholder = "Enter new password", isPassword = true
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
             ProfileFormField("Confirm New Password") {
-                OutlinedTextField(
+                CustomTextField(
                     value = confirmPassword, onValueChange = { confirmPassword = it },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue),
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                    placeholder = "Confirm new password", isPassword = true
                 )
             }
         }

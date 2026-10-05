@@ -11,6 +11,9 @@ import androidx.navigation.compose.rememberNavController
 import com.hostelcare.app.ui.navigation.HostelCareAppNavHost
 import com.hostelcare.app.ui.theme.HostelCareTheme
 
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.imePadding
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,7 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             HostelCareTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().systemBarsPadding().imePadding(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()

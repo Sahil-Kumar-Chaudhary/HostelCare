@@ -154,43 +154,16 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                     Text("Quick Actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
                     Spacer(modifier = Modifier.height(16.dp))
                     
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         QuickActionCard("Report\nProblem", Icons.Default.Build, LightBlue, PrimaryBlue, Modifier.weight(1f)) { navController.navigate(Routes.NEW_COMPLAINT) }
-                        QuickActionCard("Hostel\nGuidelines", Icons.Default.MenuBook, Color(0xFFF9FAFB), TextMuted, Modifier.weight(1f)) { }
-                        QuickActionCard("Contact\nWarden", Icons.Default.Phone, Color(0xFFF9FAFB), TextMuted, Modifier.weight(1f)) { }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Text("Announcements", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
-                        Spacer(modifier = Modifier.weight(1f))
-                        Row(modifier = Modifier.clickable { }, verticalAlignment = Alignment.CenterVertically) {
-                            Text("View all", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                            Icon(Icons.Default.ChevronRight, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                        QuickActionCard("Hostel\nGuidelines", Icons.Default.MenuBook, Color(0xFFF9FAFB), TextMuted, Modifier.weight(1f)) { 
+                            android.widget.Toast.makeText(context, "Guidelines opened", android.widget.Toast.LENGTH_SHORT).show()
                         }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB)),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(0.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp)) {
-                            Box(modifier = Modifier.size(40.dp).background(LightBlue, CircleShape), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Campaign, null, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Water Supply Maintenance", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = TextDark)
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    Text("Oct 12", fontSize = 12.sp, color = TextMuted)
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Block B water supply will be unavailable tomorrow from 2 PM – 4 PM.", fontSize = 14.sp, color = TextMuted, lineHeight = 20.sp)
-                            }
+                        QuickActionCard("Contact\nWarden", Icons.Default.Phone, Color(0xFFF9FAFB), TextMuted, Modifier.weight(1f)) { 
+                            val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
+                            intent.data = android.net.Uri.parse("tel:+1234567890")
+                            context.startActivity(intent)
                         }
                     }
                 }

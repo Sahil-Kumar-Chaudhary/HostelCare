@@ -109,6 +109,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: StudentViewModel = viewModel(factory = factory)
     val complaints by viewModel.complaints.collectAsStateWithLifecycle()
+    val staffList by viewModel.staffList.collectAsStateWithLifecycle(initialValue = emptyList())
     val complaint = complaints.find { it.id == complaintId } ?: return
 
     val dStr = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(complaint.createdAt))
@@ -120,35 +121,22 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             TopAppBar(
                 title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = TextDark) },
                 navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } },
-                actions = {
-                    IconButton(onClick = { /* menu action */ }) {
-                        Icon(Icons.Default.MoreVert, "Menu", tint = TextDark)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         bottomBar = {
-            Row(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(
-                    onClick = { /* Add Note */ }, 
-                    modifier = Modifier.weight(1f).height(52.dp), 
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF9FAFB), contentColor = TextDark), 
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.ChatBubbleOutline, null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add Note")
-                }
-                Button(
-                    onClick = { /* Nudge Update */ }, 
-                    modifier = Modifier.weight(1f).height(52.dp), 
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White), 
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.NotificationsActive, null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Nudge Update")
+            if (complaint.status == ComplaintStatus.RESOLVED && complaint.feedbackRating == null) {
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Button(
+                        onClick = { navController.navigate(Routes.feedback(complaint.id)) }, 
+                        modifier = Modifier.weight(1f).height(52.dp), 
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White), 
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.StarRate, null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Provide Feedback")
+                    }
                 }
             }
         }
@@ -176,7 +164,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Business, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("${complaint.hostelBlock} · Room ${complaint.roomNumber}", color = TextMuted, fontSize = 13.sp)
+                            Text("${complaint.hostelBlock} • Room ${complaint.roomNumber}", color = TextMuted, fontSize = 13.sp)
                         }
                     }
                     Box(modifier = Modifier.background(Color(0xFFF9FAFB), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -220,25 +208,18 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(complaint.description, style = MaterialTheme.typography.bodyMedium, color = TextDark, lineHeight = 22.sp)
                 
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Attached Photo", fontSize = 13.sp, color = TextMuted, modifier = Modifier.padding(bottom = 8.dp))
-                
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp))
-                        .clickable { /* View Full Photo */ },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Image, null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(48.dp))
+                if (complaint.photoUri != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Attached Photo", fontSize = 13.sp, color = TextMuted, modifier = Modifier.padding(bottom = 8.dp))
                     
-                    Box(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.ZoomIn, null, tint = TextMuted, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("View full photo", color = TextMuted, fontSize = 12.sp)
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        UriImage(uriStr = complaint.photoUri)
                     }
                 }
             }
@@ -297,25 +278,32 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             // 4. Assigned Staff
             if (complaint.assignedStaffId != null) {
                 item {
-                    Text("Assigned Staff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Box(modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFFF3F4F6), RoundedCornerShape(12.dp)).padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(48.dp).background(Color(0xFFF9FAFB), CircleShape), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Person, null, tint = TextMuted)
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Ramesh Kumar", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = TextDark)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text("Plumber · Block B", fontSize = 13.sp, color = TextMuted)
-                            }
-                            Box(
-                                modifier = Modifier.size(40.dp).background(LightBlue, CircleShape).clickable { /* Call */ },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Phone, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                    val assignedStaff = staffList.find { it.id == complaint.assignedStaffId }
+                    if (assignedStaff != null) {
+                        Text("Assigned Staff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Box(modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFFF3F4F6), RoundedCornerShape(12.dp)).padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(48.dp).background(Color(0xFFF9FAFB), CircleShape), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Person, null, tint = TextMuted)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(assignedStaff.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("${assignedStaff.roleTitle} • Block ${complaint.hostelBlock}", fontSize = 13.sp, color = TextMuted)
+                                }
+                                val context = androidx.compose.ui.platform.LocalContext.current
+                                Box(
+                                    modifier = Modifier.size(40.dp).background(LightBlue, CircleShape).clickable {
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_DIAL).apply { data = android.net.Uri.parse("tel:+1234567890") }
+                                        context.startActivity(intent)
+                                    },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Phone, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                                }
                             }
                         }
                     }

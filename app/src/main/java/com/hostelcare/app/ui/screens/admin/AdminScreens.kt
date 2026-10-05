@@ -43,27 +43,7 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
     val needsAttention = complaints.filter { (it.priority.name == "HIGH" || it.priority.name == "EMERGENCY") && it.status != ComplaintStatus.RESOLVED }
 
     Scaffold(
-        bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 8.dp) {
-                NavigationBarItem(
-                    icon = { Icon(Icons.AutoMirrored.Filled.List, "Complaints") },
-                    label = { Text("Complaints") },
-                    selected = true,
-                    onClick = { navController.navigate(Routes.ADMIN_COMPLAINTS) },
-                    colors = NavigationBarItemDefaults.colors(indicatorColor = LightBlue)
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Person, "Profile") },
-                    label = { Text("Logout") },
-                    selected = false,
-                    onClick = {
-                        viewModel.logout()
-                        navController.navigate(Routes.SPLASH) { popUpTo(0) }
-                    },
-                    colors = NavigationBarItemDefaults.colors(indicatorColor = LightBlue)
-                )
-            }
-        },
+        bottomBar = { com.hostelcare.app.ui.components.AdminBottomNavigation(navController, Routes.ADMIN_HOME) },
         containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
@@ -121,7 +101,8 @@ fun AdminComplaintListScreen(navController: NavController, app: HostelCareApp) {
     val complaints by viewModel.complaints.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("All Complaints", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
+        bottomBar = { com.hostelcare.app.ui.components.AdminBottomNavigation(navController, Routes.ADMIN_COMPLAINTS) },
+        topBar = { TopAppBar(title = { Text("All Complaints", fontWeight = FontWeight.Bold) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
         containerColor = BackgroundLight
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -283,6 +264,36 @@ fun ResolveComplaintScreen(navController: NavController, app: HostelCareApp, com
                 enabled = note.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) { Text("Confirm Resolution") }
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminProfileScreen(navController: NavController, app: HostelCareApp) {
+    val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
+    val viewModel: AdminViewModel = viewModel(factory = factory)
+    
+    Scaffold(
+        bottomBar = { com.hostelcare.app.ui.components.AdminBottomNavigation(navController, Routes.ADMIN_PROFILE) },
+        containerColor = BackgroundLight,
+        topBar = {
+            TopAppBar(
+                title = { Text("Staff Profile", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                onClick = {
+                    viewModel.logout()
+                    navController.navigate(Routes.SPLASH) { popUpTo(0) }
+                },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = DangerRed)
+            ) { Text("Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
         }
     }
 }

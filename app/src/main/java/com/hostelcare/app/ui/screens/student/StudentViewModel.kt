@@ -27,6 +27,8 @@ class StudentViewModel(
     private val _draftComplaint = MutableStateFlow<Complaint?>(null)
     val draftComplaint: StateFlow<Complaint?> = _draftComplaint.asStateFlow()
 
+    val staffList = repository.getAvailableStaff()
+
     init {
         viewModelScope.launch {
             currentUser.collectLatest { user ->

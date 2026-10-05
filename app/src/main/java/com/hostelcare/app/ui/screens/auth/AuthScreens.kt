@@ -42,13 +42,22 @@ fun CustomTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
+    var passwordVisible by remember { mutableStateOf(false) }
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(placeholder, color = TextMuted) },
         leadingIcon = leadingIcon,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        trailingIcon = trailingIcon ?: if (isPassword) { { Icon(Icons.Default.Visibility, "Show", tint = TextMuted) } } else null,
+        visualTransformation = if (isPassword && !passwordVisible) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        trailingIcon = trailingIcon ?: if (isPassword) { 
+            { 
+                val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(icon, contentDescription = if (passwordVisible) "Hide password" else "Show password", tint = TextMuted)
+                }
+            } 
+        } else null,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
@@ -325,8 +334,8 @@ fun AdminLoginScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: AuthViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var email by remember { mutableStateOf("admin@campus.edu") }
-    var password by remember { mutableStateOf("password") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     LaunchedEffect(uiState) {
         if (uiState is AuthState.Success) {
@@ -336,10 +345,11 @@ fun AdminLoginScreen(navController: NavController, app: HostelCareApp) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(BackgroundLight).padding(24.dp), 
+        modifier = Modifier.fillMaxSize().background(BackgroundLight).verticalScroll(rememberScrollState()).padding(24.dp), 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Spacer(modifier = Modifier.height(32.dp))
         Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = DangerRed, modifier = Modifier.size(48.dp))
         Spacer(modifier = Modifier.height(16.dp))
         Text("Staff Login", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)

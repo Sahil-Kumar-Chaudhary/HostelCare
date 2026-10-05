@@ -24,6 +24,7 @@ object Routes {
     const val ADMIN_LOGIN = "admin_login"
     const val ADMIN_HOME = "admin_home"
     const val ADMIN_COMPLAINTS = "admin_complaints"
+    const val ADMIN_PROFILE = "admin_profile"
     const val ADMIN_COMPLAINT_DETAILS = "admin_complaint_details/{complaintId}"
     const val ASSIGN_STAFF = "assign_staff/{complaintId}"
     const val RESOLVE_COMPLAINT = "resolve_complaint/{complaintId}"
@@ -91,6 +92,9 @@ fun HostelCareAppNavHost(
         }
         composable(Routes.ADMIN_COMPLAINTS) {
             com.hostelcare.app.ui.screens.admin.AdminComplaintListScreen(navController, appContainer)
+        }
+        composable(Routes.ADMIN_PROFILE) {
+            com.hostelcare.app.ui.screens.admin.AdminProfileScreen(navController, appContainer)
         }
         composable(Routes.ADMIN_COMPLAINT_DETAILS) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("complaintId") ?: ""
