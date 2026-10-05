@@ -1,16 +1,25 @@
 package com.hostelcare.app.ui.screens.admin
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -18,7 +27,8 @@ import com.hostelcare.app.AppViewModelFactory
 import com.hostelcare.app.HostelCareApp
 import com.hostelcare.app.data.model.ComplaintStatus
 import com.hostelcare.app.ui.navigation.Routes
-import com.hostelcare.app.ui.screens.student.StatCard
+import com.hostelcare.app.ui.screens.auth.CustomTextField
+import com.hostelcare.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,17 +40,17 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
     val pendingCount = complaints.count { it.status == ComplaintStatus.SUBMITTED || it.status == ComplaintStatus.UNDER_REVIEW }
     val inProgressCount = complaints.count { it.status == ComplaintStatus.ASSIGNED || it.status == ComplaintStatus.IN_PROGRESS }
     val resolvedCount = complaints.count { it.status == ComplaintStatus.RESOLVED }
-    val needsAttention = complaints.filter { it.priority.name == "HIGH" || it.priority.name == "EMERGENCY" && it.status != ComplaintStatus.RESOLVED }
+    val needsAttention = complaints.filter { (it.priority.name == "HIGH" || it.priority.name == "EMERGENCY") && it.status != ComplaintStatus.RESOLVED }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Staff Triage Home") }) },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 8.dp) {
                 NavigationBarItem(
                     icon = { Icon(Icons.AutoMirrored.Filled.List, "Complaints") },
                     label = { Text("Complaints") },
                     selected = true,
-                    onClick = { navController.navigate(Routes.ADMIN_COMPLAINTS) }
+                    onClick = { navController.navigate(Routes.ADMIN_COMPLAINTS) },
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = LightBlue)
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Person, "Profile") },
@@ -49,26 +59,52 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
                     onClick = {
                         viewModel.logout()
                         navController.navigate(Routes.SPLASH) { popUpTo(0) }
-                    }
+                    },
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = LightBlue)
                 )
             }
+        },
+        containerColor = BackgroundLight,
+        topBar = {
+            TopAppBar(
+                title = { Text("Good morning", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+            )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                StatCard("Pending", pendingCount.toString())
-                StatCard("In Action", inProgressCount.toString())
-                StatCard("Resolved", resolvedCount.toString())
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+            Text("Complaints", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(modifier = Modifier.weight(1f).background(SurfaceLight, RoundedCornerShape(8.dp)).padding(12.dp)) {
+                    Column {
+                        Text("Pending", fontSize = 12.sp, color = TextMuted)
+                        Text("$pendingCount", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Box(modifier = Modifier.weight(1f).background(SurfaceLight, RoundedCornerShape(8.dp)).padding(12.dp)) {
+                    Column {
+                        Text("In Progress", fontSize = 12.sp, color = TextMuted)
+                        Text("$inProgressCount", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Box(modifier = Modifier.weight(1f).background(SurfaceLight, RoundedCornerShape(8.dp)).padding(12.dp)) {
+                    Column {
+                        Text("Resolved", fontSize = 12.sp, color = TextMuted)
+                        Text("$resolvedCount", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Text("Needs Attention", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyColumn {
+            Text("Needs Attention", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(needsAttention) { c ->
-                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(c.title, style = MaterialTheme.typography.titleMedium)
-                            Text("Priority: ${c.priority.name}", color = MaterialTheme.colorScheme.error)
+                    Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Room ${c.roomNumber} · ${c.priority.name} · ${c.status.name}", fontSize = 14.sp, color = TextMuted)
                         }
                     }
                 }
@@ -83,32 +119,18 @@ fun AdminComplaintListScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: AdminViewModel = viewModel(factory = factory)
     val complaints by viewModel.complaints.collectAsStateWithLifecycle()
-    
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedStatus by remember { mutableStateOf<ComplaintStatus?>(null) }
-    
-    val filtered = complaints.filter {
-        (searchQuery.isBlank() || it.title.contains(searchQuery, true)) &&
-        (selectedStatus == null || it.status == selectedStatus)
-    }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("All Complaints") }) }) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, label = { Text("Search") }, modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                FilterChip(selected = selectedStatus == null, onClick = { selectedStatus = null }, label = { Text("All") })
-                FilterChip(selected = selectedStatus == ComplaintStatus.SUBMITTED, onClick = { selectedStatus = ComplaintStatus.SUBMITTED }, label = { Text("New") })
-                FilterChip(selected = selectedStatus == ComplaintStatus.IN_PROGRESS, onClick = { selectedStatus = ComplaintStatus.IN_PROGRESS }, label = { Text("Active") })
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            LazyColumn {
-                items(filtered) { c ->
-                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(c.title, style = MaterialTheme.typography.titleMedium)
-                            Text(c.status.name)
-                        }
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("All Complaints", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
+        containerColor = BackgroundLight
+    ) { padding ->
+        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(complaints) { c ->
+                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Room ${c.roomNumber} · Status: ${c.status.name}", fontSize = 14.sp, color = TextMuted)
                     }
                 }
             }
@@ -122,37 +144,58 @@ fun AdminComplaintDetailsScreen(navController: NavController, app: HostelCareApp
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: AdminViewModel = viewModel(factory = factory)
     val complaints by viewModel.complaints.collectAsStateWithLifecycle()
-    val complaint = complaints.find { it.id == complaintId }
+    val complaint = complaints.find { it.id == complaintId } ?: return
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Complaint Details") }) }) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            if (complaint != null) {
-                Text(complaint.title, style = MaterialTheme.typography.headlineMedium)
-                Text("Student ID: ${complaint.studentId}")
-                Text("Room: ${complaint.hostelBlock}-${complaint.roomNumber}")
-                Text("Status: ${complaint.status.name}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(complaint.description)
-                if (complaint.aiSummary != null) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("AI Summary: ${complaint.aiSummary}", style = MaterialTheme.typography.bodySmall)
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Complaint Details", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
+        containerColor = BackgroundLight
+    ) { padding ->
+        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(complaint.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Student: ${complaint.studentId}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Room: ${complaint.roomNumber}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Category: ${complaint.category.name}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Priority: ${complaint.priority.name}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Status: ${complaint.status.name}", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { navController.navigate(Routes.assignStaff(complaint.id)) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Assign Staff")
+            }
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(complaint.description, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(GrayBg, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Image, null, tint = TextMuted)
+                        }
+                    }
                 }
+            }
+            if (complaint.aiSummary != null) {
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("AI Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(complaint.aiSummary!!, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+            item {
+                Text("Actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { viewModel.updateComplaintStatus(complaint.id, ComplaintStatus.IN_PROGRESS) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = complaint.status != ComplaintStatus.IN_PROGRESS
-                ) {
-                    Text("Mark In Progress")
-                }
+                Button(onClick = { navController.navigate(Routes.assignStaff(complaintId)) }, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(8.dp)) { Text("Assign Staff") }
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = { navController.navigate(Routes.resolveComplaint(complaint.id)) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Resolve Complaint")
-                }
+                Button(onClick = { viewModel.updateComplaintStatus(complaintId, ComplaintStatus.IN_PROGRESS) }, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = LightBlue, contentColor = PrimaryBlue), shape = RoundedCornerShape(8.dp)) { Text("Change Status") }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { navController.navigate(Routes.resolveComplaint(complaintId)) }, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen, contentColor = Color.White), shape = RoundedCornerShape(8.dp)) { Text("Mark as Resolved") }
             }
         }
     }
@@ -164,36 +207,54 @@ fun AssignStaffScreen(navController: NavController, app: HostelCareApp, complain
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: AdminViewModel = viewModel(factory = factory)
     val staffList by viewModel.staffList.collectAsStateWithLifecycle()
-    var selectedStaffId by remember { mutableStateOf<String?>(null) }
-
-    Scaffold(topBar = { TopAppBar(title = { Text("Assign Staff") }) }) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            Text("Select Maintenance Personnel")
-            LazyColumn(modifier = Modifier.weight(1f)) {
+    val complaints by viewModel.complaints.collectAsStateWithLifecycle()
+    val complaint = complaints.find { it.id == complaintId }
+    var selectedId by remember { mutableStateOf<String?>(null) }
+    
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Assign Staff", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
+        containerColor = BackgroundLight
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+            if (complaint != null) {
+                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(complaint.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Room ${complaint.roomNumber} · ${complaint.category.name}", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                        Text("${complaint.priority.name} Priority", style = MaterialTheme.typography.bodyMedium, color = DangerRed)
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+            Text("Select Staff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(staffList) { staff ->
-                    Row(modifier = Modifier.fillMaxWidth().clickable { selectedStaffId = staff.id }.padding(vertical = 8.dp)) {
-                        RadioButton(selected = selectedStaffId == staff.id, onClick = { selectedStaffId = staff.id })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(staff.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(staff.roleTitle, style = MaterialTheme.typography.bodySmall)
-                            Text(if (staff.isAvailable) "Available" else "Busy", color = if (staff.isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                    Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().clickable { selectedId = staff.id }) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = selectedId == staff.id, onClick = { selectedId = staff.id }, colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(staff.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text("${staff.roleTitle} · ${if(staff.isAvailable) "Available" else "Busy"}", fontSize = 14.sp, color = TextMuted)
+                            }
                         }
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = {
-                    selectedStaffId?.let {
+                onClick = { 
+                    selectedId?.let {
                         viewModel.assignStaff(complaintId, it)
                         navController.popBackStack()
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = selectedStaffId != null
-            ) {
-                Text("Assign & Notify Staff")
-            }
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+                enabled = selectedId != null,
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            ) { Text("Assign Staff") }
         }
     }
 }
@@ -205,20 +266,23 @@ fun ResolveComplaintScreen(navController: NavController, app: HostelCareApp, com
     val viewModel: AdminViewModel = viewModel(factory = factory)
     var note by remember { mutableStateOf("") }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Resolve Complaint") }) }) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            OutlinedTextField(value = note, onValueChange = { note = it }, label = { Text("Resolution Note") }, modifier = Modifier.fillMaxWidth(), minLines = 4)
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Resolve Complaint", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
+        containerColor = BackgroundLight
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            CustomTextField(note, { note = it }, "Resolution Note")
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = {
                     viewModel.updateComplaintStatus(complaintId, ComplaintStatus.RESOLVED, note)
-                    navController.navigate(Routes.ADMIN_HOME) { popUpTo(0) }
+                    navController.popBackStack()
                 },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = note.isNotBlank()
-            ) {
-                Text("Mark as Resolved")
-            }
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+                enabled = note.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            ) { Text("Confirm Resolution") }
         }
     }
 }

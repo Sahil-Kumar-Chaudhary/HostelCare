@@ -1,8 +1,6 @@
 package com.hostelcare.app.ui.theme
 
 import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -16,38 +14,51 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-val PrimaryBlue = Color(0xFF0F52BA)
-val BackgroundLight = Color(0xFFF8F9FA)
+val PrimaryBlue = Color(0xFF0056D2)
+val BackgroundLight = Color(0xFFF9FAFB)
 val SurfaceLight = Color(0xFFFFFFFF)
-val TextDark = Color(0xFF212529)
-val TextMuted = Color(0xFF6C757D)
-val SuccessGreen = Color(0xFF28A745)
-val WarningOrange = Color(0xFFFD7E14)
-val DangerRed = Color(0xFFDC3545)
+val TextDark = Color(0xFF1F2937)
+val TextMuted = Color(0xFF6B7280)
+val SuccessGreen = Color(0xFF10B981)
+val WarningOrange = Color(0xFFF59E0B)
+val DangerRed = Color(0xFFEF4444)
+
+val LightBlue = Color(0xFFEBF3FF)
+val GrayBg = Color(0xFFF3F4F6)
+val GreenPillBg = Color(0xFFE1F7E3)
+val RedPillBg = Color(0xFFFFEBEB)
+val OrangePillBg = Color(0xFFFFF3E0)
 
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryBlue,
     onPrimary = Color.White,
+    primaryContainer = LightBlue,
+    onPrimaryContainer = PrimaryBlue,
+    secondary = PrimaryBlue,
+    onSecondary = Color.White,
+    secondaryContainer = LightBlue,
+    onSecondaryContainer = PrimaryBlue,
     background = BackgroundLight,
     onBackground = TextDark,
     surface = SurfaceLight,
     onSurface = TextDark,
+    surfaceVariant = GrayBg,
+    onSurfaceVariant = TextMuted,
+    surfaceTint = Color.White,
     error = DangerRed,
     onError = Color.White
 )
 
 val Shapes = Shapes(
     small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp)
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp)
 )
 
 val Typography = Typography()
 
 @Composable
-fun HostelCareTheme(
-    content: @Composable () -> Unit
-) {
+fun HostelCareTheme(content: @Composable () -> Unit) {
     val colorScheme = LightColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -64,11 +75,5 @@ fun HostelCareTheme(
             }
         }
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = Shapes,
-        content = content
-    )
+    MaterialTheme(colorScheme = colorScheme, typography = Typography, shapes = Shapes, content = content)
 }

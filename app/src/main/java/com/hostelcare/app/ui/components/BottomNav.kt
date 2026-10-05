@@ -1,62 +1,51 @@
 package com.hostelcare.app.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.hostelcare.app.ui.navigation.Routes
 
 @Composable
 fun StudentBottomNavigation(navController: NavController, currentRoute: String) {
-    NavigationBar {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 8.dp
+    ) {
         NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
             label = { Text("Home") },
             selected = currentRoute == Routes.STUDENT_HOME,
-            onClick = {
-                if (currentRoute != Routes.STUDENT_HOME) {
-                    navController.navigate(Routes.STUDENT_HOME) {
-                        popUpTo(Routes.STUDENT_HOME) { inclusive = true }
-                    }
-                }
-            }
+            onClick = { if (currentRoute != Routes.STUDENT_HOME) navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.STUDENT_HOME) { inclusive = true } } },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
         )
         NavigationBarItem(
             icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Complaints") },
             label = { Text("Complaints") },
             selected = currentRoute == Routes.MY_COMPLAINTS,
-            onClick = {
-                if (currentRoute != Routes.MY_COMPLAINTS) {
-                    navController.navigate(Routes.MY_COMPLAINTS)
-                }
-            }
+            onClick = { if (currentRoute != Routes.MY_COMPLAINTS) navController.navigate(Routes.MY_COMPLAINTS) },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
+            icon = { Icon(Icons.Default.Notifications, contentDescription = "Updates") },
             label = { Text("Updates") },
             selected = currentRoute == Routes.NOTIFICATIONS,
-            onClick = {
-                if (currentRoute != Routes.NOTIFICATIONS) {
-                    navController.navigate(Routes.NOTIFICATIONS)
-                }
-            }
+            onClick = { if (currentRoute != Routes.NOTIFICATIONS) navController.navigate(Routes.NOTIFICATIONS) },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
             label = { Text("Profile") },
             selected = currentRoute == Routes.PROFILE,
-            onClick = {
-                if (currentRoute != Routes.PROFILE) {
-                    navController.navigate(Routes.PROFILE)
-                }
-            }
+            onClick = { if (currentRoute != Routes.PROFILE) navController.navigate(Routes.PROFILE) },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer)
         )
     }
 }
