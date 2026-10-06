@@ -6,6 +6,7 @@ require("dotenv").config();
 const auth = require("./middleware/auth");
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
+const complaintRoutes = require("./routes/complaints");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +16,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/complaints", complaintRoutes);
 
 app.get("/", (req, res) => {
   res.json({
