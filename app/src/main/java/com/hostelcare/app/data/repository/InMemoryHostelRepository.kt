@@ -224,4 +224,29 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
             list.map { if (it.id == id) it.copy(isRead = true) else it }
         }
     }
+    override suspend fun analyzeComplaint(
+        title: String,
+        description: String,
+        category: String?
+    ): Result<com.hostelcare.app.data.model.AiAnalysisResult> {
+        return try {
+            val req = com.hostelcare.app.data.remote.AiAnalyzeRequest(title, description, category)
+            val response = apiService.analyzeComplaint(req)
+            if (response.isSuccessful) {
+                val data = response.body()?.analysis
+                if (data != null) {
+                    val catEnum = try { com.hostelcare.app.data.model.ComplaintCategory.valueOf(data.category.uppercase()) } catch(e: Exception) { com.hostelcare.app.data.model.ComplaintCategory.OTHER }
+                    val prioEnum = try { com.hostelcare.app.data.model.ComplaintPriority.valueOf(data.priority.uppercase()) } catch(e: Exception) { com.hostelcare.app.data.model.ComplaintPriority.MEDIUM }
+                    Result.success(com.hostelcare.app.data.model.AiAnalysisResult(catEnum, prioEnum, data.summary))
+                } else {
+                    Result.failure(Exception("Empty AI analysis result"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception(errorBody ?: "AI analysis failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -64,7 +64,7 @@ class StudentViewModel(
         val draft = _draftComplaint.value ?: return
         viewModelScope.launch {
             _newComplaintState.value = NewComplaintState.Analyzing
-            val result = aiAnalyzer.analyzeComplaint(draft.title, draft.description, draft.category)
+            val result = repository.analyzeComplaint(draft.title, draft.description, draft.category.name)
             if (result.isSuccess) {
                 val analysis = result.getOrNull()!!
                 _draftComplaint.value = draft.copy(
@@ -74,7 +74,7 @@ class StudentViewModel(
                 )
                 _newComplaintState.value = NewComplaintState.AnalysisComplete(analysis)
             } else {
-                _newComplaintState.value = NewComplaintState.Error("AI Analysis failed")
+                _newComplaintState.value = NewComplaintState.Error(result.exceptionOrNull()?.message ?: "AI analysis is currently unavailable. Please try again.")
             }
         }
     }

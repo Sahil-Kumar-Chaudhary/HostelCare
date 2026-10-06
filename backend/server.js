@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
@@ -6,7 +6,8 @@ require("dotenv").config();
 const auth = require("./middleware/auth");
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
-const complaintRoutes = require("./routes/complaints");
+const complaintRoutes = require('./routes/complaints');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,7 +17,8 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/complaints", complaintRoutes);
+app.use('/api/complaints', complaintRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get("/", (req, res) => {
   res.json({

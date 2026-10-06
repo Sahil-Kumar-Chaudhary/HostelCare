@@ -33,4 +33,5 @@ interface HostelRepository {
     // Notifications
     fun getNotificationsForUser(userId: String): Flow<List<Notification>>
     suspend fun markNotificationAsRead(id: String)
+    suspend fun analyzeComplaint(title: String, description: String, category: String?): Result<com.hostelcare.app.data.model.AiAnalysisResult>
 }

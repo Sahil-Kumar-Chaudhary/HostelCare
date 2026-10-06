@@ -121,3 +121,20 @@ data class NetworkComplaint(
         aiSummary = aiSummary
     )
 }
+data class AiAnalyzeRequest(
+    val title: String,
+    val description: String,
+    val category: String? = null,
+    val image: String? = null
+)
+
+data class AiAnalysisData(
+    val category: String,
+    val priority: String,
+    val summary: String
+)
+
+data class AiAnalyzeResponse(
+    val message: String,
+    val analysis: AiAnalysisData
+)

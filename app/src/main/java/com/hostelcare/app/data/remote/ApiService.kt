@@ -26,4 +26,6 @@ interface ApiService {
 
     @GET("api/complaints/{id}")
     suspend fun getComplaint(@retrofit2.http.Path("id") id: String): Response<ComplaintResponse>
+    @POST("api/ai/analyze-complaint")
+    suspend fun analyzeComplaint(@Body request: AiAnalyzeRequest): retrofit2.Response<AiAnalyzeResponse>
 }
