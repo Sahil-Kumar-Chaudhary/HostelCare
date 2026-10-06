@@ -18,4 +18,12 @@ interface ApiService {
 
     @PUT("api/profile")
     suspend fun updateProfile(@Body request: UpdateProfileRequest): Response<ProfileResponse>
+    @POST("api/complaints")
+    suspend fun createComplaint(@Body request: ComplaintRequest): Response<ComplaintResponse>
+
+    @GET("api/complaints")
+    suspend fun getComplaints(): Response<ComplaintsListResponse>
+
+    @GET("api/complaints/{id}")
+    suspend fun getComplaint(@retrofit2.http.Path("id") id: String): Response<ComplaintResponse>
 }

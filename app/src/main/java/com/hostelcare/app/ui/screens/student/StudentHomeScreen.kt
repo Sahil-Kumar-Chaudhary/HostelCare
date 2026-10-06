@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.screens.student
+﻿package com.hostelcare.app.ui.screens.student
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -132,7 +132,7 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(c.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = TextDark)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text("Room ${c.roomNumber} · ${c.category.name}", fontSize = 12.sp, color = TextMuted)
+                                Text("Room ${c.roomNumber} Â· ${c.category.name}", fontSize = 12.sp, color = TextMuted)
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(horizontalAlignment = Alignment.End) {
@@ -420,8 +420,8 @@ fun AiReviewScreen(navController: NavController, app: HostelCareApp) {
     var submittingId by remember { mutableStateOf<String?>(null) }
     
     LaunchedEffect(state) {
-        if (state is NewComplaintState.Success && submittingId != null) {
-            navController.navigate(Routes.complaintDetails(submittingId!!)) {
+        if (state is NewComplaintState.Success) {
+            navController.navigate(Routes.complaintDetails(state.complaintId)) {
                 popUpTo(Routes.STUDENT_HOME)
             }
         }
@@ -498,7 +498,22 @@ fun AiReviewScreen(navController: NavController, app: HostelCareApp) {
                     }
                 }
                 else -> {
-                    Text(if (state is NewComplaintState.Error) state.message else "No complaint in progress.", color = TextMuted)
+                    if (state is NewComplaintState.Error) {
+                        Icon(Icons.Default.ErrorOutline, null, tint = DangerRed, modifier = Modifier.size(64.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Error", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = DangerRed)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(state.message, color = TextDark, textAlign = TextAlign.Center)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = { viewModel.submitComplaint() },
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) { Text("Retry Submit", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+                    } else {
+                        Text("No complaint in progress.", color = TextMuted)
+                    }
                 }
             }
         }

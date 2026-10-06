@@ -116,9 +116,60 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         return _complaints.map { list -> list.find { it.id == id } }
     }
 
+        override suspend fun refreshComplaints() {
+        try {
+            val response = apiService.getComplaints()
+            if (response.isSuccessful && response.body() != null) {
+                val complaints = response.body()!!.complaints.map { it.toLocalComplaint() }
+                _complaints.value = complaints
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun fetchComplaint(id: String): Result<Complaint> {
+        return try {
+            val response = apiService.getComplaint(id)
+            if (response.isSuccessful && response.body() != null) {
+                val complaint = response.body()!!.complaint.toLocalComplaint()
+                // Update local list
+                val current = _complaints.value.toMutableList()
+                val index = current.indexOfFirst { it.id == id }
+                if (index != -1) current[index] = complaint else current.add(complaint)
+                _complaints.value = current
+                Result.success(complaint)
+            } else {
+                Result.failure(Exception(response.message()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun submitComplaint(complaint: Complaint): Result<Complaint> {
-        _complaints.update { it + complaint }
-        return Result.success(complaint)
+        return try {
+            val request = com.hostelcare.app.data.remote.ComplaintRequest(
+                title = complaint.title,
+                description = complaint.description,
+                category = complaint.category.name,
+                priority = complaint.priority.name,
+                hostelBlock = complaint.hostelBlock,
+                roomNumber = complaint.roomNumber,
+                photoUrl = complaint.photoUri,
+                aiSummary = complaint.aiSummary
+            )
+            val response = apiService.createComplaint(request)
+            if (response.isSuccessful && response.body() != null) {
+                val created = response.body()!!.complaint.toLocalComplaint()
+                _complaints.update { listOf(created) + it }
+                Result.success(created)
+            } else {
+                Result.failure(Exception("Failed to submit complaint: " + response.message()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     override suspend fun updateComplaintStatus(

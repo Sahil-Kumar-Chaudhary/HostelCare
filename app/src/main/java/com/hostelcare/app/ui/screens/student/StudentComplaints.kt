@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.screens.student
+﻿package com.hostelcare.app.ui.screens.student
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -91,7 +91,7 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("${c.category.name} · ${c.status.name}", fontSize = 14.sp, color = TextMuted)
+                            Text("${c.category.name} Â· ${c.status.name}", fontSize = 14.sp, color = TextMuted)
                             Spacer(modifier = Modifier.height(8.dp))
                             val dStr = SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(c.createdAt))
                             Text(dStr, fontSize = 12.sp, color = TextMuted)
@@ -108,9 +108,52 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
 fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, complaintId: String) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: StudentViewModel = viewModel(factory = factory)
-    val complaints by viewModel.complaints.collectAsStateWithLifecycle()
+    val detailsState by viewModel.complaintDetailsState.collectAsStateWithLifecycle()
     val staffList by viewModel.staffList.collectAsStateWithLifecycle(initialValue = emptyList())
-    val complaint = complaints.find { it.id == complaintId } ?: return
+    
+    LaunchedEffect(complaintId) {
+        viewModel.fetchComplaintDetails(complaintId)
+    }
+
+    if (detailsState is ComplaintDetailsState.Loading) {
+        Scaffold(
+            topBar = {
+                @OptIn(ExperimentalMaterial3Api::class)
+                TopAppBar(
+                    title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = TextDark) },
+                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                )
+            },
+            containerColor = Color.White
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = PrimaryBlue)
+            }
+        }
+        return
+    }
+
+    if (detailsState is ComplaintDetailsState.Error) {
+        Scaffold(
+            topBar = {
+                @OptIn(ExperimentalMaterial3Api::class)
+                TopAppBar(
+                    title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = TextDark) },
+                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                )
+            },
+            containerColor = Color.White
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text((detailsState as ComplaintDetailsState.Error).message, color = DangerRed)
+            }
+        }
+        return
+    }
+
+    val complaint = (detailsState as ComplaintDetailsState.Success).complaint
 
     val dStr = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(complaint.createdAt))
     val timeStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(complaint.createdAt))
@@ -164,7 +207,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Business, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("${complaint.hostelBlock} • Room ${complaint.roomNumber}", color = TextMuted, fontSize = 13.sp)
+                            Text("${complaint.hostelBlock} â€¢ Room ${complaint.roomNumber}", color = TextMuted, fontSize = 13.sp)
                         }
                     }
                     Box(modifier = Modifier.background(Color(0xFFF9FAFB), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -292,7 +335,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(assignedStaff.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = TextDark)
                                     Spacer(modifier = Modifier.height(2.dp))
-                                    Text("${assignedStaff.roleTitle} • Block ${complaint.hostelBlock}", fontSize = 13.sp, color = TextMuted)
+                                    Text("${assignedStaff.roleTitle} â€¢ Block ${complaint.hostelBlock}", fontSize = 13.sp, color = TextMuted)
                                 }
                                 val context = androidx.compose.ui.platform.LocalContext.current
                                 Box(

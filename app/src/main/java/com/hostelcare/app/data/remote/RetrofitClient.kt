@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
     // Keep BASE_URL configurable. Use 10.0.2.2 for emulator localhost.
-    private const val BASE_URL = "http://10.0.2.2:5000/"
+    private const val BASE_URL = "https://hostelcare-backend-1r6q.onrender.com/"
 
     fun create(tokenManager: TokenManager): ApiService {
         val logging = HttpLoggingInterceptor().apply {

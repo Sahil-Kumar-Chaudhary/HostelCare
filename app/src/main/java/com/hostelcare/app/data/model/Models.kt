@@ -1,4 +1,4 @@
-package com.hostelcare.app.data.model
+﻿package com.hostelcare.app.data.model
 
 import java.util.UUID
 
@@ -30,6 +30,7 @@ enum class ComplaintStatus {
 
 data class Complaint(
     val id: String = UUID.randomUUID().toString(),
+    val ticketId: String = "",
     val title: String,
     val description: String,
     val category: ComplaintCategory,

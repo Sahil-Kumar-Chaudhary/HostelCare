@@ -33,6 +33,7 @@ class StudentViewModel(
         viewModelScope.launch {
             currentUser.collectLatest { user ->
                 if (user != null) {
+                    launch { repository.refreshComplaints() }
                     launch {
                         repository.getComplaintsForStudent(user.id).collect {
                             _complaints.value = it
@@ -84,10 +85,31 @@ class StudentViewModel(
             _newComplaintState.value = NewComplaintState.Submitting
             val result = repository.submitComplaint(draft)
             if (result.isSuccess) {
-                _newComplaintState.value = NewComplaintState.Success
-                _draftComplaint.value = null
+                val createdComplaint = result.getOrNull()
+                if (createdComplaint != null) {
+                    _newComplaintState.value = NewComplaintState.Success(createdComplaint.id)
+                    _draftComplaint.value = null
+                    repository.refreshComplaints()
+                } else {
+                    _newComplaintState.value = NewComplaintState.Error("Submission failed")
+                }
             } else {
-                _newComplaintState.value = NewComplaintState.Error("Submission failed")
+                _newComplaintState.value = NewComplaintState.Error(result.exceptionOrNull()?.message ?: "Submission failed")
+            }
+        }
+    }
+
+    private val _complaintDetailsState = MutableStateFlow<ComplaintDetailsState>(ComplaintDetailsState.Loading)
+    val complaintDetailsState: StateFlow<ComplaintDetailsState> = _complaintDetailsState.asStateFlow()
+
+    fun fetchComplaintDetails(id: String) {
+        viewModelScope.launch {
+            _complaintDetailsState.value = ComplaintDetailsState.Loading
+            val result = repository.fetchComplaint(id)
+            if (result.isSuccess) {
+                _complaintDetailsState.value = ComplaintDetailsState.Success(result.getOrNull()!!)
+            } else {
+                _complaintDetailsState.value = ComplaintDetailsState.Error(result.exceptionOrNull()?.message ?: "Failed to load complaint")
             }
         }
     }
@@ -146,6 +168,11 @@ sealed class NewComplaintState {
     object Analyzing : NewComplaintState()
     data class AnalysisComplete(val result: com.hostelcare.app.data.model.AiAnalysisResult) : NewComplaintState()
     object Submitting : NewComplaintState()
-    object Success : NewComplaintState()
+    data class Success(val complaintId: String) : NewComplaintState()
     data class Error(val message: String) : NewComplaintState()
+}
+sealed class ComplaintDetailsState {
+    object Loading : ComplaintDetailsState()
+    data class Success(val complaint: com.hostelcare.app.data.model.Complaint) : ComplaintDetailsState()
+    data class Error(val message: String) : ComplaintDetailsState()
 }

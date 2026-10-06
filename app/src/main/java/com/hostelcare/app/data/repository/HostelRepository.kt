@@ -1,4 +1,4 @@
-package com.hostelcare.app.data.repository
+﻿package com.hostelcare.app.data.repository
 
 import com.hostelcare.app.data.model.Complaint
 import com.hostelcare.app.data.model.ComplaintStatus
@@ -18,6 +18,8 @@ interface HostelRepository {
 
     // Complaints
     fun getComplaintsForStudent(studentId: String): Flow<List<Complaint>>
+    suspend fun refreshComplaints()
+    suspend fun fetchComplaint(id: String): Result<Complaint>
     fun getAllComplaints(): Flow<List<Complaint>>
     fun getComplaint(id: String): Flow<Complaint?>
     suspend fun submitComplaint(complaint: Complaint): Result<Complaint>
