@@ -16,6 +16,10 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,42 +44,167 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
-    val viewModel: StudentViewModel = viewModel(factory = factory)
+    val viewModel: StudentViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+    
+    var filter by remember { mutableStateOf("All") }
+    val filters = listOf("All", "Updates", "Assigned", "Resolved", "System")
+    
+    val filtered = notifications.filter {
+        when (filter) {
+            "Updates" -> it.type == com.hostelcare.app.data.model.NotificationType.SUBMITTED || it.type == com.hostelcare.app.data.model.NotificationType.STATUS_UPDATED || it.type == com.hostelcare.app.data.model.NotificationType.AI_ANALYSIS_COMPLETED
+            "Assigned" -> it.type == com.hostelcare.app.data.model.NotificationType.ASSIGNED
+            "Resolved" -> it.type == com.hostelcare.app.data.model.NotificationType.RESOLVED
+            "System" -> it.type == com.hostelcare.app.data.model.NotificationType.ADVISORY
+            else -> true
+        }
+    }
 
     Scaffold(
         bottomBar = { StudentBottomNavigation(navController, Routes.NOTIFICATIONS) },
-        containerColor = BackgroundLight,
+        containerColor = Color(0xFFF9FAFB),
         topBar = {
             TopAppBar(
-                title = { Text("Notifications", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = TextDark) },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                notifications.filter { !it.isRead }.forEach { n ->
+                                    app.repository.markNotificationAsRead(n.id)
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Mark all read", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
-            items(notifications) { notif ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { notif.complaintId?.let { navController.navigate(Routes.complaintDetails(it)) } }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(notif.message.take(20) + "...", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Text(notif.message, style = MaterialTheme.typography.bodySmall, color = TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                filters.forEach { f ->
+                    val isSelected = filter == f
+                    Surface(
+                        onClick = { filter = f },
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isSelected) Color(0xFFEFF6FF) else Color.Transparent,
+                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else Color(0xFFE5E7EB))
+                    ) {
+                        Text(
+                            text = f,
+                            color = if (isSelected) PrimaryBlue else TextMuted,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(notif.createdAt)), fontSize = 12.sp, color = TextMuted)
                 }
-                HorizontalDivider(color = GrayBg)
+            }
+            
+            Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+            
+            if (filtered.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.NotificationsOff, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFD1D5DB))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("No notifications yet", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("You'll see complaint updates and\nimportant hostel announcements here.", color = TextMuted, fontSize = 14.sp, textAlign = TextAlign.Center, lineHeight = 20.sp)
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filtered) { n ->
+                        NotificationCard(n) {
+                            coroutineScope.launch {
+                                app.repository.markNotificationAsRead(n.id)
+                            }
+                            if (n.complaintId != null) {
+                                navController.navigate(Routes.complaintDetails(n.complaintId))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationCard(n: com.hostelcare.app.data.model.Notification, onClick: () -> Unit) {
+    val iconInfo = when (n.type) {
+        com.hostelcare.app.data.model.NotificationType.AI_ANALYSIS_COMPLETED -> Pair(Icons.Default.AutoAwesome, PrimaryBlue)
+        com.hostelcare.app.data.model.NotificationType.SUBMITTED -> Pair(Icons.Default.Assignment, PrimaryBlue)
+        com.hostelcare.app.data.model.NotificationType.ASSIGNED -> Pair(Icons.Default.PersonOutline, Color(0xFFD97706))
+        com.hostelcare.app.data.model.NotificationType.IN_PROGRESS, com.hostelcare.app.data.model.NotificationType.STATUS_UPDATED -> Pair(Icons.Default.Settings, Color(0xFF7C3AED))
+        com.hostelcare.app.data.model.NotificationType.RESOLVED -> Pair(Icons.Default.CheckCircleOutline, Color(0xFF16A34A))
+        com.hostelcare.app.data.model.NotificationType.ADVISORY -> Pair(Icons.Default.Info, TextMuted)
+    }
+
+    // Convert from timestamp if available, otherwise just use a relative string logic. Assuming we have timestamp in n.createdAt
+    val timeDiff = System.currentTimeMillis() - n.createdAt
+    val mins = timeDiff / 60000
+    val hours = mins / 60
+    val days = hours / 24
+    
+    val timeStr = when {
+        mins < 60 -> "${maxOf(1, mins)} min ago"
+        hours < 24 -> "$hours hours ago"
+        days == 1L -> "1 day ago"
+        else -> "$days days ago"
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = if (n.isRead) Color.White else Color(0xFFF8FAFC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (n.isRead) 0.dp else 0.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, if (n.isRead) Color(0xFFF3F4F6) else Color(0xFFE5E7EB))
+    ) {
+        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Box(
+                modifier = Modifier.size(40.dp).background(if (n.isRead) Color(0xFFF3F4F6) else Color.White, CircleShape).border(1.dp, Color(0xFFE5E7EB), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(iconInfo.first, contentDescription = null, tint = iconInfo.second, modifier = Modifier.size(20.dp))
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                    Text(n.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.weight(1f).padding(end = 8.dp))
+                    Text(timeStr, color = TextMuted, fontSize = 11.sp)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(n.message, color = if (n.isRead) TextMuted else TextDark, fontSize = 14.sp, lineHeight = 20.sp)
+            }
+            
+            if (!n.isRead) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(modifier = Modifier.size(8.dp).background(PrimaryBlue, CircleShape).align(Alignment.CenterVertically))
             }
         }
     }

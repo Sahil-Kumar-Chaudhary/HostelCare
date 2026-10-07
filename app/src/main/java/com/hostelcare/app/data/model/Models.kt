@@ -56,7 +56,7 @@ data class Staff(
 )
 
 enum class NotificationType {
-    SUBMITTED, ASSIGNED, IN_PROGRESS, RESOLVED, ADVISORY
+    SUBMITTED, AI_ANALYSIS_COMPLETED, ASSIGNED, STATUS_UPDATED, IN_PROGRESS, RESOLVED, ADVISORY
 }
 
 data class Notification(

@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.screens.student
+﻿package com.hostelcare.app.ui.screens.student
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -37,11 +37,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
-    val viewModel: StudentViewModel = viewModel(factory = factory)
+    val viewModel: StudentViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
     val complaints by viewModel.complaints.collectAsStateWithLifecycle()
     
     var filter by remember { mutableStateOf("All") }
@@ -49,53 +49,86 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
     
     val filtered = complaints.filter {
         when (filter) {
-            "Active" -> it.status != ComplaintStatus.RESOLVED && it.status != ComplaintStatus.SUBMITTED
-            "Pending" -> it.status == ComplaintStatus.SUBMITTED
-            "Resolved" -> it.status == ComplaintStatus.RESOLVED
+            "Active" -> it.status != com.hostelcare.app.data.model.ComplaintStatus.RESOLVED && it.status != com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED
+            "Pending" -> it.status == com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED
+            "Resolved" -> it.status == com.hostelcare.app.data.model.ComplaintStatus.RESOLVED
             else -> true
         }
     }
 
     Scaffold(
         bottomBar = { StudentBottomNavigation(navController, Routes.MY_COMPLAINTS) },
-        containerColor = BackgroundLight,
+        containerColor = Color(0xFFF9FAFB),
         topBar = {
             TopAppBar(
-                title = { Text("My Complaints", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+                title = { Text("My Complaints", fontWeight = FontWeight.Bold, color = TextDark) },
+                actions = {
+                    Button(
+                        onClick = { navController.navigate(Routes.NEW_COMPLAINT) },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(end = 16.dp).height(36.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("New Complaint", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Filters
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 filters.forEach { f ->
                     val isSelected = filter == f
-                    Box(
-                        modifier = Modifier
-                            .background(if (isSelected) LightBlue else Color.Transparent, RoundedCornerShape(20.dp))
-                            .border(1.dp, if (isSelected) PrimaryBlue else Color(0xFFE5E7EB), RoundedCornerShape(20.dp))
-                            .clickable { filter = f }
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    Surface(
+                        onClick = { filter = f },
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isSelected) Color(0xFFEFF6FF) else Color.Transparent,
+                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else Color(0xFFE5E7EB))
                     ) {
-                        Text(f, color = if (isSelected) PrimaryBlue else TextDark, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
+                        Text(
+                            text = f,
+                            color = if (isSelected) PrimaryBlue else TextMuted,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        )
                     }
                 }
             }
             
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), contentPadding = PaddingValues(bottom = 80.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(filtered) { c ->
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.complaintDetails(c.id)) }
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("${c.category.name} Â· ${c.status.name}", fontSize = 14.sp, color = TextMuted)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val dStr = SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(c.createdAt))
-                            Text(dStr, fontSize = 12.sp, color = TextMuted)
+            Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+
+            if (filtered.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFD1D5DB))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("No complaints found", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("You don't have any complaints matching this filter.", color = TextMuted, fontSize = 14.sp)
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(filtered) { c ->
+                        ComplaintCard(c) {
+                            navController.navigate(Routes.complaintDetails(c.id))
                         }
                     }
                 }
@@ -103,7 +136,94 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
         }
     }
 }
-@OptIn(ExperimentalMaterial3Api::class)
+
+@Composable
+fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Unit) {
+    val dStr = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date(c.createdAt))
+    val timeStr = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(c.createdAt))
+    
+    val statusColorInfo = when (c.status) {
+        com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED -> Pair(PrimaryBlue, Color(0xFFEFF6FF))
+        com.hostelcare.app.data.model.ComplaintStatus.UNDER_REVIEW -> Pair(Color(0xFF7C3AED), Color(0xFFF5F3FF))
+        com.hostelcare.app.data.model.ComplaintStatus.ASSIGNED, com.hostelcare.app.data.model.ComplaintStatus.IN_PROGRESS -> Pair(Color(0xFFD97706), Color(0xFFFEF3C7))
+        com.hostelcare.app.data.model.ComplaintStatus.RESOLVED -> Pair(Color(0xFF16A34A), Color(0xFFF0FDF4))
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                Text(
+                    text = c.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(end = 12.dp)
+                )
+                
+                Box(
+                    modifier = Modifier.background(statusColorInfo.second, RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(6.dp).background(statusColorInfo.first, CircleShape))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(c.status.name.replace("_", " "), color = statusColorInfo.first, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Build, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                val catName = if (c.aiSummary.isNullOrBlank()) "Unassigned" else c.category.name.lowercase().replaceFirstChar { it.uppercase() }
+                val ticketStr = c.ticketId.ifBlank { "HC-${c.id.take(6).uppercase()}" }
+                Text("$catName | $ticketStr", color = TextMuted, fontSize = 13.sp)
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Domain, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Block ${c.hostelBlock} Â· Room ${c.roomNumber}", color = TextMuted, fontSize = 13.sp)
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = TextMuted, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("$dStr Â· $timeStr", color = TextMuted, fontSize = 13.sp)
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = c.description,
+                    color = TextDark,
+                    fontSize = 14.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.weight(1f).padding(end = 12.dp)
+                )
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFD1D5DB), modifier = Modifier.size(24.dp))
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, complaintId: String) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
@@ -247,7 +367,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text("Location", color = TextMuted, fontSize = 11.sp)
-                                        Text("Block ${complaint.hostelBlock} · Room ${complaint.roomNumber}", color = TextDark, fontSize = 13.sp)
+                                        Text("Block ${complaint.hostelBlock} Â· Room ${complaint.roomNumber}", color = TextDark, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -282,7 +402,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text("Reported On", color = TextMuted, fontSize = 11.sp)
-                                Text("${dStr} · ${timeStr}", color = TextDark, fontSize = 13.sp)
+                                Text("${dStr} Â· ${timeStr}", color = TextDark, fontSize = 13.sp)
                             }
                         }
                     }
@@ -460,7 +580,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                 Column {
                                     Text(pair.second, color = if (isPast) TextDark else TextMuted, fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp)
                                     if (isCurrent) {
-                                        Text("${dStr} · ${timeStr}", color = TextMuted, fontSize = 12.sp)
+                                        Text("${dStr} Â· ${timeStr}", color = TextMuted, fontSize = 12.sp)
                                     }
                                 }
                             }
