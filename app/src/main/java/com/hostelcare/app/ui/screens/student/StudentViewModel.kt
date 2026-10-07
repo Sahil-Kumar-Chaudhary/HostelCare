@@ -28,6 +28,8 @@ class StudentViewModel(
     val draftComplaint: StateFlow<Complaint?> = _draftComplaint.asStateFlow()
 
     val staffList = repository.getAvailableStaff()
+    var selectedPhotoBytes: ByteArray? = null
+    var selectedPhotoMimeType: String? = null
 
     init {
         viewModelScope.launch {
@@ -83,7 +85,8 @@ class StudentViewModel(
         val draft = _draftComplaint.value ?: return
         viewModelScope.launch {
             _newComplaintState.value = NewComplaintState.Submitting
-            val result = repository.submitComplaint(draft)
+            val result = repository.submitComplaint(draft, selectedPhotoBytes, selectedPhotoMimeType)
+            if (result.isSuccess) { selectedPhotoBytes = null; selectedPhotoMimeType = null }
             if (result.isSuccess) {
                 val createdComplaint = result.getOrNull()
                 if (createdComplaint != null) {

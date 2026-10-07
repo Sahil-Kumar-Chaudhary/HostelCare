@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.ui.screens.student
+package com.hostelcare.app.ui.screens.student
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

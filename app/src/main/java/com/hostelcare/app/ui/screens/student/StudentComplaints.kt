@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -445,12 +446,20 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text("Attached Photo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
                                 }
-                                Icon(Icons.Default.OpenInNew, contentDescription = null, tint = TextMuted, modifier = Modifier.size(20.dp))
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            // Placeholder for actual photo
-                            Box(modifier = Modifier.fillMaxWidth().height(150.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Image, contentDescription = null, tint = TextMuted, modifier = Modifier.size(48.dp))
+                            if (!complaint.photoUri.isNullOrEmpty()) {
+                                Box(modifier = Modifier.fillMaxWidth().height(180.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                    com.hostelcare.app.ui.screens.student.UriImage(uriStr = complaint.photoUri!!, modifier = Modifier.fillMaxSize())
+                                }
+                            } else {
+                                Box(modifier = Modifier.fillMaxWidth().height(80.dp).background(Color(0xFFF9FAFB), RoundedCornerShape(12.dp)).border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.HideImage, contentDescription = null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("No photo attached", color = TextMuted, fontSize = 14.sp)
+                                    }
+                                }
                             }
                         }
                     }

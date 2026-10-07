@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 class InMemoryHostelRepository(private val apiService: ApiService, private val tokenManager: TokenManager) : HostelRepository {
 
@@ -33,9 +34,13 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
             } else {
                 Result.failure(Exception("Login failed: ${response.message()}"))
             }
+        } 
+        catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please try again."))
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Something went wrong on the server. Please try again."))
         }
+
     }
 
     override suspend fun registerStudent(user: User, password: String): Result<User> {
@@ -161,25 +166,68 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         }
     }
 
-    override suspend fun submitComplaint(complaint: Complaint): Result<Complaint> {
+    override suspend fun submitComplaint(complaint: Complaint, photoBytes: ByteArray?, mimeType: String?): Result<Complaint> {
         return try {
-            val request = com.hostelcare.app.data.remote.ComplaintRequest(
-                title = complaint.title,
-                description = complaint.description,
-                category = complaint.category.name,
-                priority = complaint.priority.name,
-                hostelBlock = complaint.hostelBlock,
-                roomNumber = complaint.roomNumber,
-                photoUrl = complaint.photoUri,
-                aiSummary = complaint.aiSummary
-            )
-            val response = apiService.createComplaint(request)
-            if (response.isSuccessful && response.body() != null) {
-                val created = response.body()!!.complaint.toLocalComplaint()
-                _complaints.update { listOf(created) + it }
-                Result.success(created)
+            if (photoBytes != null && mimeType != null) {
+                val titleBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.title)
+                val descBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.description)
+                val catBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.category.name)
+                val prioBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.priority.name)
+                val blockBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.hostelBlock)
+                val roomBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.roomNumber)
+                val aiBody = complaint.aiSummary?.let { okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, it) }
+                
+                val requestFile = okhttp3.RequestBody.create(mimeType.toMediaTypeOrNull() /* okhttp3 uses parse, or we can use extension. Let us fix it securely: */ ?: "image/jpeg".toMediaTypeOrNull(), photoBytes)
+                val ext = if (mimeType.contains("png")) "png" else if (mimeType.contains("webp")) "webp" else "jpg"
+                val photoPart = okhttp3.MultipartBody.Part.createFormData("photo", "upload." + ext, requestFile)
+
+                val response = apiService.createComplaintWithPhoto(
+                    titleBody, descBody, catBody, prioBody, blockBody, roomBody, aiBody, photoPart
+                )
+                if (response.isSuccessful && response.body() != null) {
+                    val created = response.body()!!.complaint.toLocalComplaint()
+                    _complaints.update { listOf(created) + it }
+                    Result.success(created)
+                } else {
+                    
+                    val code = response.code()
+                    val msg = when (code) {
+                        400 -> "Please check the complaint details."
+                        401 -> "Your session has expired. Please log in again."
+                        500 -> "Something went wrong on the server. Please try again."
+                        else -> "Failed to submit complaint: $code"
+                    }
+                    Result.failure(Exception(msg))
+
+                }
             } else {
-                Result.failure(Exception("Failed to submit complaint: " + response.message()))
+                val request = com.hostelcare.app.data.remote.ComplaintRequest(
+                    title = complaint.title,
+                    description = complaint.description,
+                    category = complaint.category.name,
+                    priority = complaint.priority.name,
+                    hostelBlock = complaint.hostelBlock,
+                    roomNumber = complaint.roomNumber,
+                    photoUrl = complaint.photoUri,
+                    aiSummary = complaint.aiSummary
+                )
+                val response = apiService.createComplaint(request)
+                if (response.isSuccessful && response.body() != null) {
+                    val created = response.body()!!.complaint.toLocalComplaint()
+                    _complaints.update { listOf(created) + it }
+                    Result.success(created)
+                } else {
+                    
+                    val code = response.code()
+                    val msg = when (code) {
+                        400 -> "Please check the complaint details."
+                        401 -> "Your session has expired. Please log in again."
+                        500 -> "Something went wrong on the server. Please try again."
+                        else -> "Failed to submit complaint: $code"
+                    }
+                    Result.failure(Exception(msg))
+
+                }
             }
         } catch (e: Exception) {
             Result.failure(e)

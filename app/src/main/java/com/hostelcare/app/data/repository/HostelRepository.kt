@@ -23,7 +23,7 @@ interface HostelRepository {
     suspend fun fetchComplaint(id: String): Result<Complaint>
     fun getAllComplaints(): Flow<List<Complaint>>
     fun getComplaint(id: String): Flow<Complaint?>
-    suspend fun submitComplaint(complaint: Complaint): Result<Complaint>
+    suspend fun submitComplaint(complaint: Complaint, photoBytes: ByteArray? = null, mimeType: String? = null): Result<Complaint>
     suspend fun updateComplaintStatus(id: String, status: ComplaintStatus, resolutionNote: String? = null): Result<Unit>
     suspend fun assignStaffToComplaint(complaintId: String, staffId: String): Result<Unit>
     suspend fun submitFeedback(complaintId: String, rating: Int, note: String?): Result<Unit>

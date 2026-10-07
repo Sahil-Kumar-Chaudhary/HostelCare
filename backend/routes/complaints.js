@@ -2,9 +2,33 @@
 const Complaint = require("../models/Complaint");
 const auth = require("../middleware/auth");
 
+const multer = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are allowed.'));
+    }
+  }
+});
+
+
 const router = express.Router();
 
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, (req, res, next) => {
+  upload.single('photo')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: "Image must be 5 MB or smaller." });
+      }
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const {
       title,
@@ -13,9 +37,14 @@ router.post("/", auth, async (req, res) => {
       priority,
       hostelBlock,
       roomNumber,
-      photoUrl,
       aiSummary
     } = req.body;
+
+      let photoUrl = req.body.photoUrl;
+      if (req.file) {
+        const base64Image = req.file.buffer.toString('base64');
+        photoUrl = `data:${req.file.mimetype};base64,${base64Image}`;
+      }
 
     if (
       !title ||

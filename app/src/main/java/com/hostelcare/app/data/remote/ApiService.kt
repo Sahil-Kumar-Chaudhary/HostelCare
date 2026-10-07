@@ -5,6 +5,11 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Multipart
+import retrofit2.http.Part
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+
 
 interface ApiService {
     @POST("api/auth/register")
@@ -20,6 +25,20 @@ interface ApiService {
     suspend fun updateProfile(@Body request: UpdateProfileRequest): Response<ProfileResponse>
     @POST("api/complaints")
     suspend fun createComplaint(@Body request: ComplaintRequest): Response<ComplaintResponse>
+
+    @Multipart
+    @POST("api/complaints")
+    suspend fun createComplaintWithPhoto(
+        @Part("title") title: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("category") category: RequestBody,
+        @Part("priority") priority: RequestBody?,
+        @Part("hostelBlock") hostelBlock: RequestBody,
+        @Part("roomNumber") roomNumber: RequestBody,
+        @Part("aiSummary") aiSummary: RequestBody?,
+        @Part photo: MultipartBody.Part?
+    ): Response<ComplaintResponse>
+
 
     @GET("api/complaints")
     suspend fun getComplaints(): Response<ComplaintsListResponse>
