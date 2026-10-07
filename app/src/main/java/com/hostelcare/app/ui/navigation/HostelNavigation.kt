@@ -1,4 +1,4 @@
-package com.hostelcare.app.ui.navigation
+﻿package com.hostelcare.app.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -12,8 +12,7 @@ object Routes {
     const val SIGN_UP = "signup"
     const val STUDENT_HOME = "student_home"
     const val NEW_COMPLAINT = "new_complaint"
-    const val AI_REVIEW = "ai_review"
-    const val MY_COMPLAINTS = "my_complaints"
+        const val MY_COMPLAINTS = "my_complaints"
     const val COMPLAINT_DETAILS = "complaint_details/{complaintId}"
     const val NOTIFICATIONS = "notifications"
     const val PROFILE = "profile"
@@ -58,9 +57,7 @@ fun HostelCareAppNavHost(
         composable(Routes.NEW_COMPLAINT) {
             com.hostelcare.app.ui.screens.student.NewComplaintScreen(navController, appContainer)
         }
-        composable(Routes.AI_REVIEW) {
-            com.hostelcare.app.ui.screens.student.AiReviewScreen(navController, appContainer)
-        }
+
         composable(Routes.MY_COMPLAINTS) {
             com.hostelcare.app.ui.screens.student.MyComplaintsScreen(navController, appContainer)
         }

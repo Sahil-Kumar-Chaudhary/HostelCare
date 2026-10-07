@@ -243,6 +243,16 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
     var categoryExpanded by remember { mutableStateOf(false) }
     var hostelExpanded by remember { mutableStateOf(false) }
 
+    val state = viewModel.newComplaintState.collectAsStateWithLifecycle().value
+
+    LaunchedEffect(state) {
+        if (state is NewComplaintState.Success) {
+            navController.popBackStack()
+            navController.navigate(Routes.complaintDetails(state.complaintId))
+            viewModel.resetComplaintState()
+        }
+    }
+
     Scaffold(
         containerColor = Color.White,
         topBar = {
@@ -267,15 +277,14 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                             studentId = user?.studentId ?: "UNKNOWN"
                         )
                         viewModel.startNewComplaint(complaint)
-                        viewModel.analyzeComplaint()
-                        navController.navigate(Routes.AI_REVIEW)
+                        viewModel.submitComplaint()
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp),
                     enabled = title.isNotBlank() && desc.isNotBlank() && hostelBlock.isNotBlank() && room.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                 ) {
-                    Text("Analyze Complaint", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Submit Complaint", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
                 }
@@ -410,112 +419,4 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AiReviewScreen(navController: NavController, app: HostelCareApp) {
-    val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
-    val viewModel: StudentViewModel = viewModel(factory = factory)
-    val state = viewModel.newComplaintState.collectAsStateWithLifecycle().value
-    val draft by viewModel.draftComplaint.collectAsStateWithLifecycle()
-    var submittingId by remember { mutableStateOf<String?>(null) }
-    
-    LaunchedEffect(state) {
-        if (state is NewComplaintState.Success) {
-            navController.navigate(Routes.complaintDetails(state.complaintId)) {
-                popUpTo(Routes.STUDENT_HOME)
-            }
-        }
-    }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Review Complaint", fontWeight = FontWeight.Bold, color = TextDark) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)) },
-        containerColor = Color.White,
-        bottomBar = {
-            if (state is NewComplaintState.AnalysisComplete) {
-                Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
-                    Button(
-                        onClick = {
-                            submittingId = draft?.id
-                            viewModel.submitComplaint()
-                        },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) { Text("Confirm & Submit", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Button(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF3F4F6), contentColor = TextDark)
-                    ) { Text("Edit Complaint", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
-                }
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            when (state) {
-                is NewComplaintState.Analyzing, is NewComplaintState.Submitting -> {
-                    CircularProgressIndicator(color = PrimaryBlue, modifier = Modifier.size(48.dp))
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(if (state is NewComplaintState.Analyzing) "Analyzing complaint..." else "Submitting...", style = MaterialTheme.typography.titleMedium, color = TextDark)
-                }
-                is NewComplaintState.AnalysisComplete -> {
-                    val analysis = state.result
-                    Icon(Icons.Default.CheckCircle, null, tint = SuccessGreen, modifier = Modifier.size(64.dp))
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text("AI Suggestion", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = TextDark)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("We've categorized and prioritized your issue.", color = TextMuted, textAlign = TextAlign.Center)
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB)), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, Color(0xFFE5E7EB))) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
-                                    Text("Category", fontSize = 13.sp, color = TextMuted)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(analysis.category.name, fontWeight = FontWeight.SemiBold, color = TextDark)
-                                }
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("Priority", fontSize = 13.sp, color = TextMuted)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(analysis.priority.name, fontWeight = FontWeight.Bold, color = if (analysis.priority.name == "HIGH") DangerRed else WarningOrange)
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(20.dp))
-                            HorizontalDivider(color = Color(0xFFE5E7EB))
-                            Spacer(modifier = Modifier.height(20.dp))
-                            
-                            Text("Summary", fontSize = 13.sp, color = TextMuted)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(analysis.summary, style = MaterialTheme.typography.bodyLarge, color = TextDark, lineHeight = 24.sp)
-                        }
-                    }
-                }
-                else -> {
-                    if (state is NewComplaintState.Error) {
-                        Icon(Icons.Default.ErrorOutline, null, tint = DangerRed, modifier = Modifier.size(64.dp))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Error", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = DangerRed)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(state.message, color = TextDark, textAlign = TextAlign.Center)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = { viewModel.submitComplaint() },
-                            modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                        ) { Text("Retry Submit", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
-                    } else {
-                        Text("No complaint in progress.", color = TextMuted)
-                    }
-                }
-            }
-        }
-    }
-}

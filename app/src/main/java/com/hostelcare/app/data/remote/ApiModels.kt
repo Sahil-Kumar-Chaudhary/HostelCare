@@ -121,7 +121,7 @@ data class NetworkComplaint(
         aiSummary = aiSummary
     )
 }
-data class AiAnalyzeRequest(
+data class AiAnalyzeRequest(val complaintId: String? = null, 
     val title: String,
     val description: String,
     val category: String? = null,

@@ -102,6 +102,17 @@ class StudentViewModel(
     private val _complaintDetailsState = MutableStateFlow<ComplaintDetailsState>(ComplaintDetailsState.Loading)
     val complaintDetailsState: StateFlow<ComplaintDetailsState> = _complaintDetailsState.asStateFlow()
 
+        fun triggerAiAnalysis(complaintId: String) {
+        viewModelScope.launch {
+            val result = repository.triggerAiAnalysis(complaintId)
+            if (result.isSuccess) {
+                // refresh details
+                fetchComplaintDetails(complaintId)
+                repository.refreshComplaints()
+            }
+        }
+    }
+
     fun fetchComplaintDetails(id: String) {
         viewModelScope.launch {
             _complaintDetailsState.value = ComplaintDetailsState.Loading
@@ -116,6 +127,7 @@ class StudentViewModel(
 
     fun resetComplaintState() {
         _newComplaintState.value = NewComplaintState.Idle
+        _draftComplaint.value = null
     }
 
     fun markNotificationRead(id: String) {

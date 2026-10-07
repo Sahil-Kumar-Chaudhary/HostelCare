@@ -128,6 +128,20 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         }
     }
 
+        override suspend fun triggerAiAnalysis(complaintId: String): Result<Unit> {
+        return try {
+            val req = com.hostelcare.app.data.remote.AiAnalyzeRequest(complaintId = complaintId, title = "", description = "", category = null)
+            val response = apiService.analyzeComplaint(req)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("AI analysis failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun fetchComplaint(id: String): Result<Complaint> {
         return try {
             val response = apiService.getComplaint(id)
@@ -230,7 +244,7 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         category: String?
     ): Result<com.hostelcare.app.data.model.AiAnalysisResult> {
         return try {
-            val req = com.hostelcare.app.data.remote.AiAnalyzeRequest(title, description, category)
+            val req = com.hostelcare.app.data.remote.AiAnalyzeRequest(title = title, description = description, category = category)
             val response = apiService.analyzeComplaint(req)
             if (response.isSuccessful) {
                 val data = response.body()?.analysis
