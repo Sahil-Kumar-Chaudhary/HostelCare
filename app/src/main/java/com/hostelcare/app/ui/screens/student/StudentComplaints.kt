@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hostelcare.app.utils.NetworkUtils
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -231,6 +233,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
     val viewModel: StudentViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
     val detailsState by viewModel.complaintDetailsState.collectAsStateWithLifecycle()
     
+    val context = LocalContext.current
     var isAnalyzing by remember { mutableStateOf(false) }
     var aiError by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -244,12 +247,17 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             val c = (detailsState as ComplaintDetailsState.Success).complaint
             if (c.aiSummary.isNullOrBlank() && !isAnalyzing && aiError == null) {
                 isAnalyzing = true
-                val result = app.repository.triggerAiAnalysis(c.id)
-                isAnalyzing = false
-                if (result.isSuccess) {
-                    viewModel.fetchComplaintDetails(c.id)
+                                if (!NetworkUtils.isNetworkAvailable(context)) {
+                    aiError = "No internet connection. Please check your connection and try again."
+                    isAnalyzing = false
                 } else {
-                    aiError = "AI analysis is temporarily unavailable."
+                    val result = app.repository.triggerAiAnalysis(c.id)
+                    isAnalyzing = false
+                    if (result.isSuccess) {
+                        viewModel.fetchComplaintDetails(c.id)
+                    } else {
+                        aiError = "AI analysis is temporarily unavailable."
+                    }
                 }
             }
         }
@@ -487,6 +495,11 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                         aiError = null
                                         isAnalyzing = true
                                         coroutineScope.launch {
+                                            if (!NetworkUtils.isNetworkAvailable(context)) {
+                                                aiError = "No internet connection. Please check your connection and try again."
+                                                isAnalyzing = false
+                                                return@launch
+                                            }
                                             val result = app.repository.triggerAiAnalysis(complaint.id)
                                             isAnalyzing = false
                                             if (result.isSuccess) {

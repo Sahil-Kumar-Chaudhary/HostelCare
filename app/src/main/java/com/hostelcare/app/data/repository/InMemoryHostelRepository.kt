@@ -169,13 +169,13 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
     override suspend fun submitComplaint(complaint: Complaint, photoBytes: ByteArray?, mimeType: String?): Result<Complaint> {
         return try {
             if (photoBytes != null && mimeType != null) {
-                val titleBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.title)
-                val descBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.description)
-                val catBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.category.name)
-                val prioBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.priority.name)
-                val blockBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.hostelBlock)
-                val roomBody = okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, complaint.roomNumber)
-                val aiBody = complaint.aiSummary?.let { okhttp3.RequestBody.create(okhttp3.MultipartBody.FORM, it) }
+                val titleBody = okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), complaint.title)
+                val descBody = okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), complaint.description)
+                val catBody = okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), complaint.category.name)
+                val prioBody = okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), complaint.priority.name)
+                val blockBody = okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), complaint.hostelBlock)
+                val roomBody = okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), complaint.roomNumber)
+                val aiBody = complaint.aiSummary?.let { okhttp3.RequestBody.create("text/plain".toMediaTypeOrNull(), it) }
                 
                 val requestFile = okhttp3.RequestBody.create(mimeType.toMediaTypeOrNull() /* okhttp3 uses parse, or we can use extension. Let us fix it securely: */ ?: "image/jpeg".toMediaTypeOrNull(), photoBytes)
                 val ext = if (mimeType.contains("png")) "png" else if (mimeType.contains("webp")) "webp" else "jpg"

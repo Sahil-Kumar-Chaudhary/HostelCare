@@ -23,6 +23,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.CircularProgressIndicator
+import kotlinx.coroutines.launch
+import com.hostelcare.app.utils.NetworkUtils
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -238,69 +252,136 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
     var hostelBlock by remember(draft, user) { mutableStateOf(draft?.hostelBlock?.takeIf { it.isNotBlank() } ?: user?.hostelBlock ?: "") }
     var room by remember(draft, user) { mutableStateOf(draft?.roomNumber?.takeIf { it.isNotBlank() } ?: user?.roomNumber ?: "") }
     var desc by remember(draft) { mutableStateOf(draft?.description ?: "") }
-    var photoAdded by remember { mutableStateOf(false) }
+    
+    var showPhotoSheet by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var imageSizeError by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     
     var categoryExpanded by remember { mutableStateOf(false) }
     var hostelExpanded by remember { mutableStateOf(false) }
 
     val state = viewModel.newComplaintState.collectAsStateWithLifecycle().value
+    val isSubmitting = state is NewComplaintState.Submitting
 
     LaunchedEffect(state) {
-        if (state is NewComplaintState.Success) {
-            navController.popBackStack()
-            navController.navigate(Routes.complaintDetails(state.complaintId))
+        if (state is NewComplaintState.Error) {
+            snackbarHostState.showSnackbar((state as NewComplaintState.Error).message)
             viewModel.resetComplaintState()
+        } else if (state is NewComplaintState.Success) {
+            viewModel.selectedPhotoBytes = null
+            viewModel.selectedPhotoMimeType = null
+            selectedImageUri = null
+            navController.popBackStack()
+            navController.navigate(Routes.complaintDetails((state as NewComplaintState.Success).complaintId))
+            viewModel.resetComplaintState()
+        }
+    }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            val outStream = java.io.ByteArrayOutputStream()
+            var valid = true
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+                if (bitmap != null) {
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, outStream)
+                    val bytes = outStream.toByteArray()
+                    if (bytes.size > 5 * 1024 * 1024) {
+                        imageSizeError = "Image is too large. Please choose another photo."
+                        valid = false
+                    } else {
+                        imageSizeError = null
+                        selectedImageUri = uri
+                        viewModel.selectedPhotoBytes = bytes
+                        viewModel.selectedPhotoMimeType = "image/jpeg"
+                    }
+                }
+            } catch (e: Exception) {
+                valid = false
+            }
+            if (!valid && imageSizeError == null) {
+                imageSizeError = "Unable to process image."
+            }
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && cameraUri != null) {
+            val uri = cameraUri!!
+            val outStream = java.io.ByteArrayOutputStream()
+            var valid = true
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+                if (bitmap != null) {
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, outStream)
+                    val bytes = outStream.toByteArray()
+                    if (bytes.size > 5 * 1024 * 1024) {
+                        imageSizeError = "Image is too large. Please choose another photo."
+                        valid = false
+                    } else {
+                        imageSizeError = null
+                        selectedImageUri = uri
+                        viewModel.selectedPhotoBytes = bytes
+                        viewModel.selectedPhotoMimeType = "image/jpeg"
+                    }
+                }
+            } catch (e: Exception) {
+                valid = false
+            }
+            if (!valid && imageSizeError == null) {
+                imageSizeError = "Unable to process image."
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            try {
+                val tempFile = java.io.File.createTempFile("complaint_", ".jpg", context.cacheDir).apply {
+                    createNewFile()
+                    deleteOnExit()
+                }
+                val uri = androidx.core.content.FileProvider.getUriForFile(context, "com.hostelcare.app.fileprovider", tempFile)
+                cameraUri = uri
+                cameraLauncher.launch(uri)
+            } catch (e: Exception) {
+                imageSizeError = "Unable to launch camera."
+            }
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Camera permission is required to take a photo.")
+            }
         }
     }
 
     Scaffold(
         containerColor = Color.White,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("New Complaint", fontWeight = FontWeight.Bold, color = TextDark) },
-                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
-        },
-        bottomBar = {
-            Box(modifier = Modifier.fillMaxWidth().background(Color.White).padding(16.dp).navigationBarsPadding()) {
-                Button(
-                    onClick = {
-                        val catEnum = try { ComplaintCategory.valueOf(category.uppercase()) } catch(e: Exception) { ComplaintCategory.OTHER }
-                        val complaint = com.hostelcare.app.data.model.Complaint(
-                            id = draft?.id ?: java.util.UUID.randomUUID().toString(),
-                            title = title,
-                            description = desc,
-                            category = catEnum,
-                            hostelBlock = hostelBlock,
-                            roomNumber = room,
-                            studentId = user?.studentId ?: "UNKNOWN"
-                        )
-                        viewModel.startNewComplaint(complaint)
-                        viewModel.submitComplaint()
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = title.isNotBlank() && desc.isNotBlank() && hostelBlock.isNotBlank() && room.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                ) {
-                    Text("Submit Complaint", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
-                }
-            }
         }
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(20.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(modifier = Modifier.fillMaxWidth().background(LightBlue, RoundedCornerShape(12.dp)).padding(16.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Default.Info, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Report maintenance issues in your hostel. Our team will review and assign it to the relevant staff.", style = MaterialTheme.typography.bodyMedium, color = TextDark, lineHeight = 20.sp)
-                }
-            }
-            
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
             item {
                 FormField("Problem Title", required = true) {
                     OutlinedTextField(
@@ -328,8 +409,8 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { categoryExpanded = true })
                         DropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }, modifier = Modifier.background(Color.White)) {
-                            listOf("Plumbing", "Electrical", "Internet", "Cleaning", "Furniture", "Other").forEach { opt ->
-                                DropdownMenuItem(text = { Text(opt) }, onClick = { category = opt; categoryExpanded = false })
+                            listOf("Plumbing", "Electrical", "Internet/WiFi", "Cleaning", "Furniture", "Other").forEach { cat ->
+                                DropdownMenuItem(text = { Text(cat) }, onClick = { category = cat; categoryExpanded = false })
                             }
                         }
                     }
@@ -337,34 +418,49 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
             }
             
             item {
-                FormField("Hostel / Block", required = true) {
-                    Box {
-                        OutlinedTextField(
-                            value = hostelBlock, onValueChange = { },
-                            placeholder = { Text("Select hostel/block", color = TextMuted) },
-                            leadingIcon = { Icon(Icons.Default.Domain, null, tint = TextMuted) },
-                            trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) },
-                            modifier = Modifier.fillMaxWidth(), readOnly = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
-                        )
-                        Box(modifier = Modifier.matchParentSize().clickable { hostelExpanded = true })
-                        DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(Color.White)) {
-                            listOf("Block A", "Block B", "Block C", "Tagore Hostel", "Block B - Tagore Hostel").forEach { opt ->
-                                DropdownMenuItem(text = { Text(opt) }, onClick = { hostelBlock = opt; hostelExpanded = false })
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        FormField("Hostel / Block", required = true) {
+                            Box {
+                                OutlinedTextField(
+                                    value = hostelBlock, onValueChange = { },
+                                    placeholder = { Text("Block", color = TextMuted) },
+                                    leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = TextMuted) },
+                                    trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) },
+                                    modifier = Modifier.fillMaxWidth(), readOnly = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
+                                )
+                                Box(modifier = Modifier.matchParentSize().clickable { hostelExpanded = true })
+                                DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(Color.White)) {
+                                    listOf("Tagore Block A", "Tagore Block B", "Raman Block A", "Raman Block B", "Curie Block", "Newton Block").forEach { block ->
+                                        DropdownMenuItem(text = { Text(block) }, onClick = { hostelBlock = block; hostelExpanded = false })
+                                    }
+                                }
                             }
+                        }
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        FormField("Room Number", required = true) {
+                            OutlinedTextField(
+                                value = room, onValueChange = { room = it },
+                                placeholder = { Text("e.g. 101", color = TextMuted) },
+                                leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = TextMuted) },
+                                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
+                            )
                         }
                     }
                 }
             }
             
             item {
-                FormField("Room Number", required = true) {
+                FormField("Description", required = true) {
                     OutlinedTextField(
-                        value = room, onValueChange = { room = it },
-                        placeholder = { Text("e.g. B-204", color = TextMuted) },
-                        leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        value = desc, onValueChange = { desc = it },
+                        placeholder = { Text("Provide details about the issue...", color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
                     )
@@ -372,51 +468,119 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
             }
             
             item {
-                FormField("Description", required = true) {
-                    OutlinedTextField(
-                        value = desc, onValueChange = { if (it.length <= 500) desc = it },
-                        placeholder = { Text("Describe the issue in detail...", color = TextMuted) },
-                        leadingIcon = { Icon(Icons.Default.Subject, null, tint = TextMuted) },
-                        modifier = Modifier.fillMaxWidth().height(140.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue),
-                        supportingText = { Text("${desc.length}/500", textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) }
-                    )
-                }
-            }
-            
-            item {
                 FormField("Add Photo (Optional)", required = false) {
-                    if (photoAdded) {
-                        Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Image, null, tint = TextMuted, modifier = Modifier.size(40.dp))
-                            IconButton(onClick = { photoAdded = false }, modifier = Modifier.align(Alignment.TopEnd)) {
-                                Icon(Icons.Default.Close, "Remove photo", tint = DangerRed)
+                    if (selectedImageUri != null) {
+                        Box(modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                            UriImage(selectedImageUri.toString(), modifier = Modifier.fillMaxSize())
+                            Row(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                                IconButton(onClick = { showPhotoSheet = true }, modifier = Modifier.background(Color.White.copy(alpha=0.7f), CircleShape).size(36.dp)) {
+                                    Icon(Icons.Default.Edit, "Change photo", tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                IconButton(onClick = { 
+                                    selectedImageUri = null
+                                    viewModel.selectedPhotoBytes = null
+                                    viewModel.selectedPhotoMimeType = null
+                                }, modifier = Modifier.background(Color.White.copy(alpha=0.7f), CircleShape).size(36.dp)) {
+                                    Icon(Icons.Default.Close, "Remove photo", tint = DangerRed, modifier = Modifier.size(20.dp))
+                                }
                             }
                         }
                     } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .background(Color.White, RoundedCornerShape(12.dp))
-                                .border(1.dp, PrimaryBlue.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                                .clickable { photoAdded = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.AddPhotoAlternate, null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Tap to add photo", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Supports JPG, PNG (Max 5 MB)", color = TextMuted, fontSize = 11.sp)
+                        Column {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(120.dp).background(Color.White, RoundedCornerShape(12.dp)).border(1.dp, PrimaryBlue.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).clickable { showPhotoSheet = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.AddPhotoAlternate, null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Tap to add photo", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Supports JPG, PNG (Max 5 MB)", color = TextMuted, fontSize = 11.sp)
+                                }
+                            }
+                            if (imageSizeError != null) {
+                                Text(imageSizeError!!, color = DangerRed, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
                     }
                 }
             }
+            
+            item {
+                Button(
+                    onClick = {
+                        if (!NetworkUtils.isNetworkAvailable(context)) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("No internet connection. Please check your connection and try again.")
+                            }
+                            return@Button
+                        }
+                        val catEnum = when (category) {
+                            "Plumbing" -> com.hostelcare.app.data.model.ComplaintCategory.PLUMBING
+                            "Electrical" -> com.hostelcare.app.data.model.ComplaintCategory.ELECTRICAL
+                            "Internet/WiFi" -> com.hostelcare.app.data.model.ComplaintCategory.INTERNET
+                            "Cleaning" -> com.hostelcare.app.data.model.ComplaintCategory.CLEANING
+                            "Furniture" -> com.hostelcare.app.data.model.ComplaintCategory.FURNITURE
+                            else -> com.hostelcare.app.data.model.ComplaintCategory.OTHER
+                        }
+                        val complaint = com.hostelcare.app.data.model.Complaint(
+                            title = title,
+                            description = desc,
+                            category = catEnum,
+                            hostelBlock = hostelBlock,
+                            roomNumber = room,
+                            studentId = user?.studentId ?: "UNKNOWN"
+                        )
+                        viewModel.startNewComplaint(complaint)
+                        viewModel.submitComplaint()
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isSubmitting && title.isNotBlank() && desc.isNotBlank() && hostelBlock.isNotBlank() && room.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    if (isSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    } else {
+                        Text("Submit Complaint", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+                    }
+                }
+            }
+        }
+    }
+    
+    if (showPhotoSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showPhotoSheet = false },
+            containerColor = Color.White
+        ) {
+            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                Text("Add Photo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                Spacer(Modifier.height(16.dp))
+                ListItem(
+                    headlineContent = { Text("Choose from Gallery") },
+                    leadingContent = { Icon(Icons.Default.PhotoLibrary, null, tint = PrimaryBlue) },
+                    modifier = Modifier.clickable {
+                        showPhotoSheet = false
+                        photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+                ListItem(
+                    headlineContent = { Text("Take Photo") },
+                    leadingContent = { Icon(Icons.Default.CameraAlt, null, tint = PrimaryBlue) },
+                    modifier = Modifier.clickable {
+                        showPhotoSheet = false
+                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+                Spacer(Modifier.height(32.dp))
+            }
         }
     }
 }
-
-
