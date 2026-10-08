@@ -148,7 +148,11 @@ class StudentViewModel(
     private val _updateProfileState = MutableStateFlow<UpdateProfileState>(UpdateProfileState.Idle)
     val updateProfileState: StateFlow<UpdateProfileState> = _updateProfileState.asStateFlow()
 
-    fun updateProfile(name: String, email: String, hostelBlock: String, roomNumber: String, phone: String = "", profilePhotoUri: String? = null) {
+        var profilePhotoBytes: ByteArray? = null
+    var profilePhotoMimeType: String? = null
+    var removeProfilePhoto: Boolean = false
+
+    fun updateProfile(name: String, email: String, hostelBlock: String, roomNumber: String, phone: String = "") {
         viewModelScope.launch {
             _updateProfileState.value = UpdateProfileState.Loading
             val current = repository.getCurrentUser()
@@ -156,10 +160,28 @@ class StudentViewModel(
                 _updateProfileState.value = UpdateProfileState.Error("Session expired")
                 return@launch
             }
-            val updated = current.copy(name = name, email = email, hostelBlock = hostelBlock, roomNumber = roomNumber, phone = phone, profilePhotoUri = profilePhotoUri)
+            val updated = current.copy(name = name, email = email, hostelBlock = hostelBlock, roomNumber = roomNumber, phone = phone)
             val result = repository.updateUser(updated)
+            
             if (result.isSuccess) {
-                _updateProfileState.value = UpdateProfileState.Success
+                var photoError: String? = null
+                if (removeProfilePhoto) {
+                    val r = repository.deleteProfilePhoto()
+                    if (r.isFailure) photoError = r.exceptionOrNull()?.message
+                } else if (profilePhotoBytes != null && profilePhotoMimeType != null) {
+                    val r = repository.updateProfilePhoto(profilePhotoBytes!!, profilePhotoMimeType!!)
+                    if (r.isFailure) photoError = r.exceptionOrNull()?.message
+                }
+                
+                profilePhotoBytes = null
+                profilePhotoMimeType = null
+                removeProfilePhoto = false
+                
+                if (photoError == null) {
+                    _updateProfileState.value = UpdateProfileState.Success
+                } else {
+                    _updateProfileState.value = UpdateProfileState.Error("Profile updated, but photo failed: $photoError")
+                }
             } else {
                 _updateProfileState.value = UpdateProfileState.Error(result.exceptionOrNull()?.message ?: "Update failed")
             }

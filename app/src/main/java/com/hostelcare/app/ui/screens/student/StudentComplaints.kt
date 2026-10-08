@@ -458,7 +458,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                             Spacer(modifier = Modifier.height(12.dp))
                             if (!complaint.photoUri.isNullOrEmpty()) {
                                 Box(modifier = Modifier.fillMaxWidth().height(180.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                    com.hostelcare.app.ui.screens.student.UriImage(uriStr = complaint.photoUri!!, modifier = Modifier.fillMaxSize())
+                                    UriImage(uriStr = complaint.photoUri!!, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(12.dp), fallbackIcon = Icons.Default.HideImage)
                                 }
                             } else {
                                 Box(modifier = Modifier.fillMaxWidth().height(80.dp).background(Color(0xFFF9FAFB), RoundedCornerShape(12.dp)).border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {

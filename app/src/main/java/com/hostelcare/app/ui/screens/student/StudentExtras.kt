@@ -211,25 +211,42 @@ fun NotificationCard(n: com.hostelcare.app.data.model.Notification, onClick: () 
 }
 
 @Composable
-fun UriImage(uriStr: String, modifier: Modifier = Modifier) {
+fun UriImage(
+    uriStr: String, 
+    modifier: Modifier = Modifier, 
+    shape: androidx.compose.ui.graphics.Shape = CircleShape,
+    fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Person
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var bitmap by remember(uriStr) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    var hasError by remember(uriStr) { mutableStateOf(false) }
     
     LaunchedEffect(uriStr) {
         if (uriStr.isNotEmpty()) {
             try {
-                val uri = android.net.Uri.parse(uriStr)
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val androidBitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
-                inputStream?.close()
+                val androidBitmap = if (uriStr.startsWith("data:image")) {
+                    val base64 = uriStr.substringAfter("base64,")
+                    val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                    android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } else {
+                    val uri = android.net.Uri.parse(uriStr)
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val decoded = android.graphics.BitmapFactory.decodeStream(inputStream)
+                    inputStream?.close()
+                    decoded
+                }
                 if (androidBitmap != null) {
                     bitmap = androidBitmap.asImageBitmap()
+                } else {
+                    hasError = true
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                hasError = true
             }
         } else {
             bitmap = null
+            hasError = false
         }
     }
     
@@ -237,13 +254,14 @@ fun UriImage(uriStr: String, modifier: Modifier = Modifier) {
         androidx.compose.foundation.Image(
             bitmap = bitmap!!,
             contentDescription = null,
-            modifier = modifier.clip(CircleShape),
+            modifier = modifier.clip(shape),
             contentScale = ContentScale.Crop
         )
+    } else if (hasError) {
+        Icon(androidx.compose.material.icons.Icons.Default.BrokenImage, null, modifier = modifier.padding(16.dp), tint = TextMuted)
     } else {
-        Icon(Icons.Default.Person, null, modifier = modifier.padding(16.dp), tint = TextMuted)
+        Icon(fallbackIcon, null, modifier = modifier.padding(16.dp), tint = TextMuted)
     }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -302,17 +320,22 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
             )
         }
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, contentPadding = PaddingValues(bottom = 24.dp)) {
-            if (user != null) {
+        if (user == null) {
+            Box(modifier = Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = PrimaryBlue)
+            }
+        } else {
+            val u = user!!
+            LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, contentPadding = PaddingValues(bottom = 24.dp)) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     Box(modifier = Modifier.size(96.dp).background(Color(0xFFE5E7EB), CircleShape), contentAlignment = Alignment.Center) {
-                        UriImage(user!!.profilePhotoUri ?: "", modifier = Modifier.fillMaxSize())
+                        UriImage(u.profilePhotoUri ?: "", modifier = Modifier.fillMaxSize())
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(user!!.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                    Text(u.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(user!!.studentId.ifEmpty { "STU-XXXX" }, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
+                    Text(u.studentId.ifEmpty { "STU-XXXX" }, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
                     Spacer(modifier = Modifier.height(32.dp))
                 }
                 item {
@@ -323,13 +346,13 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
                         modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF3F4F6), RoundedCornerShape(16.dp))
                     ) {
                         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                            ProfileDetailRow(Icons.Default.Domain, "Hostel & Block", user!!.hostelBlock.ifEmpty { "Not Assigned" })
+                            ProfileDetailRow(Icons.Default.Domain, "Hostel & Block", u.hostelBlock.ifEmpty { "Not Assigned" })
                             HorizontalDivider(color = Color(0xFFF3F4F6))
-                            ProfileDetailRow(Icons.Default.MeetingRoom, "Room Number", user!!.roomNumber.ifEmpty { "Not Assigned" })
+                            ProfileDetailRow(Icons.Default.MeetingRoom, "Room Number", u.roomNumber.ifEmpty { "Not Assigned" })
                             HorizontalDivider(color = Color(0xFFF3F4F6))
-                            ProfileDetailRow(Icons.Default.Email, "College Email", user!!.email)
+                            ProfileDetailRow(Icons.Default.Email, "College Email", u.email)
                             HorizontalDivider(color = Color(0xFFF3F4F6))
-                            ProfileDetailRow(Icons.Default.Phone, "Phone Number", user!!.phone.ifEmpty { "Not Provided" })
+                            ProfileDetailRow(Icons.Default.Phone, "Phone Number", u.phone.ifEmpty { "Not Provided" })
                         }
                     }
                     Spacer(modifier = Modifier.height(20.dp))
@@ -338,41 +361,27 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) { 
-                        Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+                    ) {
+                        Icon(Icons.Default.Edit, null, tint = Color.White, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Edit Profile", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-                
-                item {
-                    ActionRow(Icons.Default.LockReset, "Change Password", LightBlue) { navController.navigate(Routes.CHANGE_PASSWORD) }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ActionRow(Icons.Default.MenuBook, "Hostel Guidelines", LightBlue) { 
-                        android.widget.Toast.makeText(context, "Guidelines opened", android.widget.Toast.LENGTH_SHORT).show() 
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(0.dp),
+                        modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF3F4F6), RoundedCornerShape(16.dp)).clickable { navController.navigate(Routes.CHANGE_PASSWORD) }
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(40.dp).background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.LockReset, null, tint = PrimaryBlue)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text("Change Password", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextDark, modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.ChevronRight, null, tint = TextMuted)
+                        }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ActionRow(Icons.Default.Security, "Contact Warden", LightBlue) {
-                        val number = "+1234567890" // In a real app, from config
-                        val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
-                        intent.data = android.net.Uri.parse("tel:$number")
-                        context.startActivity(intent)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(48.dp))
-                    
-                    Button(
-                        onClick = { showLogoutDialog = true },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2), contentColor = DangerRed)
-                    ) { 
-                        Icon(Icons.AutoMirrored.Filled.Logout, null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Log Out", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) 
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -422,41 +431,95 @@ fun ProfileFormField(label: String, required: Boolean = false, content: @Composa
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+﻿@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: StudentViewModel = viewModel(factory = factory)
     val user by viewModel.currentUser.collectAsStateWithLifecycle(null)
+    val updateState by viewModel.updateProfileState.collectAsStateWithLifecycle()
     
     var name by remember(user) { mutableStateOf(user?.name ?: "") }
     var email by remember(user) { mutableStateOf(user?.email ?: "") }
     var hostel by remember(user) { mutableStateOf(user?.hostelBlock ?: "") }
     var room by remember(user) { mutableStateOf(user?.roomNumber ?: "") }
     var phone by remember(user) { mutableStateOf(user?.phone ?: "") }
+    
     var photoUri by remember(user) { mutableStateOf(user?.profilePhotoUri ?: "") }
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
     
     var hostelExpanded by remember { mutableStateOf(false) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val isSubmitting = updateState is com.hostelcare.app.ui.screens.student.UpdateProfileState.Loading
+
+    LaunchedEffect(updateState) {
+        if (updateState is com.hostelcare.app.ui.screens.student.UpdateProfileState.Success) {
+            viewModel.resetUpdateState()
+            navController.popBackStack()
+        } else if (updateState is com.hostelcare.app.ui.screens.student.UpdateProfileState.Error) {
+            val err = (updateState as com.hostelcare.app.ui.screens.student.UpdateProfileState.Error).message
+            snackbarHostState.showSnackbar(err)
+            viewModel.resetUpdateState()
+        }
+    }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> if (uri != null) photoUri = uri.toString() }
+        onResult = { uri -> 
+            if (uri != null) {
+                try {
+                    val outStream = java.io.ByteArrayOutputStream()
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                    inputStream?.close()
+                    if (bitmap != null) {
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, outStream)
+                        val bytes = outStream.toByteArray()
+                        if (bytes.size <= 5 * 1024 * 1024) {
+                            selectedImageUri = uri
+                            photoUri = uri.toString()
+                            viewModel.profilePhotoBytes = bytes
+                            viewModel.profilePhotoMimeType = "image/jpeg"
+                            viewModel.removeProfilePhoto = false
+                        } else {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Image too large (Max 5 MB)") }
+                        }
+                    }
+                } catch (e: Exception) {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Failed to process image") }
+                }
+            }
+        }
     )
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { TopAppBar(title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = TextDark) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } }, actions = { IconButton(onClick = {}) { Icon(Icons.Default.Info, null, tint = TextMuted) } ; IconButton(onClick = {}) { Box(modifier = Modifier.size(32.dp).background(PrimaryBlue, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp)) } } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)) },
         containerColor = Color.White,
         bottomBar = {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
                 Button(
                     onClick = { 
-                        viewModel.updateProfile(name, email, hostel, room, phone, photoUri)
-                        navController.popBackStack() 
+                        if (!com.hostelcare.app.utils.NetworkUtils.isNetworkAvailable(context)) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("No internet connection") }
+                        } else {
+                            viewModel.updateProfile(name, email, hostel, room, phone)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp),
+                    enabled = !isSubmitting,
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                ) { Text("Save Changes", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+                ) { 
+                    if (isSubmitting) {
+                        androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    } else {
+                        Text("Save Changes", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -478,87 +541,65 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
                         Icon(Icons.Default.CameraAlt, null, tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Tap to change photo", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { photoPickerLauncher.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) })
+                if (photoUri.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Remove photo", color = DangerRed, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { 
+                        photoUri = ""
+                        selectedImageUri = null
+                        viewModel.profilePhotoBytes = null
+                        viewModel.profilePhotoMimeType = null
+                        viewModel.removeProfilePhoto = true
+                    })
+                }
                 Spacer(modifier = Modifier.height(32.dp))
             }
             
             item {
-                ProfileFormField("Full Name") {
-                    OutlinedTextField(
-                        value = name, onValueChange = { name = it },
-                        leadingIcon = { Icon(Icons.Default.Person, null, tint = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
-                    )
+                ProfileFormField("Full Name", required = true) {
+                    OutlinedTextField(value = name, onValueChange = { name = it }, leadingIcon = { Icon(Icons.Default.Person, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
                 }
-                Spacer(modifier = Modifier.height(20.dp))
             }
+            item { Spacer(modifier = Modifier.height(20.dp)) }
             
             item {
-                ProfileFormField("College Email") {
-                    OutlinedTextField(
-                        value = email, onValueChange = { email = it },
-                        leadingIcon = { Icon(Icons.Default.Email, null, tint = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
-                    )
+                ProfileFormField("College Email", required = true) {
+                    OutlinedTextField(value = email, onValueChange = { email = it }, leadingIcon = { Icon(Icons.Default.Email, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
                 }
-                Spacer(modifier = Modifier.height(20.dp))
             }
+            item { Spacer(modifier = Modifier.height(20.dp)) }
             
             item {
-                ProfileFormField("Hostel / Block") {
+                ProfileFormField("Hostel / Block", required = true) {
                     Box {
-                        OutlinedTextField(
-                            value = hostel, onValueChange = { },
-                            leadingIcon = { Icon(Icons.Default.Domain, null, tint = TextMuted) },
-                            trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) },
-                            modifier = Modifier.fillMaxWidth(), readOnly = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
-                        )
+                        OutlinedTextField(value = hostel, onValueChange = { }, leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = TextMuted) }, trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), readOnly = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
                         Box(modifier = Modifier.matchParentSize().clickable { hostelExpanded = true })
                         DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(Color.White)) {
-                            listOf("Block A", "Block B", "Block C", "Cauvery Hostel", "Block B - Cauvery Hostel", "Tagore Hostel").forEach { opt ->
-                                DropdownMenuItem(text = { Text(opt) }, onClick = { hostel = opt; hostelExpanded = false })
+                            listOf("Tagore Block A", "Tagore Block B", "Raman Block A", "Raman Block B", "Curie Block", "Newton Block").forEach { block ->
+                                DropdownMenuItem(text = { Text(block) }, onClick = { hostel = block; hostelExpanded = false })
                             }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
             }
+            item { Spacer(modifier = Modifier.height(20.dp)) }
             
             item {
-                ProfileFormField("Room Number") {
-                    OutlinedTextField(
-                        value = room, onValueChange = { room = it },
-                        leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
-                    )
+                ProfileFormField("Room Number", required = true) {
+                    OutlinedTextField(value = room, onValueChange = { room = it }, leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
                 }
-                Spacer(modifier = Modifier.height(20.dp))
             }
+            item { Spacer(modifier = Modifier.height(20.dp)) }
             
             item {
                 ProfileFormField("Phone Number") {
-                    OutlinedTextField(
-                        value = phone, onValueChange = { phone = it },
-                        leadingIcon = { Icon(Icons.Default.Phone, null, tint = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
-                    )
+                    OutlinedTextField(value = phone, onValueChange = { phone = it }, leadingIcon = { Icon(Icons.Default.Phone, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
                 }
             }
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangePasswordScreen(navController: NavController) {

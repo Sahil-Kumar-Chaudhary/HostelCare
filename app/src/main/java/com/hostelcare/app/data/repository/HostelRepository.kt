@@ -14,6 +14,8 @@ interface HostelRepository {
     suspend fun getCurrentUser(): User?
     suspend fun logout()
     suspend fun updateUser(user: User): Result<User>
+    suspend fun updateProfilePhoto(photoBytes: ByteArray, mimeType: String): Result<String>
+    suspend fun deleteProfilePhoto(): Result<Unit>
     fun currentUserFlow(): Flow<User?>
 
     // Complaints

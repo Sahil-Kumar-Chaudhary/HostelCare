@@ -138,3 +138,6 @@ data class AiAnalyzeResponse(
     val message: String,
     val analysis: AiAnalysisData
 )
+
+
+data class ProfilePhotoResponse(val message: String, val photoUrl: String? = null)

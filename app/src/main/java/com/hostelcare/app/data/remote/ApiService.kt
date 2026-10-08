@@ -23,6 +23,13 @@ interface ApiService {
 
     @PUT("api/profile")
     suspend fun updateProfile(@Body request: UpdateProfileRequest): Response<ProfileResponse>
+
+    @Multipart
+    @POST("api/profile/photo")
+    suspend fun updateProfilePhoto(@Part photo: okhttp3.MultipartBody.Part): Response<ProfilePhotoResponse>
+
+    @DELETE("api/profile/photo")
+    suspend fun deleteProfilePhoto(): Response<ProfilePhotoResponse>
     @POST("api/complaints")
     suspend fun createComplaint(@Body request: ComplaintRequest): Response<ComplaintResponse>
 

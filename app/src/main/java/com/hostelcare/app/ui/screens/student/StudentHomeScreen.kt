@@ -471,7 +471,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                 FormField("Add Photo (Optional)", required = false) {
                     if (selectedImageUri != null) {
                         Box(modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                            UriImage(selectedImageUri.toString(), modifier = Modifier.fillMaxSize())
+                            UriImage(selectedImageUri.toString(), modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(12.dp), fallbackIcon = Icons.Default.HideImage)
                             Row(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
                                 IconButton(onClick = { showPhotoSheet = true }, modifier = Modifier.background(Color.White.copy(alpha=0.7f), CircleShape).size(36.dp)) {
                                     Icon(Icons.Default.Edit, "Change photo", tint = PrimaryBlue, modifier = Modifier.size(20.dp))

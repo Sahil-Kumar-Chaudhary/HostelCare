@@ -85,6 +85,43 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         currentUser.value = null
     }
 
+    override suspend fun updateProfilePhoto(photoBytes: ByteArray, mimeType: String): Result<String> {
+        return try {
+            val reqFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse(mimeType), photoBytes)
+            val photoPart = okhttp3.MultipartBody.Part.createFormData("photo", "profile.jpg", reqFile)
+            val response = apiService.updateProfilePhoto(photoPart)
+            if (response.isSuccessful && response.body() != null) {
+                val url = response.body()!!.photoUrl ?: ""
+                val current = currentUser.value
+                if (current != null) {
+                    currentUser.value = current.copy(profilePhotoUri = url)
+                }
+                Result.success(url)
+            } else {
+                Result.failure(Exception("Failed to upload photo: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteProfilePhoto(): Result<Unit> {
+        return try {
+            val response = apiService.deleteProfilePhoto()
+            if (response.isSuccessful) {
+                val current = currentUser.value
+                if (current != null) {
+                    currentUser.value = current.copy(profilePhotoUri = null)
+                }
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to delete photo: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateUser(user: User): Result<User> {
         return try {
             val req = com.hostelcare.app.data.remote.UpdateProfileRequest(
