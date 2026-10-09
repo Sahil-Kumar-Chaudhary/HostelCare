@@ -24,6 +24,31 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    collegeName: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    course: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    currentYear: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    semester: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    hostelName: {
+      type: String,
+      default: "",
+      trim: true
+    },
     hostelBlock: {
       type: String,
       required: true,
@@ -37,6 +62,14 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       default: ""
+    },
+    acceptedTerms: {
+      type: Boolean,
+      default: true
+    },
+    acceptedTermsAt: {
+      type: Date,
+      default: Date.now
     },
     profilePhoto: {
       type: String,
