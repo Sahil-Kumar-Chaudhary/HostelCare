@@ -5,33 +5,130 @@ const User = require("../models/User");
 
 const router = express.Router();
 
+function validatePassword(pwd) {
+  if (!pwd || typeof pwd !== "string") return false;
+  if (pwd.length < 8 || pwd.length > 128) return false;
+  if (!/[A-Z]/.test(pwd)) return false;
+  if (!/[a-z]/.test(pwd)) return false;
+  if (!/[0-9]/.test(pwd)) return false;
+  if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/~`]/.test(pwd)) return false;
+  return true;
+}
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+
 router.post("/register", async (req, res) => {
   try {
     const {
       name,
       studentId,
       email,
-      password,
+      phone,
+      collegeName,
+      course,
+      currentYear,
+      admissionYear,
+      semester,
+      hostelName,
       hostelBlock,
       roomNumber,
-      phone
+      password,
+      confirmPassword,
+      acceptedTerms
     } = req.body;
+
+    const yearValue = admissionYear || currentYear;
 
     if (
       !name ||
       !studentId ||
       !email ||
-      !password ||
+      !phone ||
+      !collegeName ||
+      !course ||
+      !yearValue ||
+      !hostelName ||
       !hostelBlock ||
-      !roomNumber
+      !roomNumber ||
+      !password ||
+      confirmPassword === undefined
     ) {
       return res.status(400).json({
         message: "Please fill all required fields"
       });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    if (acceptedTerms !== true && acceptedTerms !== "true") {
+      return res.status(400).json({
+        message: "You must accept the Terms of Service and Code of Conduct"
+      });
+    }
+
+    const cleanName = name.trim();
     const cleanStudentId = studentId.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+    const cleanCollegeName = collegeName.trim();
+    const cleanCourse = course.trim();
+    const cleanCurrentYear = yearValue.trim();
+    const cleanSemester = semester ? semester.trim() : "";
+    const cleanHostelName = hostelName.trim();
+    const cleanHostelBlock = hostelBlock.trim();
+    const cleanRoomNumber = roomNumber.trim();
+
+    if (
+      !cleanName ||
+      !cleanStudentId ||
+      !cleanEmail ||
+      !cleanPhone ||
+      !cleanCollegeName ||
+      !cleanCourse ||
+      !cleanCurrentYear ||
+      !cleanHostelName ||
+      !cleanHostelBlock ||
+      !cleanRoomNumber
+    ) {
+      return res.status(400).json({
+        message: "Fields cannot be empty or blank"
+      });
+    }
+
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({
+        message: "Please enter a valid email address"
+      });
+    }
+
+    if (!cleanEmail.endsWith("@gmail.com")) {
+      return res.status(400).json({
+        message: "Only @gmail.com email addresses are allowed"
+      });
+    }
+
+    if (!phoneRegex.test(cleanPhone)) {
+      return res.status(400).json({
+        message: "Please enter a valid phone number"
+      });
+    }
+
+    if (!/^[a-zA-Z0-9\-_]+$/.test(cleanStudentId)) {
+      return res.status(400).json({
+        message: "Student ID must be alphanumeric"
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        message: "Passwords do not match"
+      });
+    }
+
+    if (!validatePassword(password)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters, and include uppercase, lowercase, number, and special character"
+      });
+    }
 
     const existingUser = await User.findOne({
       $or: [
@@ -49,13 +146,21 @@ router.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name: name.trim(),
+      name: cleanName,
       studentId: cleanStudentId,
       email: cleanEmail,
+      phone: cleanPhone,
+      collegeName: cleanCollegeName,
+      course: cleanCourse,
+      currentYear: cleanCurrentYear,
+      semester: cleanSemester,
+      hostelName: cleanHostelName,
+      hostelBlock: cleanHostelBlock,
+      roomNumber: cleanRoomNumber,
       password: hashedPassword,
-      hostelBlock: hostelBlock.trim(),
-      roomNumber: roomNumber.trim(),
-      phone: phone ? phone.trim() : ""
+      acceptedTerms: true,
+      acceptedTermsAt: new Date(),
+      role: "student"
     });
 
     res.status(201).json({
@@ -65,10 +170,15 @@ router.post("/register", async (req, res) => {
         name: user.name,
         studentId: user.studentId,
         email: user.email,
+        phone: user.phone || "",
+        collegeName: user.collegeName || "",
+        course: user.course || "",
+        currentYear: user.currentYear || "",
+        semester: user.semester || "",
+        hostelName: user.hostelName || "",
         hostelBlock: user.hostelBlock,
         roomNumber: user.roomNumber,
-        phone: user.phone,
-        profilePhoto: user.profilePhoto,
+        profilePhoto: user.profilePhoto || "",
         role: user.role
       }
     });
@@ -141,10 +251,15 @@ router.post("/login", async (req, res) => {
         name: user.name,
         studentId: user.studentId,
         email: user.email,
+        phone: user.phone || "",
+        collegeName: user.collegeName || "",
+        course: user.course || "",
+        currentYear: user.currentYear || "",
+        semester: user.semester || "",
+        hostelName: user.hostelName || "",
         hostelBlock: user.hostelBlock,
         roomNumber: user.roomNumber,
-        phone: user.phone,
-        profilePhoto: user.profilePhoto,
+        profilePhoto: user.profilePhoto || "",
         role: user.role
       }
     });
