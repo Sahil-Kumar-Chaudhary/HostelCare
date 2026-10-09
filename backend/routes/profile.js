@@ -34,10 +34,15 @@ router.get("/", auth, async (req, res) => {
         name: user.name,
         studentId: user.studentId,
         email: user.email,
+        phone: user.phone || "",
+        collegeName: user.collegeName || "",
+        course: user.course || "",
+        currentYear: user.currentYear || "",
+        semester: user.semester || "",
+        hostelName: user.hostelName || "",
         hostelBlock: user.hostelBlock,
         roomNumber: user.roomNumber,
-        phone: user.phone,
-        profilePhoto: user.profilePhoto,
+        profilePhoto: user.profilePhoto || "",
         role: user.role
       }
     });
@@ -52,7 +57,18 @@ router.get("/", auth, async (req, res) => {
 
 router.put("/", auth, async (req, res) => {
   try {
-    const { name, email, hostelBlock, roomNumber, phone } = req.body;
+    const {
+      name,
+      email,
+      hostelBlock,
+      roomNumber,
+      phone,
+      collegeName,
+      course,
+      currentYear,
+      semester,
+      hostelName
+    } = req.body;
 
     if (!name || !email || !hostelBlock || !roomNumber) {
       return res.status(400).json({
@@ -83,6 +99,21 @@ router.put("/", auth, async (req, res) => {
     if (phone !== undefined) {
       user.phone = phone.trim();
     }
+    if (collegeName !== undefined) {
+      user.collegeName = collegeName.trim();
+    }
+    if (course !== undefined) {
+      user.course = course.trim();
+    }
+    if (currentYear !== undefined) {
+      user.currentYear = currentYear.trim();
+    }
+    if (semester !== undefined) {
+      user.semester = semester.trim();
+    }
+    if (hostelName !== undefined) {
+      user.hostelName = hostelName.trim();
+    }
 
     await user.save();
 
@@ -93,10 +124,15 @@ router.put("/", auth, async (req, res) => {
         name: user.name,
         studentId: user.studentId,
         email: user.email,
+        phone: user.phone || "",
+        collegeName: user.collegeName || "",
+        course: user.course || "",
+        currentYear: user.currentYear || "",
+        semester: user.semester || "",
+        hostelName: user.hostelName || "",
         hostelBlock: user.hostelBlock,
         roomNumber: user.roomNumber,
-        phone: user.phone,
-        profilePhoto: user.profilePhoto,
+        profilePhoto: user.profilePhoto || "",
         role: user.role
       }
     });
