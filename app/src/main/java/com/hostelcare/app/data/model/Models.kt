@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.data.model
+package com.hostelcare.app.data.model
 
 import java.util.UUID
 
@@ -9,9 +9,14 @@ data class User(
     val name: String,
     val email: String,
     val studentId: String = "",
+    val phone: String = "",
+    val collegeName: String = "",
+    val course: String = "",
+    val currentYear: String = "",
+    val semester: String = "",
+    val hostelName: String = "",
     val hostelBlock: String = "",
     val roomNumber: String = "",
-    val phone: String = "",
     val profilePhotoUri: String? = null,
     val role: Role = Role.STUDENT
 )
