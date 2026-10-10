@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.ui.screens.student
+package com.hostelcare.app.ui.screens.student
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -152,7 +152,18 @@ class StudentViewModel(
     var profilePhotoMimeType: String? = null
     var removeProfilePhoto: Boolean = false
 
-    fun updateProfile(name: String, email: String, hostelBlock: String, roomNumber: String, phone: String = "") {
+    fun updateProfile(
+        name: String,
+        email: String,
+        hostelBlock: String,
+        roomNumber: String,
+        phone: String = "",
+        collegeName: String? = null,
+        course: String? = null,
+        currentYear: String? = null,
+        semester: String? = null,
+        hostelName: String? = null
+    ) {
         viewModelScope.launch {
             _updateProfileState.value = UpdateProfileState.Loading
             val current = repository.getCurrentUser()
@@ -160,7 +171,18 @@ class StudentViewModel(
                 _updateProfileState.value = UpdateProfileState.Error("Session expired")
                 return@launch
             }
-            val updated = current.copy(name = name, email = email, hostelBlock = hostelBlock, roomNumber = roomNumber, phone = phone)
+            val updated = current.copy(
+                name = name,
+                email = email,
+                hostelBlock = hostelBlock,
+                roomNumber = roomNumber,
+                phone = phone,
+                collegeName = collegeName ?: current.collegeName,
+                course = course ?: current.course,
+                currentYear = currentYear ?: current.currentYear,
+                semester = semester ?: current.semester,
+                hostelName = hostelName ?: current.hostelName
+            )
             val result = repository.updateUser(updated)
             
             if (result.isSuccess) {
@@ -184,6 +206,30 @@ class StudentViewModel(
                 }
             } else {
                 _updateProfileState.value = UpdateProfileState.Error(result.exceptionOrNull()?.message ?: "Update failed")
+            }
+        }
+    }
+
+    fun uploadProfilePhotoDirect(bytes: ByteArray, mimeType: String) {
+        viewModelScope.launch {
+            _updateProfileState.value = UpdateProfileState.Loading
+            val r = repository.updateProfilePhoto(bytes, mimeType)
+            if (r.isSuccess) {
+                _updateProfileState.value = UpdateProfileState.Success
+            } else {
+                _updateProfileState.value = UpdateProfileState.Error(r.exceptionOrNull()?.message ?: "Failed to upload photo")
+            }
+        }
+    }
+
+    fun deleteProfilePhotoDirect() {
+        viewModelScope.launch {
+            _updateProfileState.value = UpdateProfileState.Loading
+            val r = repository.deleteProfilePhoto()
+            if (r.isSuccess) {
+                _updateProfileState.value = UpdateProfileState.Success
+            } else {
+                _updateProfileState.value = UpdateProfileState.Error(r.exceptionOrNull()?.message ?: "Failed to remove photo")
             }
         }
     }
