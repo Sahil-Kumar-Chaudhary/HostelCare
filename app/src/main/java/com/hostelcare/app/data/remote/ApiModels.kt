@@ -7,10 +7,17 @@ data class RegisterRequest(
     val name: String,
     val studentId: String,
     val email: String,
-    val password: String,
+    val phone: String,
+    val collegeName: String,
+    val course: String,
+    val currentYear: String,
+    val semester: String,
+    val hostelName: String,
     val hostelBlock: String,
     val roomNumber: String,
-    val phone: String
+    val password: String,
+    val confirmPassword: String,
+    val acceptedTerms: Boolean
 )
 
 data class LoginRequest(
@@ -33,7 +40,12 @@ data class UpdateProfileRequest(
     val email: String,
     val hostelBlock: String,
     val roomNumber: String,
-    val phone: String
+    val phone: String,
+    val collegeName: String = "",
+    val course: String = "",
+    val currentYear: String = "",
+    val semester: String = "",
+    val hostelName: String = ""
 )
 
 data class NetworkUser(
@@ -41,9 +53,14 @@ data class NetworkUser(
     val name: String,
     val studentId: String,
     val email: String,
+    val phone: String = "",
+    val collegeName: String? = null,
+    val course: String? = null,
+    val currentYear: String? = null,
+    val semester: String? = null,
+    val hostelName: String? = null,
     val hostelBlock: String,
     val roomNumber: String,
-    val phone: String,
     @SerializedName("profilePhoto")
     val profilePhotoUri: String?,
     val role: String
@@ -53,9 +70,14 @@ data class NetworkUser(
         name = name,
         email = email,
         studentId = studentId,
+        phone = phone,
+        collegeName = collegeName ?: "",
+        course = course ?: "",
+        currentYear = currentYear ?: "",
+        semester = semester ?: "",
+        hostelName = hostelName ?: "",
         hostelBlock = hostelBlock,
         roomNumber = roomNumber,
-        phone = phone,
         profilePhotoUri = profilePhotoUri,
         role = if (role.equals("admin", ignoreCase = true) || role.equals("staff", ignoreCase = true)) Role.ADMIN else Role.STUDENT
     )
