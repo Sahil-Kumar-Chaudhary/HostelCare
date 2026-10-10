@@ -35,10 +35,10 @@ class AuthViewModel(private val repository: HostelRepository) : ViewModel() {
         }
     }
 
-    fun register(user: User, password: String) {
+    fun register(user: User, password: String, confirmPassword: String = password, acceptedTerms: Boolean = true) {
         viewModelScope.launch {
             _uiState.value = AuthState.Loading
-            val result = repository.registerStudent(user, password)
+            val result = repository.registerStudent(user, password, confirmPassword, acceptedTerms)
             if (result.isSuccess) {
                 _uiState.value = AuthState.Success
             } else {
