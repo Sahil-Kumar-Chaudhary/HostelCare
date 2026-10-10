@@ -43,22 +43,38 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
 
     }
 
-    override suspend fun registerStudent(user: User, password: String): Result<User> {
+    override suspend fun registerStudent(user: User, password: String, confirmPassword: String, acceptedTerms: Boolean): Result<User> {
         return try {
             val req = com.hostelcare.app.data.remote.RegisterRequest(
                 name = user.name,
                 studentId = user.studentId,
                 email = user.email,
-                password = password,
+                phone = user.phone,
+                collegeName = user.collegeName,
+                course = user.course,
+                currentYear = user.currentYear,
+                semester = user.semester,
+                hostelName = user.hostelName,
                 hostelBlock = user.hostelBlock,
                 roomNumber = user.roomNumber,
-                phone = user.phone
+                password = password,
+                confirmPassword = confirmPassword,
+                acceptedTerms = acceptedTerms
             )
             val response = apiService.register(req)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!.user.toLocalUser())
             } else {
-                Result.failure(Exception("Registration failed: ${response.message()}"))
+                val errorMsg = try {
+                    val errBody = response.errorBody()?.string()
+                    if (!errBody.isNullOrBlank()) {
+                        val json = org.json.JSONObject(errBody)
+                        json.optString("message", "Registration failed: ${response.message()}")
+                    } else "Registration failed: ${response.message()}"
+                } catch (e: Exception) {
+                    "Registration failed: ${response.message()}"
+                }
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -87,7 +103,7 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
 
     override suspend fun updateProfilePhoto(photoBytes: ByteArray, mimeType: String): Result<String> {
         return try {
-            val reqFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse(mimeType), photoBytes)
+            val reqFile = okhttp3.RequestBody.create(mimeType.toMediaTypeOrNull(), photoBytes)
             val photoPart = okhttp3.MultipartBody.Part.createFormData("photo", "profile.jpg", reqFile)
             val response = apiService.updateProfilePhoto(photoPart)
             if (response.isSuccessful && response.body() != null) {
@@ -129,7 +145,12 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
                 email = user.email,
                 hostelBlock = user.hostelBlock,
                 roomNumber = user.roomNumber,
-                phone = user.phone
+                phone = user.phone,
+                collegeName = user.collegeName,
+                course = user.course,
+                currentYear = user.currentYear,
+                semester = user.semester,
+                hostelName = user.hostelName
             )
             val response = apiService.updateProfile(req)
             if (response.isSuccessful && response.body() != null) {
