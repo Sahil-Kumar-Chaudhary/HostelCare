@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.ui.screens.student
+package com.hostelcare.app.ui.screens.student
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -61,10 +61,10 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
 
     Scaffold(
         bottomBar = { StudentBottomNavigation(navController, Routes.MY_COMPLAINTS) },
-        containerColor = Color(0xFFF9FAFB),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("My Complaints", fontWeight = FontWeight.Bold, color = TextDark) },
+                title = { Text("My Complaints", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 actions = {
                     Button(
                         onClick = { navController.navigate(Routes.NEW_COMPLAINT) },
@@ -78,7 +78,7 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
                         Text("New Complaint", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -87,7 +87,7 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -97,12 +97,12 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
                     Surface(
                         onClick = { filter = f },
                         shape = RoundedCornerShape(20.dp),
-                        color = if (isSelected) Color(0xFFEFF6FF) else Color.Transparent,
-                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else Color(0xFFE5E7EB))
+                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
                         Text(
                             text = f,
-                            color = if (isSelected) PrimaryBlue else TextMuted,
+                            color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
@@ -111,16 +111,16 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
                 }
             }
             
-            Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 1.dp)
 
             if (filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFD1D5DB))
+                        Icon(Icons.Default.Inbox, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outlineVariant)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("No complaints found", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                        Text("No complaints found", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("You don't have any complaints matching this filter.", color = TextMuted, fontSize = 14.sp)
+                        Text("You don't have any complaints matching this filter.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -146,18 +146,18 @@ fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Uni
     val timeStr = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(c.createdAt))
     
     val statusColorInfo = when (c.status) {
-        com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED -> Pair(PrimaryBlue, Color(0xFFEFF6FF))
-        com.hostelcare.app.data.model.ComplaintStatus.UNDER_REVIEW -> Pair(Color(0xFF7C3AED), Color(0xFFF5F3FF))
-        com.hostelcare.app.data.model.ComplaintStatus.ASSIGNED, com.hostelcare.app.data.model.ComplaintStatus.IN_PROGRESS -> Pair(Color(0xFFD97706), Color(0xFFFEF3C7))
-        com.hostelcare.app.data.model.ComplaintStatus.RESOLVED -> Pair(Color(0xFF16A34A), Color(0xFFF0FDF4))
+        com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED -> Pair(PrimaryBlue, MaterialTheme.colorScheme.primaryContainer)
+        com.hostelcare.app.data.model.ComplaintStatus.UNDER_REVIEW -> Pair(Color(0xFF9333EA), Color(0xFF9333EA).copy(alpha = 0.15f))
+        com.hostelcare.app.data.model.ComplaintStatus.ASSIGNED, com.hostelcare.app.data.model.ComplaintStatus.IN_PROGRESS -> Pair(Color(0xFFD97706), Color(0xFFD97706).copy(alpha = 0.15f))
+        com.hostelcare.app.data.model.ComplaintStatus.RESOLVED -> Pair(Color(0xFF16A34A), Color(0xFF16A34A).copy(alpha = 0.15f))
     }
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
@@ -165,7 +165,7 @@ fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Uni
                     text = c.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f).padding(end = 12.dp)
@@ -189,7 +189,7 @@ fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Uni
                 Spacer(modifier = Modifier.width(6.dp))
                 val catName = if (c.aiSummary.isNullOrBlank()) "Unassigned" else c.category.name.lowercase().replaceFirstChar { it.uppercase() }
                 val ticketStr = c.ticketId.ifBlank { "HC-${c.id.take(6).uppercase()}" }
-                Text("$catName | $ticketStr", color = TextMuted, fontSize = 13.sp)
+                Text("$catName | $ticketStr", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
             }
             
             Spacer(modifier = Modifier.height(4.dp))
@@ -197,15 +197,15 @@ fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Uni
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Domain, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Block ${c.hostelBlock} Â· Room ${c.roomNumber}", color = TextMuted, fontSize = 13.sp)
+                Text("Block ${c.hostelBlock} • Room ${c.roomNumber}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
             }
             
             Spacer(modifier = Modifier.height(4.dp))
             
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = TextMuted, modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("$dStr Â· $timeStr", color = TextMuted, fontSize = 13.sp)
+                Text("$dStr • $timeStr", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
             }
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -213,14 +213,14 @@ fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Uni
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = c.description,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 14.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 20.sp,
                     modifier = Modifier.weight(1f).padding(end = 12.dp)
                 )
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFD1D5DB), modifier = Modifier.size(24.dp))
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.size(24.dp))
             }
         }
     }
@@ -267,12 +267,12 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = TextDark) },
-                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             },
-            containerColor = Color(0xFFF9FAFB)
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             Box(modifier = Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)
@@ -285,12 +285,12 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = TextDark) },
-                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             },
-            containerColor = Color(0xFFF9FAFB)
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             Box(modifier = Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text((detailsState as ComplaintDetailsState.Error).message, color = DangerRed)
@@ -304,13 +304,13 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
     val timeStr = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(complaint.createdAt))
 
     Scaffold(
-        containerColor = Color(0xFFF9FAFB),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = TextDark) },
-                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } },
-                actions = { IconButton(onClick = { }) { Icon(Icons.Filled.MoreVert, "More", tint = TextDark) } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
+                actions = { IconButton(onClick = { }) { Icon(Icons.Filled.MoreVert, "More", tint = MaterialTheme.colorScheme.onSurface) } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
         bottomBar = {
@@ -337,18 +337,18 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(complaint.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                                Text(complaint.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.background(LightBlue, CircleShape).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                                    Box(modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer, CircleShape).padding(horizontal = 10.dp, vertical = 4.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Box(modifier = Modifier.size(6.dp).background(PrimaryBlue, CircleShape))
                                             Spacer(modifier = Modifier.width(6.dp))
@@ -358,16 +358,16 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                 }
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("Ticket ID", color = TextMuted, fontSize = 11.sp)
+                                Text("Ticket ID", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.FileCopy, contentDescription = null, tint = TextMuted, modifier = Modifier.size(12.dp))
+                                    Icon(Icons.Default.FileCopy, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(complaint.ticketId.ifBlank { "HC-${complaint.id.take(6).uppercase()}" }, color = TextDark, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(complaint.ticketId.ifBlank { "HC-${complaint.id.take(6).uppercase()}" }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
                         
-                        Divider(modifier = Modifier.padding(vertical = 16.dp), color = Color(0xFFF3F4F6))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                         
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -375,30 +375,30 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     Icon(Icons.Default.Domain, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
-                                        Text("Location", color = TextMuted, fontSize = 11.sp)
-                                        Text("Block ${complaint.hostelBlock} Â· Room ${complaint.roomNumber}", color = TextDark, fontSize = 13.sp)
+                                        Text("Location", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                        Text("Block ${complaint.hostelBlock} • Room ${complaint.roomNumber}", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                     }
                                 }
                             }
-                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color(0xFFF3F4F6)))
+                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)))
                             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                                 Row {
                                     Icon(Icons.Default.Build, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
-                                        Text("Category", color = TextMuted, fontSize = 11.sp)
-                                        Text(if (complaint.aiSummary.isNullOrBlank() && aiError == null) "Not assigned yet" else complaint.category.name.lowercase().replaceFirstChar { it.uppercase() }, color = TextDark, fontSize = 13.sp)
+                                        Text("Category", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                        Text(if (complaint.aiSummary.isNullOrBlank() && aiError == null) "Not assigned yet" else complaint.category.name.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                     }
                                 }
                             }
-                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color(0xFFF3F4F6)))
+                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)))
                             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                                 Row {
                                     Icon(Icons.Default.Flag, contentDescription = null, tint = DangerRed, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
-                                        Text("Priority", color = TextMuted, fontSize = 11.sp)
-                                        Text(if (complaint.aiSummary.isNullOrBlank() && aiError == null) "Not assigned yet" else complaint.priority.name.lowercase().replaceFirstChar { it.uppercase() }, color = TextDark, fontSize = 13.sp)
+                                        Text("Priority", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                        Text(if (complaint.aiSummary.isNullOrBlank() && aiError == null) "Not assigned yet" else complaint.priority.name.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -407,11 +407,11 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         Row {
-                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
-                                Text("Reported On", color = TextMuted, fontSize = 11.sp)
-                                Text("${dStr} Â· ${timeStr}", color = TextDark, fontSize = 13.sp)
+                                Text("Reported On", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                Text("${dStr} • ${timeStr}", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                             }
                         }
                     }
@@ -421,19 +421,19 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Description, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Issue Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text("Issue Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(complaint.description, color = TextDark, fontSize = 14.sp, lineHeight = 20.sp)
+                        Text(complaint.description, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, lineHeight = 20.sp)
                     }
                 }
             }
@@ -442,30 +442,30 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Image, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Attached Photo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                                    Text("Attached Photo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 }
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             if (!complaint.photoUri.isNullOrEmpty()) {
-                                Box(modifier = Modifier.fillMaxWidth().height(180.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.fillMaxWidth().height(180.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                                     UriImage(uriStr = complaint.photoUri!!, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(12.dp), fallbackIcon = Icons.Default.HideImage)
                                 }
                             } else {
-                                Box(modifier = Modifier.fillMaxWidth().height(80.dp).background(Color(0xFFF9FAFB), RoundedCornerShape(12.dp)).border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.fillMaxWidth().height(80.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.HideImage, contentDescription = null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.HideImage, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("No photo attached", color = TextMuted, fontSize = 14.sp)
+                                        Text("No photo attached", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                     }
                                 }
                             }
@@ -477,17 +477,17 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = if (aiError != null) Color(0xFFFEF2F2) else Color.White),
+                    colors = CardDefaults.cardColors(containerColor = if (aiError != null) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, if (aiError != null) Color(0xFFFECACA) else Color(0xFFE5E7EB))
+                    border = BorderStroke(1.dp, if (aiError != null) MaterialTheme.colorScheme.error.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("AI Assessment", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                                Text("AI Assessment", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             }
                             if (aiError != null) {
                                 OutlinedButton(
@@ -530,30 +530,30 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                 Column {
                                     Text(aiError!!, color = DangerRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("We couldn't analyze this complaint right now. Your complaint has been submitted successfully, and you can continue tracking its status. AI analysis will be retried automatically.", color = TextMuted, fontSize = 13.sp, lineHeight = 18.sp)
+                                    Text("We couldn't analyze this complaint right now. Your complaint has been submitted successfully, and you can continue tracking its status. AI analysis will be retried automatically.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, lineHeight = 18.sp)
                                 }
                             }
                         } else if (isAnalyzing || complaint.aiSummary.isNullOrBlank()) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), color = PrimaryBlue, strokeWidth = 2.dp)
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Text("Analyzing complaint details...", color = TextMuted, fontSize = 14.sp)
+                                Text("Analyzing complaint details...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             }
                         } else {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Category", color = TextMuted, fontSize = 11.sp)
-                                    Text(complaint.category.name.lowercase().replaceFirstChar { it.uppercase() }, color = TextDark, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("Category", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                    Text(complaint.category.name.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Priority", color = TextMuted, fontSize = 11.sp)
-                                    Text(complaint.priority.name.lowercase().replaceFirstChar { it.uppercase() }, color = if (complaint.priority.name == "HIGH" || complaint.priority.name == "EMERGENCY") DangerRed else if (complaint.priority.name == "MEDIUM") WarningOrange else TextDark, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text("Priority", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                    Text(complaint.priority.name.lowercase().replaceFirstChar { it.uppercase() }, color = if (complaint.priority.name == "HIGH" || complaint.priority.name == "EMERGENCY") DangerRed else if (complaint.priority.name == "MEDIUM") WarningOrange else MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("Summary", color = TextMuted, fontSize = 11.sp)
+                            Text("Summary", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(complaint.aiSummary!!, color = TextDark, fontSize = 13.sp, lineHeight = 20.sp)
+                            Text(complaint.aiSummary!!, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, lineHeight = 20.sp)
                         }
                     }
                 }
@@ -562,16 +562,16 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Timeline, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Progress", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text("Progress", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         
@@ -589,20 +589,20 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                             val isCurrent = idx == currentIdx
                             Row(verticalAlignment = Alignment.Top) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(modifier = Modifier.size(18.dp).background(if (isCurrent) Color.Transparent else if (isPast) Color(0xFFE5E7EB) else Color(0xFFE5E7EB), CircleShape).border(if (isCurrent) BorderStroke(4.dp, PrimaryBlue) else BorderStroke(0.dp, Color.Transparent), CircleShape), contentAlignment = Alignment.Center) {
+                                    Box(modifier = Modifier.size(18.dp).background(if (isCurrent) Color.Transparent else if (isPast) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape).border(if (isCurrent) BorderStroke(4.dp, PrimaryBlue) else BorderStroke(0.dp, Color.Transparent), CircleShape), contentAlignment = Alignment.Center) {
                                         if (isPast && !isCurrent) {
-                                            Box(modifier = Modifier.size(8.dp).background(Color(0xFF9CA3AF), CircleShape))
+                                            Box(modifier = Modifier.size(8.dp).background(Color.White, CircleShape))
                                         }
                                     }
                                     if (idx < statuses.size - 1) {
-                                        Box(modifier = Modifier.padding(vertical = 4.dp).width(2.dp).height(24.dp).background(if (idx < currentIdx) Color(0xFFE5E7EB) else Color(0xFFE5E7EB)))
+                                        Box(modifier = Modifier.padding(vertical = 4.dp).width(2.dp).height(24.dp).background(if (idx < currentIdx) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(pair.second, color = if (isPast) TextDark else TextMuted, fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp)
+                                    Text(pair.second, color = if (isPast) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp)
                                     if (isCurrent) {
-                                        Text("${dStr} Â· ${timeStr}", color = TextMuted, fontSize = 12.sp)
+                                        Text("${dStr} • ${timeStr}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                     }
                                 }
                             }

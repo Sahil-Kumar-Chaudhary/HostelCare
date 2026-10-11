@@ -1,6 +1,8 @@
 package com.hostelcare.app.ui.screens.admin
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,47 +46,47 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
 
     Scaffold(
         bottomBar = { com.hostelcare.app.ui.components.AdminBottomNavigation(navController, Routes.ADMIN_HOME) },
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Good morning", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+                title = { Text("Good morning", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            Text("Complaints", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Complaints", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(modifier = Modifier.weight(1f).background(SurfaceLight, RoundedCornerShape(8.dp)).padding(12.dp)) {
+                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
-                        Text("Pending", fontSize = 12.sp, color = TextMuted)
-                        Text("$pendingCount", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Pending", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$pendingCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
-                Box(modifier = Modifier.weight(1f).background(SurfaceLight, RoundedCornerShape(8.dp)).padding(12.dp)) {
+                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
-                        Text("In Progress", fontSize = 12.sp, color = TextMuted)
-                        Text("$inProgressCount", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("In Progress", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$inProgressCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
-                Box(modifier = Modifier.weight(1f).background(SurfaceLight, RoundedCornerShape(8.dp)).padding(12.dp)) {
+                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
-                        Text("Resolved", fontSize = 12.sp, color = TextMuted)
-                        Text("$resolvedCount", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Resolved", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$resolvedCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Text("Needs Attention", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Needs Attention", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(needsAttention) { c ->
-                    Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Room ${c.roomNumber} · ${c.priority.name} · ${c.status.name}", fontSize = 14.sp, color = TextMuted)
+                            Text("Room ${c.roomNumber} · ${c.priority.name} · ${c.status.name}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -102,16 +104,16 @@ fun AdminComplaintListScreen(navController: NavController, app: HostelCareApp) {
 
     Scaffold(
         bottomBar = { com.hostelcare.app.ui.components.AdminBottomNavigation(navController, Routes.ADMIN_COMPLAINTS) },
-        topBar = { TopAppBar(title = { Text("All Complaints", fontWeight = FontWeight.Bold) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
-        containerColor = BackgroundLight
+        topBar = { TopAppBar(title = { Text("All Complaints", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(complaints) { c ->
-                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Room ${c.roomNumber} · Status: ${c.status.name}", fontSize = 14.sp, color = TextMuted)
+                        Text("Room ${c.roomNumber} · Status: ${c.status.name}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -128,53 +130,53 @@ fun AdminComplaintDetailsScreen(navController: NavController, app: HostelCareApp
     val complaint = complaints.find { it.id == complaintId } ?: return
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Complaint Details", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
-        containerColor = BackgroundLight
+        topBar = { TopAppBar(title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(complaint.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(complaint.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Student: ${complaint.studentId}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Room: ${complaint.roomNumber}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Category: ${complaint.category.name}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Priority: ${complaint.priority.name}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Status: ${complaint.status.name}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Student: ${complaint.studentId}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Room: ${complaint.roomNumber}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Category: ${complaint.category.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Priority: ${complaint.priority.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Status: ${complaint.status.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(complaint.description, style = MaterialTheme.typography.bodyMedium)
+                        Text(complaint.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(12.dp))
-                        Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(GrayBg, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Image, null, tint = TextMuted)
+                        Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Image, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
             if (complaint.aiSummary != null) {
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("AI Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("AI Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(complaint.aiSummary!!, style = MaterialTheme.typography.bodyMedium)
+                            Text(complaint.aiSummary!!, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
             item {
-                Text("Actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = { navController.navigate(Routes.assignStaff(complaintId)) }, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(8.dp)) { Text("Assign Staff") }
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = { viewModel.updateComplaintStatus(complaintId, ComplaintStatus.IN_PROGRESS) }, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = LightBlue, contentColor = PrimaryBlue), shape = RoundedCornerShape(8.dp)) { Text("Change Status") }
+                Button(onClick = { viewModel.updateComplaintStatus(complaintId, ComplaintStatus.IN_PROGRESS) }, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(8.dp)) { Text("Change Status") }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = { navController.navigate(Routes.resolveComplaint(complaintId)) }, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen, contentColor = Color.White), shape = RoundedCornerShape(8.dp)) { Text("Mark as Resolved") }
             }
@@ -193,31 +195,31 @@ fun AssignStaffScreen(navController: NavController, app: HostelCareApp, complain
     var selectedId by remember { mutableStateOf<String?>(null) }
     
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Assign Staff", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
-        containerColor = BackgroundLight
+        topBar = { TopAppBar(title = { Text("Assign Staff", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
             if (complaint != null) {
-                Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(complaint.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("Room ${complaint.roomNumber} · ${complaint.category.name}", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                        Text(complaint.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Room ${complaint.roomNumber} · ${complaint.category.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("${complaint.priority.name} Priority", style = MaterialTheme.typography.bodyMedium, color = DangerRed)
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
-            Text("Select Staff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Select Staff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(staffList) { staff ->
-                    Card(colors = CardDefaults.cardColors(containerColor = SurfaceLight), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().clickable { selectedId = staff.id }) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth().clickable { selectedId = staff.id }) {
                         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(selected = selectedId == staff.id, onClick = { selectedId = staff.id }, colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue))
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
-                                Text(staff.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                                Text("${staff.roleTitle} · ${if(staff.isAvailable) "Available" else "Busy"}", fontSize = 14.sp, color = TextMuted)
+                                Text(staff.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Text("${staff.roleTitle} · ${if(staff.isAvailable) "Available" else "Busy"}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -248,8 +250,8 @@ fun ResolveComplaintScreen(navController: NavController, app: HostelCareApp, com
     var note by remember { mutableStateOf("") }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Resolve Complaint", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
-        containerColor = BackgroundLight
+        topBar = { TopAppBar(title = { Text("Resolve Complaint", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             CustomTextField(note, { note = it }, "Resolution Note")
@@ -275,11 +277,11 @@ fun AdminProfileScreen(navController: NavController, app: HostelCareApp) {
     
     Scaffold(
         bottomBar = { com.hostelcare.app.ui.components.AdminBottomNavigation(navController, Routes.ADMIN_PROFILE) },
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Staff Profile", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+                title = { Text("Staff Profile", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
