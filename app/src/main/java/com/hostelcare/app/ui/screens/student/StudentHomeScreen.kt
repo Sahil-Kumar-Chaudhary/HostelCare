@@ -66,32 +66,32 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
 
     Scaffold(
         bottomBar = { StudentBottomNavigation(navController, Routes.STUDENT_HOME) },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().background(Color.White)) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).background(LightBlue, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Home, null, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
+                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Home, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text("HostelCare", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
-                    Text("Student Portal", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    Text("HostelCare", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text("Student Portal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.Default.NotificationsNone, null, tint = TextDark, modifier = Modifier.size(24.dp))
+                Icon(Icons.Default.NotificationsNone, null, tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(16.dp))
-                Box(modifier = Modifier.size(40.dp).background(GrayBg, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Person, null, tint = TextMuted)
+                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             
             LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Good morning, ${user?.name?.split(" ")?.firstOrNull() ?: "Student"}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                    Text("Good morning, ${user?.name?.split(" ")?.firstOrNull() ?: "Student"}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Need something fixed in your room?", style = MaterialTheme.typography.bodyLarge, color = TextMuted)
+                    Text("Need something fixed in your room?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
@@ -111,19 +111,19 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatCard("Active", activeCount.toString(), Icons.Default.Description, LightBlue, PrimaryBlue, Modifier.weight(1f))
-                        StatCard("Pending", pendingCount.toString(), Icons.Default.Schedule, OrangePillBg, WarningOrange, Modifier.weight(1f))
-                        StatCard("Resolved", resolvedCount.toString(), Icons.Default.CheckCircle, GreenPillBg, SuccessGreen, Modifier.weight(1f))
+                        StatCard("Active", activeCount.toString(), Icons.Default.Description, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                        StatCard("Pending", pendingCount.toString(), Icons.Default.Schedule, WarningOrange.copy(alpha = 0.15f), WarningOrange, Modifier.weight(1f))
+                        StatCard("Resolved", resolvedCount.toString(), Icons.Default.CheckCircle, SuccessGreen.copy(alpha = 0.15f), SuccessGreen, Modifier.weight(1f))
                     }
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Text("My Complaints", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("My Complaints", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         Spacer(modifier = Modifier.weight(1f))
                         Row(modifier = Modifier.clickable { navController.navigate(Routes.MY_COMPLAINTS) }, verticalAlignment = Alignment.CenterVertically) {
-                            Text("View all", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                            Icon(Icons.Default.ChevronRight, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                            Text("View all", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -131,9 +131,9 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                 
                 items(complaints.take(3)) { c ->
                     val (icon, bg, fg) = when(c.status) {
-                        ComplaintStatus.RESOLVED -> Triple(Icons.Default.Build, GreenPillBg, SuccessGreen)
-                        ComplaintStatus.SUBMITTED -> Triple(Icons.Default.Wifi, OrangePillBg, WarningOrange)
-                        else -> Triple(Icons.Default.WaterDrop, LightBlue, PrimaryBlue)
+                        ComplaintStatus.RESOLVED -> Triple(Icons.Default.Build, SuccessGreen.copy(alpha = 0.15f), SuccessGreen)
+                        ComplaintStatus.SUBMITTED -> Triple(Icons.Default.Wifi, WarningOrange.copy(alpha = 0.15f), WarningOrange)
+                        else -> Triple(Icons.Default.WaterDrop, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary)
                     }
                     val dateStr = SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(c.createdAt))
 
@@ -144,9 +144,9 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(c.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = TextDark)
+                                Text(c.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text("Room ${c.roomNumber} Â· ${c.category.name}", fontSize = 12.sp, color = TextMuted)
+                                Text("Room ${c.roomNumber} • ${c.category.name}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(horizontalAlignment = Alignment.End) {
@@ -154,27 +154,27 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                                     Text(c.status.name, color = fg, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(dateStr, fontSize = 12.sp, color = TextMuted)
+                                Text(dateStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.Default.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                         }
-                        HorizontalDivider(color = Color(0xFFF3F4F6))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                     }
                 }
                 
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
-                    Text("Quick Actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark)
+                    Text("Quick Actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     val context = androidx.compose.ui.platform.LocalContext.current
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        QuickActionCard("Report\nProblem", Icons.Default.Build, LightBlue, PrimaryBlue, Modifier.weight(1f)) { navController.navigate(Routes.NEW_COMPLAINT) }
-                        QuickActionCard("Hostel\nGuidelines", Icons.Default.MenuBook, Color(0xFFF9FAFB), TextMuted, Modifier.weight(1f)) { 
+                        QuickActionCard("Report\nProblem", Icons.Default.Build, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary, Modifier.weight(1f)) { navController.navigate(Routes.NEW_COMPLAINT) }
+                        QuickActionCard("Hostel\nGuidelines", Icons.Default.MenuBook, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f)) { 
                             android.widget.Toast.makeText(context, "Guidelines opened", android.widget.Toast.LENGTH_SHORT).show()
                         }
-                        QuickActionCard("Contact\nWarden", Icons.Default.Phone, Color(0xFFF9FAFB), TextMuted, Modifier.weight(1f)) { 
+                        QuickActionCard("Contact\nWarden", Icons.Default.Phone, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f)) { 
                             val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
                             intent.data = android.net.Uri.parse("tel:+1234567890")
                             context.startActivity(intent)
@@ -191,8 +191,8 @@ fun StatCard(label: String, value: String, icon: ImageVector, bg: Color, iconCol
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     ) {
         Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(32.dp).background(bg, CircleShape), contentAlignment = Alignment.Center) {
@@ -200,10 +200,10 @@ fun StatCard(label: String, value: String, icon: ImageVector, bg: Color, iconCol
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                Text(label, fontSize = 12.sp, color = TextMuted)
+                Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Icon(Icons.Default.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
     }
 }
@@ -229,7 +229,7 @@ fun QuickActionCard(label: String, icon: ImageVector, bg: Color, fg: Color, modi
 fun FormField(label: String, required: Boolean = false, content: @Composable () -> Unit) {
     Column {
         Row {
-            Text(label, fontSize = 13.sp, color = TextDark)
+            Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium)
             if (required) {
                 Text(" *", fontSize = 13.sp, color = DangerRed)
             }
@@ -362,18 +362,33 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
         }
     }
 
+    val inputColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        focusedBorderColor = PrimaryBlue,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+        focusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        focusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("New Complaint", fontWeight = FontWeight.Bold, color = TextDark) },
+                title = { Text("New Complaint", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -386,11 +401,11 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                 FormField("Problem Title", required = true) {
                     OutlinedTextField(
                         value = title, onValueChange = { title = it },
-                        placeholder = { Text("e.g. Water leakage in bathroom", color = TextMuted) },
-                        leadingIcon = { Icon(Icons.Default.Description, null, tint = TextMuted) },
+                        placeholder = { Text("e.g. Water leakage in bathroom", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Default.Description, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
                         shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
+                        colors = inputColors
                     )
                 }
             }
@@ -400,17 +415,17 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                     Box {
                         OutlinedTextField(
                             value = category, onValueChange = { },
-                            placeholder = { Text("Select category", color = TextMuted) },
-                            leadingIcon = { Icon(Icons.Default.Build, null, tint = TextMuted) },
-                            trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) },
+                            placeholder = { Text("Select category", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingIcon = { Icon(Icons.Default.Build, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                             modifier = Modifier.fillMaxWidth(), readOnly = true,
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
+                            colors = inputColors
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { categoryExpanded = true })
-                        DropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }, modifier = Modifier.background(Color.White)) {
+                        DropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                             listOf("Plumbing", "Electrical", "Internet/WiFi", "Cleaning", "Furniture", "Other").forEach { cat ->
-                                DropdownMenuItem(text = { Text(cat) }, onClick = { category = cat; categoryExpanded = false })
+                                DropdownMenuItem(text = { Text(cat, color = MaterialTheme.colorScheme.onSurface) }, onClick = { category = cat; categoryExpanded = false })
                             }
                         }
                     }
@@ -424,17 +439,17 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                             Box {
                                 OutlinedTextField(
                                     value = hostelBlock, onValueChange = { },
-                                    placeholder = { Text("Block", color = TextMuted) },
-                                    leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = TextMuted) },
-                                    trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) },
+                                    placeholder = { Text("Block", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                                     modifier = Modifier.fillMaxWidth(), readOnly = true,
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
+                                    colors = inputColors
                                 )
                                 Box(modifier = Modifier.matchParentSize().clickable { hostelExpanded = true })
-                                DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(Color.White)) {
+                                DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                                     listOf("Tagore Block A", "Tagore Block B", "Raman Block A", "Raman Block B", "Curie Block", "Newton Block").forEach { block ->
-                                        DropdownMenuItem(text = { Text(block) }, onClick = { hostelBlock = block; hostelExpanded = false })
+                                        DropdownMenuItem(text = { Text(block, color = MaterialTheme.colorScheme.onSurface) }, onClick = { hostelBlock = block; hostelExpanded = false })
                                     }
                                 }
                             }
@@ -444,11 +459,11 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                         FormField("Room Number", required = true) {
                             OutlinedTextField(
                                 value = room, onValueChange = { room = it },
-                                placeholder = { Text("e.g. 101", color = TextMuted) },
-                                leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = TextMuted) },
+                                placeholder = { Text("e.g. 101", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                                 modifier = Modifier.fillMaxWidth(), singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
+                                colors = inputColors
                             )
                         }
                     }
@@ -459,10 +474,10 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                 FormField("Description", required = true) {
                     OutlinedTextField(
                         value = desc, onValueChange = { desc = it },
-                        placeholder = { Text("Provide details about the issue...", color = TextMuted) },
+                        placeholder = { Text("Provide details about the issue...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.fillMaxWidth().height(120.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue)
+                        colors = inputColors
                     )
                 }
             }
@@ -470,10 +485,10 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
             item {
                 FormField("Add Photo (Optional)", required = false) {
                     if (selectedImageUri != null) {
-                        Box(modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.fillMaxWidth().height(160.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                             UriImage(selectedImageUri.toString(), modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(12.dp), fallbackIcon = Icons.Default.HideImage)
                             Row(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                                IconButton(onClick = { showPhotoSheet = true }, modifier = Modifier.background(Color.White.copy(alpha=0.7f), CircleShape).size(36.dp)) {
+                                IconButton(onClick = { showPhotoSheet = true }, modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha=0.85f), CircleShape).size(36.dp)) {
                                     Icon(Icons.Default.Edit, "Change photo", tint = PrimaryBlue, modifier = Modifier.size(20.dp))
                                 }
                                 Spacer(Modifier.width(8.dp))
@@ -481,7 +496,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                                     selectedImageUri = null
                                     viewModel.selectedPhotoBytes = null
                                     viewModel.selectedPhotoMimeType = null
-                                }, modifier = Modifier.background(Color.White.copy(alpha=0.7f), CircleShape).size(36.dp)) {
+                                }, modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha=0.85f), CircleShape).size(36.dp)) {
                                     Icon(Icons.Default.Close, "Remove photo", tint = DangerRed, modifier = Modifier.size(20.dp))
                                 }
                             }
@@ -489,7 +504,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                     } else {
                         Column {
                             Box(
-                                modifier = Modifier.fillMaxWidth().height(120.dp).background(Color.White, RoundedCornerShape(12.dp)).border(1.dp, PrimaryBlue.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).clickable { showPhotoSheet = true },
+                                modifier = Modifier.fillMaxWidth().height(120.dp).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).border(1.dp, PrimaryBlue.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).clickable { showPhotoSheet = true },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -497,7 +512,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text("Tap to add photo", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Supports JPG, PNG (Max 5 MB)", color = TextMuted, fontSize = 11.sp)
+                                    Text("Supports JPG, PNG (Max 5 MB)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                                 }
                             }
                             if (imageSizeError != null) {
@@ -556,13 +571,13 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
     if (showPhotoSheet) {
         ModalBottomSheet(
             onDismissRequest = { showPhotoSheet = false },
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(Modifier.fillMaxWidth().padding(16.dp)) {
                 Text("Add Photo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PrimaryBlue)
                 Spacer(Modifier.height(16.dp))
                 ListItem(
-                    headlineContent = { Text("Choose from Gallery") },
+                    headlineContent = { Text("Choose from Gallery", color = MaterialTheme.colorScheme.onSurface) },
                     leadingContent = { Icon(Icons.Default.PhotoLibrary, null, tint = PrimaryBlue) },
                     modifier = Modifier.clickable {
                         showPhotoSheet = false
@@ -571,7 +586,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 ListItem(
-                    headlineContent = { Text("Take Photo") },
+                    headlineContent = { Text("Take Photo", color = MaterialTheme.colorScheme.onSurface) },
                     leadingContent = { Icon(Icons.Default.CameraAlt, null, tint = PrimaryBlue) },
                     modifier = Modifier.clickable {
                         showPhotoSheet = false
