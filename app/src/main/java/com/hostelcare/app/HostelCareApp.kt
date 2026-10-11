@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app
+package com.hostelcare.app
 
 import android.app.Application
 import com.hostelcare.app.ai.AiComplaintAnalyzer
@@ -7,6 +7,7 @@ import com.hostelcare.app.data.remote.RetrofitClient
 import com.hostelcare.app.data.remote.TokenManager
 import com.hostelcare.app.data.repository.HostelRepository
 import com.hostelcare.app.data.repository.InMemoryHostelRepository
+import com.hostelcare.app.ui.theme.ThemeManager
 
 class HostelCareApp : Application() {
     lateinit var repository: HostelRepository
@@ -15,6 +16,7 @@ class HostelCareApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ThemeManager.init(this)
         tokenManager = TokenManager(this)
         val apiService = RetrofitClient.create(tokenManager)
         
