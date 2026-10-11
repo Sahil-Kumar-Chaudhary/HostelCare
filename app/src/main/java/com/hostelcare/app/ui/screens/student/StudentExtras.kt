@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.ui.screens.student
+package com.hostelcare.app.ui.screens.student
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,10 +68,10 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
 
     Scaffold(
         bottomBar = { StudentBottomNavigation(navController, Routes.NOTIFICATIONS) },
-        containerColor = Color(0xFFF9FAFB),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = TextDark) },
+                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 actions = {
                     TextButton(
                         onClick = {
@@ -86,7 +87,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                         Text("Mark all read", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -94,7 +95,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -104,12 +105,12 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                     Surface(
                         onClick = { filter = f },
                         shape = RoundedCornerShape(20.dp),
-                        color = if (isSelected) Color(0xFFEFF6FF) else Color.Transparent,
-                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else Color(0xFFE5E7EB))
+                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
                         Text(
                             text = f,
-                            color = if (isSelected) PrimaryBlue else TextMuted,
+                            color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
@@ -118,16 +119,16 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                 }
             }
             
-            Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 1.dp)
             
             if (filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.NotificationsOff, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFD1D5DB))
+                        Icon(Icons.Default.NotificationsOff, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outlineVariant)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("No notifications yet", style = MaterialTheme.typography.titleMedium, color = TextDark)
+                        Text("No notifications yet", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("You'll see complaint updates and\nimportant hostel announcements here.", color = TextMuted, fontSize = 14.sp, textAlign = TextAlign.Center, lineHeight = 20.sp)
+                        Text("You'll see complaint updates and\nimportant hostel announcements here.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, textAlign = TextAlign.Center, lineHeight = 20.sp)
                     }
                 }
             } else {
@@ -163,7 +164,6 @@ fun NotificationCard(n: com.hostelcare.app.data.model.Notification, onClick: () 
         com.hostelcare.app.data.model.NotificationType.ADVISORY -> Pair(Icons.Default.Info, TextMuted)
     }
 
-    // Convert from timestamp if available, otherwise just use a relative string logic. Assuming we have timestamp in n.createdAt
     val timeDiff = System.currentTimeMillis() - n.createdAt
     val mins = timeDiff / 60000
     val hours = mins / 60
@@ -178,14 +178,14 @@ fun NotificationCard(n: com.hostelcare.app.data.model.Notification, onClick: () 
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = if (n.isRead) Color.White else Color(0xFFF8FAFC)),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (n.isRead) 0.dp else 0.dp),
+        colors = CardDefaults.cardColors(containerColor = if (n.isRead) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, if (n.isRead) Color(0xFFF3F4F6) else Color(0xFFE5E7EB))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     ) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Box(
-                modifier = Modifier.size(40.dp).background(if (n.isRead) Color(0xFFF3F4F6) else Color.White, CircleShape).border(1.dp, Color(0xFFE5E7EB), CircleShape),
+                modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(iconInfo.first, contentDescription = null, tint = iconInfo.second, modifier = Modifier.size(20.dp))
@@ -195,11 +195,11 @@ fun NotificationCard(n: com.hostelcare.app.data.model.Notification, onClick: () 
             
             Column(modifier = Modifier.weight(1f)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                    Text(n.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.weight(1f).padding(end = 8.dp))
-                    Text(timeStr, color = TextMuted, fontSize = 11.sp)
+                    Text(n.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f).padding(end = 8.dp))
+                    Text(timeStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(n.message, color = if (n.isRead) TextMuted else TextDark, fontSize = 14.sp, lineHeight = 20.sp)
+                Text(n.message, color = if (n.isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, lineHeight = 20.sp)
             }
             
             if (!n.isRead) {
@@ -262,6 +262,7 @@ fun UriImage(
     } else {
         Icon(fallbackIcon, null, modifier = modifier.padding(16.dp), tint = TextMuted)
     }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -269,54 +270,458 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: StudentViewModel = viewModel(factory = factory)
     val user by viewModel.currentUser.collectAsStateWithLifecycle(null)
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val updateState by viewModel.updateProfileState.collectAsStateWithLifecycle()
+    val isDarkMode by ThemeManager.isDarkMode.collectAsStateWithLifecycle()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showCollegeDetailsDialog by remember { mutableStateOf(false) }
+    var showHostelDetailsDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+    var showTermsDialog by remember { mutableStateOf(false) }
+    var showPhotoOptionsDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(updateState) {
+        if (updateState is UpdateProfileState.Success) {
+            snackbarHostState.showSnackbar("Profile updated successfully")
+            viewModel.resetUpdateState()
+        } else if (updateState is UpdateProfileState.Error) {
+            val err = (updateState as UpdateProfileState.Error).message
+            snackbarHostState.showSnackbar(err)
+            viewModel.resetUpdateState()
+        }
+    }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            if (uri != null) {
+                try {
+                    val outStream = java.io.ByteArrayOutputStream()
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                    inputStream?.close()
+                    if (bitmap != null) {
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, outStream)
+                        val bytes = outStream.toByteArray()
+                        if (bytes.size <= 5 * 1024 * 1024) {
+                            viewModel.uploadProfilePhotoDirect(bytes, "image/jpeg")
+                        } else {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Image too large (Max 5 MB)") }
+                        }
+                    }
+                } catch (e: Exception) {
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Failed to process photo") }
+                }
+            }
+        }
+    )
+
+    // Dialogs
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Log out?", fontWeight = FontWeight.Bold, color = TextDark) },
-            text = { Text("Are you sure you want to log out?", color = TextMuted) },
+            title = {
+                Text(
+                    "Log out?",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    "Are you sure you want to log out of HostelCare? You can log back in at any time.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutDialog = false
                     viewModel.logout()
-                    navController.navigate(Routes.LOGIN) { popUpTo(0) }
-                }) { Text("Log Out", color = DangerRed) }
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }) {
+                    Text("Log out", color = DangerRed, fontWeight = FontWeight.Bold)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) { Text("Cancel", color = TextDark) }
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                }
             },
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showPhotoOptionsDialog && user != null) {
+        val u = user!!
+        AlertDialog(
+            onDismissRequest = { showPhotoOptionsDialog = false },
+            title = { Text("Profile Photo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+            text = {
+                Column {
+                    Text("Choose an option for your profile photo:", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            showPhotoOptionsDialog = false
+                            photoPickerLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Choose New Photo")
+                    }
+                    if (!u.profilePhotoUri.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                showPhotoOptionsDialog = false
+                                viewModel.deleteProfilePhotoDirect()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            border = BorderStroke(1.dp, DangerRed),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp), tint = DangerRed)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Remove Photo", color = DangerRed)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPhotoOptionsDialog = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showCollegeDetailsDialog && user != null) {
+        val u = user!!
+        AlertDialog(
+            onDismissRequest = { showCollegeDetailsDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.School, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("College Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    InfoItem(label = "University / College", value = u.collegeName.ifEmpty { "Not Assigned" })
+                    InfoItem(label = "Course / Department", value = u.course.ifEmpty { "Not Assigned" })
+                    val yr = u.currentYear.ifEmpty { "Not Specified" }
+                    val sem = if (u.semester.isNotBlank()) " (Sem ${u.semester})" else ""
+                    InfoItem(label = "Academic Year", value = "$yr$sem")
+                    InfoItem(label = "Student ID", value = u.studentId.ifEmpty { "STU-XXXX" })
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCollegeDetailsDialog = false
+                        navController.navigate(Routes.EDIT_PROFILE)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Edit Details")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCollegeDetailsDialog = false }) {
+                    Text("Close", color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showHostelDetailsDialog && user != null) {
+        val u = user!!
+        AlertDialog(
+            onDismissRequest = { showHostelDetailsDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Apartment, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Hostel Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    InfoItem(label = "Hostel Name", value = u.hostelName.ifEmpty { "Campus Residence" })
+                    InfoItem(label = "Hostel Block", value = u.hostelBlock.ifEmpty { "Not Assigned" })
+                    InfoItem(label = "Room Number", value = u.roomNumber.ifEmpty { "Not Assigned" })
+                    InfoItem(label = "Helpdesk Desk", value = "Warden Office, Block A Ground Floor")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showHostelDetailsDialog = false
+                        navController.navigate(Routes.EDIT_PROFILE)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Edit Details")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showHostelDetailsDialog = false }) {
+                    Text("Close", color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Translate, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Language", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("English", fontWeight = FontWeight.Bold, color = PrimaryBlue, modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.Check, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    listOf("Hindi (हिंदी)", "Spanish (Español)", "French (Français)").forEach { lang ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(lang, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                                Text("Coming soon", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    Text(
+                        "HostelCare is currently available in English. Additional language localizations are underway.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showLanguageDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Done")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showPrivacyPolicyDialog) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyPolicyDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Description, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Privacy Policy", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text("Last updated: October 2026", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                    PolicySection(
+                        title = "1. Information We Collect",
+                        body = "HostelCare collects your name, university email, student ID, hostel block, room number, contact phone, and uploaded complaint photos for operational and facility management purposes."
+                    )
+                    PolicySection(
+                        title = "2. How Information is Used",
+                        body = "Your information is used solely to triage, assign, and resolve maintenance complaints, dispatch technicians, track resolution timelines, and issue push notifications."
+                    )
+                    PolicySection(
+                        title = "3. AI Processing & Gemini",
+                        body = "Complaint titles, descriptions, and uploaded images may be analyzed by Google Gemini AI models strictly to classify priority, assess hazard levels, and suggest actionable repair instructions."
+                    )
+                    PolicySection(
+                        title = "4. Data Security",
+                        body = "All network communication is encrypted over HTTPS. User tokens and sensitive credentials are encrypted using industry standard protocols and never exposed publicly."
+                    )
+                    PolicySection(
+                        title = "5. Your Rights",
+                        body = "You have the right to view, update, or request deletion of your profile photo and personal details at any time through the HostelCare profile management interface."
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showPrivacyPolicyDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Close")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showTermsDialog) {
+        AlertDialog(
+            onDismissRequest = { showTermsDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.VerifiedUser, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Terms & Resident Code", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text("Hostel Residence Guidelines & Portal Rules", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                    PolicySection(
+                        title = "1. Resident Code of Conduct",
+                        body = "All residents must observe quiet hours between 10:00 PM and 6:00 AM. Mutual respect among roommates and staff is strictly enforced."
+                    )
+                    PolicySection(
+                        title = "2. Complaint Submission Rules",
+                        body = "Submit authentic maintenance grievances only. Falsified, frivolous, or abusive complaints may result in suspension of portal privileges and administrative disciplinary review."
+                    )
+                    PolicySection(
+                        title = "3. Property & Appliance Care",
+                        body = "Residents are responsible for preserving hostel furnishings, plumbing fixtures, and electrical installations. Intentional damage is subject to replacement levies."
+                    )
+                    PolicySection(
+                        title = "4. Urgent Safety Hazards",
+                        body = "For life-safety emergencies, electrical short circuits, or gas leakages, report immediately to the physical Warden desk and activate the emergency contact channel."
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showTermsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("I Understand")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = { StudentBottomNavigation(navController, Routes.PROFILE) },
-        containerColor = Color(0xFFF9FAFB),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(40.dp).background(PrimaryBlue, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Business, null, tint = Color.White)
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(PrimaryBlue, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Business, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("HOSTELCARE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
-                            Text("Profile", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("HOSTEL", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, letterSpacing = 1.sp)
+                                Text("CARE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue, letterSpacing = 1.sp)
+                            }
+                            Text("Profile", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) { Icon(Icons.Default.Tune, null, tint = TextDark) }
-                    IconButton(onClick = { }) { 
-                        Box(modifier = Modifier.size(32.dp).background(PrimaryBlue, CircleShape), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
+                    IconButton(onClick = { /* filter/actions */ }) {
+                        Icon(Icons.Default.Tune, contentDescription = "Options", tint = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(36.dp)
+                            .background(PrimaryBlue, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -326,62 +731,233 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
             }
         } else {
             val u = user!!
-            LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, contentPadding = PaddingValues(bottom = 24.dp)) {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header: Avatar, Name, Student ID
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Box(modifier = Modifier.size(96.dp).background(Color(0xFFE5E7EB), CircleShape), contentAlignment = Alignment.Center) {
-                        UriImage(u.profilePhotoUri ?: "", modifier = Modifier.fillMaxSize())
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(u.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(u.studentId.ifEmpty { "STU-XXXX" }, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 1.sp)
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(0.dp),
-                        modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF3F4F6), RoundedCornerShape(16.dp))
-                    ) {
-                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                            ProfileDetailRow(Icons.Default.Domain, "Hostel & Block", u.hostelBlock.ifEmpty { "Not Assigned" })
-                            HorizontalDivider(color = Color(0xFFF3F4F6))
-                            ProfileDetailRow(Icons.Default.MeetingRoom, "Room Number", u.roomNumber.ifEmpty { "Not Assigned" })
-                            HorizontalDivider(color = Color(0xFFF3F4F6))
-                            ProfileDetailRow(Icons.Default.Email, "College Email", u.email)
-                            HorizontalDivider(color = Color(0xFFF3F4F6))
-                            ProfileDetailRow(Icons.Default.Phone, "Phone Number", u.phone.ifEmpty { "Not Provided" })
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Button(
-                        onClick = { navController.navigate(Routes.EDIT_PROFILE) },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) {
-                        Icon(Icons.Default.Edit, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Edit Profile", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(0.dp),
-                        modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF3F4F6), RoundedCornerShape(16.dp)).clickable { navController.navigate(Routes.CHANGE_PASSWORD) }
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(40.dp).background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.LockReset, null, tint = PrimaryBlue)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier.size(104.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(104.dp)
+                                    .background(Color(0xFFE2E8F0), CircleShape)
+                                    .clickable {
+                                        if (u.profilePhotoUri.isNullOrEmpty()) {
+                                            photoPickerLauncher.launch(
+                                                androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                            )
+                                        } else {
+                                            showPhotoOptionsDialog = true
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!u.profilePhotoUri.isNullOrEmpty()) {
+                                    UriImage(u.profilePhotoUri!!, modifier = Modifier.fillMaxSize())
+                                } else {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(60.dp))
+                                }
                             }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text("Change Password", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextDark, modifier = Modifier.weight(1f))
-                            Icon(Icons.Default.ChevronRight, null, tint = TextMuted)
+                            // Camera badge overlapping bottom-right
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(34.dp)
+                                    .background(PrimaryBlue, CircleShape)
+                                    .border(2.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                    .clickable {
+                                        if (u.profilePhotoUri.isNullOrEmpty()) {
+                                            photoPickerLauncher.launch(
+                                                androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                            )
+                                        } else {
+                                            showPhotoOptionsDialog = true
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CameraAlt, contentDescription = "Change photo", tint = Color.White, modifier = Modifier.size(17.dp))
+                            }
                         }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            u.name.ifEmpty { "Sahil Kumar Chaudhary" },
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            u.studentId.ifEmpty { "12305507" },
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
+                }
+
+                // Section 1: MY DETAILS
+                item {
+                    ProfileSectionCard(
+                        icon = Icons.Default.Person,
+                        title = "MY DETAILS",
+                        subtitle = "View and manage your personal, college and hostel information."
+                    ) {
+                        ProfileNavigationRow(
+                            icon = Icons.Default.Person,
+                            title = "Personal details",
+                            subtitle = "Name, email and phone",
+                            onClick = { navController.navigate(Routes.EDIT_PROFILE) }
+                        )
+                        ProfileNavigationRow(
+                            icon = Icons.Default.School,
+                            title = "College details",
+                            subtitle = "University, course and academic year",
+                            onClick = { showCollegeDetailsDialog = true }
+                        )
+                        ProfileNavigationRow(
+                            icon = Icons.Default.Apartment,
+                            title = "Hostel details",
+                            subtitle = "Hostel, block and room number",
+                            showDivider = false,
+                            onClick = { showHostelDetailsDialog = true }
+                        )
+                    }
+                }
+
+                // Section 2: APP PREFERENCES
+                item {
+                    ProfileSectionCard(
+                        icon = Icons.Default.Settings,
+                        title = "APP PREFERENCES",
+                        subtitle = "Customize your app experience."
+                    ) {
+                        ProfileNavigationRow(
+                            icon = Icons.Default.DarkMode,
+                            title = "Appearance",
+                            subtitle = "Light or dark theme",
+                            onClick = { ThemeManager.setDarkMode(context, !isDarkMode) },
+                            trailingContent = {
+                                Switch(
+                                    checked = isDarkMode,
+                                    onCheckedChange = { checked ->
+                                        ThemeManager.setDarkMode(context, checked)
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = PrimaryBlue,
+                                        uncheckedThumbColor = Color.White,
+                                        uncheckedTrackColor = Color(0xFFCBD5E1)
+                                    )
+                                )
+                            }
+                        )
+                        ProfileNavigationRow(
+                            icon = Icons.Default.Translate,
+                            title = "Language",
+                            subtitle = "Choose app language",
+                            showDivider = false,
+                            onClick = { showLanguageDialog = true },
+                            trailingContent = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "English",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+
+                // Section 3: ACCOUNT & SUPPORT
+                item {
+                    ProfileSectionCard(
+                        icon = Icons.Default.Shield,
+                        title = "ACCOUNT & SUPPORT",
+                        subtitle = "Manage your account and get help."
+                    ) {
+                        ProfileNavigationRow(
+                            icon = Icons.Default.Lock,
+                            title = "Change password",
+                            subtitle = "Update your account password",
+                            onClick = { navController.navigate(Routes.CHANGE_PASSWORD) }
+                        )
+                        ProfileNavigationRow(
+                            icon = Icons.Default.Description,
+                            title = "Privacy policy",
+                            subtitle = "How your information is used",
+                            onClick = { showPrivacyPolicyDialog = true }
+                        )
+                        ProfileNavigationRow(
+                            icon = Icons.Default.VerifiedUser,
+                            title = "Terms & resident code",
+                            subtitle = "Review app and hostel rules",
+                            showDivider = false,
+                            onClick = { showTermsDialog = true }
+                        )
+                    }
+                }
+
+                // Log out Danger Button
+                item {
+                    Button(
+                        onClick = { showLogoutDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                            contentColor = DangerRed
+                        ),
+                        border = BorderStroke(1.dp, DangerRed.copy(alpha = 0.35f))
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            tint = DangerRed,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Log out",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = DangerRed
+                        )
+                    }
+                }
+
+                // Version Footer
+                item {
+                    Text(
+                        "HostelCare • Version 1.0.0",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
@@ -389,30 +965,177 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
 }
 
 @Composable
+fun ProfileSectionCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                shape = RoundedCornerShape(16.dp)
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(Color(0xFFEFF6FF), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        title,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        subtitle,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                thickness = 1.dp
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+fun ProfileNavigationRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    showDivider: Boolean = true,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFEFF6FF), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    subtitle,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (trailingContent != null) {
+                trailingContent()
+            } else {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        if (showDivider) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                thickness = 0.8.dp,
+                modifier = Modifier.padding(start = 54.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun InfoItem(label: String, value: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+@Composable
+private fun PolicySection(title: String, body: String) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(body, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 16.sp)
+    }
+}
+
+@Composable
 fun ProfileDetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(16.dp))
-        Text(label, fontSize = 14.sp, color = TextMuted, modifier = Modifier.weight(1f))
-        Text(value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextDark, textAlign = TextAlign.End)
+        Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Text(value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.End)
     }
 }
 
 @Composable
 fun ActionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, iconBg: Color, onClick: () -> Unit) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(0.dp),
-        modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFFF3F4F6), RoundedCornerShape(16.dp)).clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(16.dp)).clickable(onClick = onClick)
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(40.dp).background(iconBg, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = PrimaryBlue, modifier = Modifier.size(22.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.weight(1f))
-            Icon(Icons.Default.ChevronRight, null, tint = TextMuted)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -421,7 +1144,7 @@ fun ActionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: Stri
 fun ProfileFormField(label: String, required: Boolean = false, content: @Composable () -> Unit) {
     Column {
         Row {
-            Text(label, fontSize = 13.sp, color = TextDark, fontWeight = FontWeight.Bold)
+            Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             if (required) {
                 Text(" *", fontSize = 13.sp, color = DangerRed)
             }
@@ -431,7 +1154,7 @@ fun ProfileFormField(label: String, required: Boolean = false, content: @Composa
     }
 }
 
-﻿@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
@@ -495,10 +1218,23 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
         }
     )
 
+    val inputColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+        unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
+        unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+    )
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { TopAppBar(title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = TextDark) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } }, actions = { IconButton(onClick = {}) { Icon(Icons.Default.Info, null, tint = TextMuted) } ; IconButton(onClick = {}) { Box(modifier = Modifier.size(32.dp).background(PrimaryBlue, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp)) } } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)) },
-        containerColor = Color.White,
+        topBar = { TopAppBar(title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, actions = { IconButton(onClick = {}) { Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) } ; IconButton(onClick = {}) { Box(modifier = Modifier.size(32.dp).background(PrimaryBlue, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp)) } } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
                 Button(
@@ -526,7 +1262,7 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
                 TextButton(
                     onClick = { navController.popBackStack() },
                     modifier = Modifier.fillMaxWidth().height(52.dp)
-                ) { Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextDark) }
+                ) { Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
     ) { padding ->
@@ -534,10 +1270,10 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(modifier = Modifier.size(100.dp).clickable { photoPickerLauncher.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, contentAlignment = Alignment.Center) {
-                    Box(modifier = Modifier.size(96.dp).background(Color(0xFFE5E7EB), CircleShape), contentAlignment = Alignment.Center) { 
+                    Box(modifier = Modifier.size(96.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape), contentAlignment = Alignment.Center) { 
                         UriImage(photoUri, modifier = Modifier.fillMaxSize())
                     }
-                    Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-4).dp, y = (-4).dp).size(32.dp).background(PrimaryBlue, CircleShape).border(2.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-4).dp, y = (-4).dp).size(32.dp).background(PrimaryBlue, CircleShape).border(2.dp, MaterialTheme.colorScheme.surface, CircleShape), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.CameraAlt, null, tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
@@ -558,14 +1294,14 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
             
             item {
                 ProfileFormField("Full Name", required = true) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, leadingIcon = { Icon(Icons.Default.Person, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
+                    OutlinedTextField(value = name, onValueChange = { name = it }, leadingIcon = { Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = inputColors)
                 }
             }
             item { Spacer(modifier = Modifier.height(20.dp)) }
             
             item {
                 ProfileFormField("College Email", required = true) {
-                    OutlinedTextField(value = email, onValueChange = { email = it }, leadingIcon = { Icon(Icons.Default.Email, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
+                    OutlinedTextField(value = email, onValueChange = { email = it }, leadingIcon = { Icon(Icons.Default.Email, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = inputColors)
                 }
             }
             item { Spacer(modifier = Modifier.height(20.dp)) }
@@ -573,11 +1309,11 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
             item {
                 ProfileFormField("Hostel / Block", required = true) {
                     Box {
-                        OutlinedTextField(value = hostel, onValueChange = { }, leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = TextMuted) }, trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), readOnly = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
+                        OutlinedTextField(value = hostel, onValueChange = { }, leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, modifier = Modifier.fillMaxWidth(), readOnly = true, shape = RoundedCornerShape(12.dp), colors = inputColors)
                         Box(modifier = Modifier.matchParentSize().clickable { hostelExpanded = true })
-                        DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(Color.White)) {
+                        DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                             listOf("Tagore Block A", "Tagore Block B", "Raman Block A", "Raman Block B", "Curie Block", "Newton Block").forEach { block ->
-                                DropdownMenuItem(text = { Text(block) }, onClick = { hostel = block; hostelExpanded = false })
+                                DropdownMenuItem(text = { Text(block, color = MaterialTheme.colorScheme.onSurface) }, onClick = { hostel = block; hostelExpanded = false })
                             }
                         }
                     }
@@ -587,14 +1323,14 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
             
             item {
                 ProfileFormField("Room Number", required = true) {
-                    OutlinedTextField(value = room, onValueChange = { room = it }, leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
+                    OutlinedTextField(value = room, onValueChange = { room = it }, leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = inputColors)
                 }
             }
             item { Spacer(modifier = Modifier.height(20.dp)) }
             
             item {
                 ProfileFormField("Phone Number") {
-                    OutlinedTextField(value = phone, onValueChange = { phone = it }, leadingIcon = { Icon(Icons.Default.Phone, null, tint = TextMuted) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE5E7EB), focusedBorderColor = PrimaryBlue))
+                    OutlinedTextField(value = phone, onValueChange = { phone = it }, leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), colors = inputColors)
                 }
             }
         }
@@ -609,8 +1345,8 @@ fun ChangePasswordScreen(navController: NavController) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Change Password", fontWeight = FontWeight.Bold, color = TextDark) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextDark) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)) },
-        containerColor = Color.White,
+        topBar = { TopAppBar(title = { Text("Change Password", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
                 Button(
@@ -666,16 +1402,16 @@ fun FeedbackScreen(navController: NavController, app: HostelCareApp, complaintId
     val complaint = complaints.find { it.id == complaintId }
     
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Resolution Feedback", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)) },
-        containerColor = BackgroundLight
+        topBar = { TopAppBar(title = { Text("Resolution Feedback", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(complaint?.title ?: "", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(complaint?.title ?: "", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(8.dp))
             Text("Resolved", color = SuccessGreen, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(32.dp))
             
-            Text("How was the resolution?", style = MaterialTheme.typography.titleMedium)
+            Text("How was the resolution?", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.Center) {
                 repeat(5) { Icon(Icons.Default.StarBorder, null, tint = WarningOrange, modifier = Modifier.size(48.dp)) }
@@ -692,7 +1428,8 @@ fun FeedbackScreen(navController: NavController, app: HostelCareApp, complaintId
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) { Text("Submit Feedback") }
             Spacer(modifier = Modifier.height(12.dp))
-            TextButton(onClick = { navController.popBackStack() }) { Text("Skip for now", color = TextMuted) }
+            TextButton(onClick = { navController.popBackStack() }) { Text("Skip for now", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }
 }
+
