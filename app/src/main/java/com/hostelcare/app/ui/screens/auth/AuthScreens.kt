@@ -117,7 +117,7 @@ fun SplashScreen(navController: NavController, app: HostelCareApp) {
                 if (currentUser!!.role == Role.ADMIN) navController.navigate(Routes.ADMIN_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
                 else navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
             } else {
-                navController.navigate(Routes.LOGIN) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                navController.navigate(Routes.PORTAL_SELECTION) { popUpTo(Routes.SPLASH) { inclusive = true } }
             }
         }
     }
@@ -148,90 +148,296 @@ fun LoginScreen(navController: NavController, app: HostelCareApp) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(true) }
+    var showForgotDialog by remember { mutableStateOf(false) }
+    var customErrorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(uiState) {
-        if (uiState is AuthState.Success) {
-            viewModel.resetState()
-            navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.LOGIN) { inclusive = true } }
+    // Intercept system back to return to Portal Selection
+    BackHandler {
+        viewModel.resetState()
+        navController.navigate(Routes.PORTAL_SELECTION) {
+            popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()).padding(24.dp), 
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        AppLogoAndTitle()
-        
-        Spacer(modifier = Modifier.height(40.dp))
-        
-        Text("Welcome back", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            "Sign in with your student credentials to manage room maintenance and campus requests.", 
-            style = MaterialTheme.typography.bodyMedium, 
-            color = MaterialTheme.colorScheme.onSurfaceVariant, 
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        CustomTextField(email, { email = it }, "Email or Student ID", leadingIcon = { Icon(Icons.Default.Person, null) })
-        Spacer(modifier = Modifier.height(16.dp))
-        CustomTextField(password, { password = it }, "Password", isPassword = true, leadingIcon = { Icon(Icons.Default.Lock, null) })
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Forgot password?", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.align(Alignment.End).clickable { })
-        
-        if (uiState is AuthState.Error) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text((uiState as AuthState.Error).message, color = DangerRed, style = MaterialTheme.typography.bodySmall)
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(
-            onClick = { viewModel.login(email, password) },
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            if (uiState is AuthState.Loading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+    if (showForgotDialog) {
+        ForgotPasswordDialog(portalTitle = "Student", onDismiss = { showForgotDialog = false })
+    }
+
+    // Role-aware security validation
+    LaunchedEffect(uiState) {
+        if (uiState is AuthState.Success) {
+            val user = app.repository.getCurrentUser()
+            if (user != null && user.role == Role.STUDENT) {
+                viewModel.resetState()
+                navController.navigate(Routes.STUDENT_HOME) {
+                    popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
+                }
             } else {
-                Text("Log in", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+                // Mismatched role: staff account entered on student portal
+                viewModel.resetState()
+                app.repository.logout()
+                customErrorMessage = "This account is not a student account. Please use the Staff or Warden Portal."
             }
         }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
-            Text("or", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))
-            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
-        }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+    ) {
+        val totalWidth = maxWidth
+        val totalHeight = maxHeight
+        val isNarrow = totalWidth < 360.dp
+        val isShort = totalHeight < 680.dp
+        val badgeSize = if (isShort) 88.dp else 104.dp
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = if (isNarrow) 16.dp else 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 460.dp)
+                    .padding(vertical = if (isShort) 8.dp else 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Don't have an account?", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("Create account", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { navController.navigate(Routes.SIGN_UP) })
+                // Top navigation bar with Back and Switch Portal
+                AuthTopBar(
+                    onBack = {
+                        viewModel.resetState()
+                        navController.navigate(Routes.PORTAL_SELECTION) {
+                            popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
+                        }
+                    },
+                    onSwitchPortal = {
+                        viewModel.resetState()
+                        navController.navigate(Routes.PORTAL_SELECTION) {
+                            popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(if (isShort) 10.dp else 16.dp))
+
+                // Student Hero Avatar
+                RoleHeroBadge(
+                    icon = Icons.Default.School,
+                    iconTint = Color(0xFF2563EB),
+                    containerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFEBF2FE) else Color(0xFF1E3A8A).copy(alpha = 0.35f),
+                    badgeIcon = Icons.Default.Person,
+                    badgeTint = Color(0xFF2563EB),
+                    badgeSize = badgeSize
+                )
+
+                Spacer(modifier = Modifier.height(if (isShort) 12.dp else 20.dp))
+
+                Text(
+                    text = "Student Login",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Access your account to manage complaints and track progress",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = if (isNarrow) 8.dp else 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(if (isShort) 18.dp else 28.dp))
+
+                // Email / Student ID field
+                CustomTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        customErrorMessage = null
+                    },
+                    placeholder = "Email / Student ID",
+                    leadingIcon = { Icon(Icons.Default.MailOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Password field
+                CustomTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        customErrorMessage = null
+                    },
+                    placeholder = "Password",
+                    isPassword = true,
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Remember me & Forgot Password row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { rememberMe = !rememberMe }
+                    ) {
+                        Checkbox(
+                            checked = rememberMe,
+                            onCheckedChange = { rememberMe = it },
+                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+                        )
+                        Text(
+                            text = "Remember me",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Text(
+                        text = "Forgot Password?",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { showForgotDialog = true }
+                    )
+                }
+
+                if (customErrorMessage != null) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = DangerRed.copy(alpha = 0.1f),
+                        border = BorderStroke(1.dp, DangerRed.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = customErrorMessage!!,
+                            color = DangerRed,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(12.dp),
+                            lineHeight = 18.sp
+                        )
+                    }
+                } else if (uiState is AuthState.Error) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = (uiState as AuthState.Error).message,
+                        color = DangerRed,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Login Button
+                Button(
+                    onClick = {
+                        if (email.isBlank() || password.isBlank()) {
+                            customErrorMessage = "Please enter your email/student ID and password"
+                            return@Button
+                        }
+                        customErrorMessage = null
+                        viewModel.login(email.trim(), password)
+                    },
+                    enabled = uiState !is AuthState.Loading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (uiState is AuthState.Loading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Log In", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // OR Divider
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                    Text(
+                        text = "OR",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Create Account Action Card
+                Surface(
+                    onClick = { navController.navigate(Routes.SIGN_UP) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    shadowElevation = 1.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFEBF2FE) else Color(0xFF1E3A8A).copy(alpha = 0.35f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Security,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "New to HostelCare?",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Create your student account",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("Admin Login", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, modifier = Modifier.clickable { navController.navigate(Routes.ADMIN_LOGIN) })
     }
 }
 

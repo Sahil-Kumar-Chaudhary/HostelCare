@@ -290,7 +290,7 @@ fun AdminProfileScreen(navController: NavController, app: HostelCareApp) {
             Button(
                 onClick = {
                     viewModel.logout()
-                    navController.navigate(Routes.SPLASH) { popUpTo(0) }
+                    navController.navigate(Routes.PORTAL_SELECTION) { popUpTo(0) { inclusive = true } }
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(12.dp),

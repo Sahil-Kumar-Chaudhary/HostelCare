@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.ui.navigation
+package com.hostelcare.app.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -8,7 +8,10 @@ import androidx.navigation.compose.rememberNavController
 
 object Routes {
     const val SPLASH = "splash"
+    const val PORTAL_SELECTION = "portal_selection"
     const val LOGIN = "login"
+    const val WARDEN_LOGIN = "warden_login"
+    const val STAFF_LOGIN = "staff_login"
     const val SIGN_UP = "signup"
     const val STUDENT_HOME = "student_home"
     const val NEW_COMPLAINT = "new_complaint"
@@ -45,8 +48,17 @@ fun HostelCareAppNavHost(
         composable(Routes.SPLASH) {
             com.hostelcare.app.ui.screens.auth.SplashScreen(navController, appContainer)
         }
+        composable(Routes.PORTAL_SELECTION) {
+            com.hostelcare.app.ui.screens.auth.PortalSelectionScreen(navController, appContainer)
+        }
         composable(Routes.LOGIN) {
             com.hostelcare.app.ui.screens.auth.LoginScreen(navController, appContainer)
+        }
+        composable(Routes.WARDEN_LOGIN) {
+            com.hostelcare.app.ui.screens.auth.WardenLoginScreen(navController, appContainer)
+        }
+        composable(Routes.STAFF_LOGIN) {
+            com.hostelcare.app.ui.screens.auth.StaffLoginScreen(navController, appContainer)
         }
         composable(Routes.SIGN_UP) {
             com.hostelcare.app.ui.screens.auth.SignUpScreen(navController, appContainer)

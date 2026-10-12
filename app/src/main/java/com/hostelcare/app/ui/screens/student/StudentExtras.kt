@@ -343,7 +343,7 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
                 TextButton(onClick = {
                     showLogoutDialog = false
                     viewModel.logout()
-                    navController.navigate(Routes.LOGIN) {
+                    navController.navigate(Routes.PORTAL_SELECTION) {
                         popUpTo(0) { inclusive = true }
                     }
                 }) {
