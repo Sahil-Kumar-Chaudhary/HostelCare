@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.data.remote
+package com.hostelcare.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import com.hostelcare.app.data.model.Role
@@ -51,7 +51,7 @@ data class UpdateProfileRequest(
 data class NetworkUser(
     val id: String,
     val name: String,
-    val studentId: String,
+    val studentId: String? = null,
     val email: String,
     val phone: String = "",
     val collegeName: String? = null,
@@ -59,27 +59,32 @@ data class NetworkUser(
     val currentYear: String? = null,
     val semester: String? = null,
     val hostelName: String? = null,
-    val hostelBlock: String,
-    val roomNumber: String,
+    val hostelBlock: String? = null,
+    val roomNumber: String? = null,
     @SerializedName("profilePhoto")
-    val profilePhotoUri: String?,
+    val profilePhotoUri: String? = null,
     val role: String
 ) {
     fun toLocalUser() = com.hostelcare.app.data.model.User(
         id = id,
         name = name,
         email = email,
-        studentId = studentId,
+        studentId = studentId ?: "",
         phone = phone,
         collegeName = collegeName ?: "",
         course = course ?: "",
         currentYear = currentYear ?: "",
         semester = semester ?: "",
         hostelName = hostelName ?: "",
-        hostelBlock = hostelBlock,
-        roomNumber = roomNumber,
+        hostelBlock = hostelBlock ?: "",
+        roomNumber = roomNumber ?: "",
         profilePhotoUri = profilePhotoUri,
-        role = if (role.equals("admin", ignoreCase = true) || role.equals("staff", ignoreCase = true)) Role.ADMIN else Role.STUDENT
+        role = when (role.trim().lowercase()) {
+            "warden" -> Role.WARDEN
+            "staff" -> Role.STAFF
+            "admin" -> Role.STAFF
+            else -> Role.STUDENT
+        }
     )
 }
 
@@ -163,3 +168,343 @@ data class AiAnalyzeResponse(
 
 
 data class ProfilePhotoResponse(val message: String, val photoUrl: String? = null)
+
+data class WardenDashboardResponse(
+    val success: Boolean,
+    val warden: NetworkWardenScope?,
+    val stats: WardenStatsData,
+    val recentComplaints: List<WardenRecentComplaint>
+)
+
+data class NetworkWardenScope(
+    val name: String,
+    val email: String,
+    val hostelName: String,
+    val hostelBlock: String? = null
+)
+
+data class WardenStatsData(
+    val total: Int = 0,
+    val pending: Int = 0,
+    val inProgress: Int = 0,
+    val resolved: Int = 0,
+    val priorityIssues: Int = 0
+)
+
+data class WardenRecentComplaint(
+    val id: String,
+    val ticketId: String?,
+    val title: String,
+    val description: String?,
+    val category: String,
+    val priority: String,
+    val status: String,
+    val hostelBlock: String?,
+    val roomNumber: String?,
+    val photoUrl: String?,
+    val aiSummary: String?,
+    val createdAt: String?,
+    val student: WardenComplaintStudent?,
+    val assignedStaff: WardenComplaintStaff?
+)
+
+data class WardenComplaintStudent(
+    val id: String?,
+    val name: String?,
+    val studentId: String?,
+    val roomNumber: String?,
+    val hostelBlock: String?
+)
+
+data class WardenComplaintStaff(
+    val id: String?,
+    val name: String?,
+    val department: String? = null,
+    val phone: String? = null
+)
+
+data class WardenComplaintsResponse(
+    val success: Boolean,
+    val count: Int,
+    val complaints: List<WardenRecentComplaint>
+)
+
+data class WardenComplaintDetailResponse(
+    val success: Boolean,
+    val complaint: WardenComplaintDetail
+)
+
+data class WardenComplaintDetail(
+    val id: String,
+    val ticketId: String?,
+    val title: String,
+    val description: String?,
+    val category: String,
+    val priority: String,
+    val status: String,
+    val hostelBlock: String?,
+    val roomNumber: String?,
+    val photoUrl: String?,
+    val completionPhotoUrl: String?,
+    val aiSummary: String?,
+    val assignmentInstructions: String?,
+    val workNotes: String?,
+    val resolutionNote: String?,
+    val createdAt: String?,
+    val student: WardenComplaintStudentDetail?,
+    val assignedStaff: WardenComplaintStaff?,
+    val timeline: List<WardenTimelineItem> = emptyList()
+)
+
+data class WardenComplaintStudentDetail(
+    val id: String?,
+    val name: String?,
+    val studentId: String?,
+    val email: String?,
+    val phone: String?,
+    val roomNumber: String?,
+    val hostelBlock: String?
+)
+
+data class WardenTimelineItem(
+    val status: String,
+    val note: String?,
+    val createdAt: String?,
+    val updatedBy: WardenTimelineUser? = null
+)
+
+data class WardenTimelineUser(
+    val name: String?,
+    val role: String?
+)
+
+data class UpdateComplaintStatusRequest(
+    val status: String,
+    val note: String? = null,
+    val resolutionNote: String? = null
+)
+
+data class AssignStaffRequest(
+    val staffId: String,
+    val instructions: String? = null
+)
+
+data class WardenStaffListResponse(
+    val success: Boolean,
+    val count: Int,
+    val staff: List<WardenStaffItem>
+)
+
+data class WardenStaffItem(
+    val id: String,
+    val staffId: String,
+    val name: String,
+    val email: String,
+    val phone: String?,
+    val department: String,
+    val hostelName: String?,
+    val hostelBlock: String?,
+    val isActive: Boolean = true,
+    val totalAssigned: Int = 0,
+    val completedCount: Int = 0,
+    val inProgressCount: Int = 0,
+    val pendingCount: Int = 0
+)
+
+data class CreateStaffRequest(
+    val name: String,
+    val email: String,
+    val phone: String,
+    val department: String,
+    val hostelBlock: String? = null,
+    val password: String
+)
+
+data class WardenStaffDetailResponse(
+    val success: Boolean,
+    val staff: WardenStaffDetail
+)
+
+data class WardenStaffDetail(
+    val id: String,
+    val staffId: String,
+    val name: String,
+    val email: String,
+    val phone: String?,
+    val department: String,
+    val hostelName: String?,
+    val hostelBlock: String?,
+    val isActive: Boolean = true,
+    val stats: StaffStatsData = StaffStatsData(),
+    val recentTasks: List<StaffRecentTask> = emptyList()
+)
+
+data class StaffStatsData(
+    val totalAssigned: Int = 0,
+    val completedCount: Int = 0,
+    val inProgressCount: Int = 0,
+    val pendingCount: Int = 0
+)
+
+data class StaffRecentTask(
+    val id: String,
+    val ticketId: String?,
+    val title: String,
+    val category: String,
+    val status: String,
+    val priority: String,
+    val roomNumber: String?,
+    val hostelBlock: String?,
+    val createdAt: String?
+)
+
+data class UpdateStaffRequest(
+    val name: String? = null,
+    val phone: String? = null,
+    val department: String? = null,
+    val hostelBlock: String? = null
+)
+
+data class ToggleStaffStatusRequest(
+    val isActive: Boolean
+)
+
+data class WardenReportsResponse(
+    val success: Boolean,
+    val timeRange: String,
+    val stats: WardenReportStats,
+    val categoryBreakdown: List<CategoryBreakdownItem> = emptyList(),
+    val trends: List<ReportTrendItem> = emptyList()
+)
+
+data class WardenReportStats(
+    val total: Int = 0,
+    val pending: Int = 0,
+    val inProgress: Int = 0,
+    val resolved: Int = 0,
+    val avgResolutionHours: Int = 0
+)
+
+data class CategoryBreakdownItem(
+    val category: String,
+    val count: Int
+)
+
+data class ReportTrendItem(
+    val date: String,
+    val count: Int
+)
+
+data class WardenProfileResponse(
+    val success: Boolean,
+    val warden: WardenProfileData
+)
+
+data class WardenProfileData(
+    val id: String,
+    val name: String,
+    val email: String,
+    val phone: String?,
+    val hostelName: String,
+    val hostelBlock: String?,
+    val profilePhoto: String?,
+    val role: String
+)
+
+data class UpdateWardenProfileRequest(
+    val name: String? = null,
+    val phone: String? = null
+)
+
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
+data class StaffTasksResponse(
+    val success: Boolean,
+    val stats: StaffStatsData = StaffStatsData(),
+    val tasks: List<StaffTaskItem> = emptyList()
+)
+
+data class StaffTaskItem(
+    val id: String,
+    val ticketId: String?,
+    val title: String,
+    val description: String?,
+    val category: String,
+    val priority: String,
+    val status: String,
+    val hostelBlock: String?,
+    val roomNumber: String?,
+    val photoUrl: String?,
+    val aiSummary: String?,
+    val assignmentInstructions: String?,
+    val workNotes: String?,
+    val createdAt: String?,
+    val student: StaffTaskStudent?
+)
+
+data class StaffTaskStudent(
+    val id: String?,
+    val name: String?,
+    val phone: String?,
+    val roomNumber: String?,
+    val hostelBlock: String?
+)
+
+data class StaffTaskDetailResponse(
+    val success: Boolean,
+    val task: StaffTaskDetail
+)
+
+data class StaffTaskDetail(
+    val id: String,
+    val ticketId: String?,
+    val title: String,
+    val description: String?,
+    val category: String,
+    val priority: String,
+    val status: String,
+    val hostelBlock: String?,
+    val roomNumber: String?,
+    val photoUrl: String?,
+    val completionPhotoUrl: String?,
+    val assignmentInstructions: String?,
+    val workNotes: String?,
+    val aiSummary: String?,
+    val createdAt: String?,
+    val student: StaffTaskStudent?,
+    val timeline: List<WardenTimelineItem> = emptyList()
+)
+
+data class UpdateStaffTaskStatusRequest(
+    val status: String? = null,
+    val workNotes: String? = null
+)
+
+data class CompleteStaffTaskRequest(
+    val completionNotes: String? = null,
+    val completionPhotoUrl: String? = null
+)
+
+data class InAppNotificationsResponse(
+    val success: Boolean,
+    val unreadCount: Int = 0,
+    val notifications: List<InAppNotificationItem> = emptyList()
+)
+
+data class InAppNotificationItem(
+    val id: String,
+    val title: String,
+    val message: String,
+    val type: String,
+    val complaintId: String?,
+    val isRead: Boolean,
+    val createdAt: String?
+)
+
+data class SimpleSuccessResponse(
+    val success: Boolean,
+    val message: String?
+)

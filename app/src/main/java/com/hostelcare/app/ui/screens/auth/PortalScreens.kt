@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import com.hostelcare.app.AppViewModelFactory
 import com.hostelcare.app.HostelCareApp
 import com.hostelcare.app.data.model.Role
@@ -671,11 +672,16 @@ fun WardenLoginScreen(navController: NavController, app: HostelCareApp) {
     LaunchedEffect(uiState) {
         if (uiState is AuthState.Success) {
             val user = app.repository.getCurrentUser()
-            // Backend role inspection: User model in backend only defines enum ["student", "staff"].
-            // There is no warden role yet in the backend.
-            viewModel.resetState()
-            app.repository.logout()
-            customErrorMessage = "Warden authentication is currently being provisioned. Warden access will become available once authorized Warden accounts are configured in the campus backend."
+            if (user != null && user.role == Role.WARDEN) {
+                viewModel.resetState()
+                navController.navigate(Routes.WARDEN_HOME) {
+                    popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
+                }
+            } else {
+                viewModel.resetState()
+                app.repository.logout()
+                customErrorMessage = "This account is not a warden account. Please use the appropriate portal."
+            }
         }
     }
 
@@ -907,16 +913,16 @@ fun StaffLoginScreen(navController: NavController, app: HostelCareApp) {
     LaunchedEffect(uiState) {
         if (uiState is AuthState.Success) {
             val user = app.repository.getCurrentUser()
-            if (user != null && user.role == Role.ADMIN) {
+            if (user != null && user.role == Role.STAFF) {
                 viewModel.resetState()
-                navController.navigate(Routes.ADMIN_HOME) {
+                navController.navigate(Routes.STAFF_HOME) {
                     popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
                 }
             } else {
-                // Mismatched role: a student account was entered
+                // Mismatched role: a student or warden account was entered
                 viewModel.resetState()
                 app.repository.logout()
-                customErrorMessage = "This account is a student account. Please use the Student Portal."
+                customErrorMessage = "This account is not a maintenance staff account. Please use the appropriate portal."
             }
         }
     }
@@ -1117,3 +1123,182 @@ fun StaffLoginScreen(navController: NavController, app: HostelCareApp) {
         }
     }
 }
+
+/**
+ * Warden Placeholder Screen
+ * Safe destination for authenticated Warden sessions prior to full Warden Dashboard rollout in Step 3.
+ * Preserves authorization, prevents incorrect dashboard routing, and supports verified logout.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WardenPlaceholderScreen(navController: NavController, app: HostelCareApp) {
+    val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
+    val authViewModel: AuthViewModel = viewModel(factory = factory)
+    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle(null)
+    val coroutineScope = rememberCoroutineScope()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Warden Portal",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                app.repository.logout()
+                                navController.navigate(Routes.PORTAL_SELECTION) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Log Out",
+                            tint = DangerRed
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            RoleHeroBadge(
+                icon = Icons.Default.Group,
+                iconTint = Color(0xFFD97706),
+                containerColor = Color(0xFFFEF3C7),
+                badgeIcon = Icons.Default.Security,
+                badgeTint = Color(0xFFD97706),
+                badgeSize = 100.dp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = currentUser?.name ?: "Campus Warden",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = currentUser?.email ?: "",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (!currentUser?.hostelName.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                ) {
+                    Text(
+                        text = "Assigned Hostel: ${currentUser?.hostelName}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Informational status card
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                shadowElevation = 1.dp,
+                modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = SuccessGreen.copy(alpha = 0.15f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = SuccessGreen,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Warden Session Active",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Role: WARDEN (Verified)",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Welcome to HostelCare Warden Portal. Your account provisioning and Warden credentials have been securely verified. The full Warden management dashboard (complaint triage, staff assignment, and escalation oversight) will be activated in Step 3.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 19.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedButton(
+                onClick = {
+                    coroutineScope.launch {
+                        app.repository.logout()
+                        navController.navigate(Routes.PORTAL_SELECTION) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp).height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, DangerRed.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed)
+            ) {
+                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Log Out", fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
+

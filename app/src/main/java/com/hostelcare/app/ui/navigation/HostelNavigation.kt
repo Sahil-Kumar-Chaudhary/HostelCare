@@ -11,6 +11,8 @@ object Routes {
     const val PORTAL_SELECTION = "portal_selection"
     const val LOGIN = "login"
     const val WARDEN_LOGIN = "warden_login"
+    const val WARDEN_HOME = "warden_home"
+    const val WARDEN_DASHBOARD = "warden_home"
     const val STAFF_LOGIN = "staff_login"
     const val SIGN_UP = "signup"
     const val STUDENT_HOME = "student_home"
@@ -31,11 +33,30 @@ object Routes {
     const val ASSIGN_STAFF = "assign_staff/{complaintId}"
     const val RESOLVE_COMPLAINT = "resolve_complaint/{complaintId}"
 
+    // Warden Routes (Steps 1 - 10)
+    const val WARDEN_COMPLAINTS = "warden_complaints"
+    const val WARDEN_COMPLAINT_DETAILS = "warden_complaint_details/{complaintId}"
+    const val WARDEN_ASSIGN_STAFF = "warden_assign_staff/{complaintId}"
+    const val WARDEN_STAFF = "warden_staff"
+    const val WARDEN_ADD_STAFF = "warden_add_staff"
+    const val WARDEN_STAFF_PROFILE = "warden_staff_profile/{staffId}"
+    const val WARDEN_REPORTS = "warden_reports"
+    const val WARDEN_PROFILE = "warden_profile"
+
+    // Staff Portal Routes
+    const val STAFF_HOME = "staff_home"
+    const val STAFF_TASK_DETAILS = "staff_task_details/{taskId}"
+
     fun complaintDetails(id: String) = "complaint_details/$id"
     fun feedback(id: String) = "feedback/$id"
     fun adminComplaintDetails(id: String) = "admin_complaint_details/$id"
     fun assignStaff(id: String) = "assign_staff/$id"
     fun resolveComplaint(id: String) = "resolve_complaint/$id"
+
+    fun wardenComplaintDetails(id: String) = "warden_complaint_details/$id"
+    fun wardenAssignStaff(id: String) = "warden_assign_staff/$id"
+    fun wardenStaffProfile(id: String) = "warden_staff_profile/$id"
+    fun staffTaskDetails(id: String) = "staff_task_details/$id"
 }
 
 @Composable
@@ -56,6 +77,9 @@ fun HostelCareAppNavHost(
         }
         composable(Routes.WARDEN_LOGIN) {
             com.hostelcare.app.ui.screens.auth.WardenLoginScreen(navController, appContainer)
+        }
+        composable(Routes.WARDEN_HOME) {
+            com.hostelcare.app.ui.screens.warden.WardenDashboardScreen(navController, appContainer)
         }
         composable(Routes.STAFF_LOGIN) {
             com.hostelcare.app.ui.screens.auth.StaffLoginScreen(navController, appContainer)
@@ -116,6 +140,44 @@ fun HostelCareAppNavHost(
         composable(Routes.RESOLVE_COMPLAINT) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("complaintId") ?: ""
             com.hostelcare.app.ui.screens.admin.ResolveComplaintScreen(navController, appContainer, id)
+        }
+
+        // Warden Full Flow Screens (Screens 2 - 10)
+        composable(Routes.WARDEN_COMPLAINTS) {
+            com.hostelcare.app.ui.screens.warden.WardenComplaintsListScreen(navController, appContainer)
+        }
+        composable(Routes.WARDEN_COMPLAINT_DETAILS) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("complaintId") ?: ""
+            com.hostelcare.app.ui.screens.warden.WardenComplaintDetailsScreen(navController, appContainer, id)
+        }
+        composable(Routes.WARDEN_ASSIGN_STAFF) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("complaintId") ?: ""
+            com.hostelcare.app.ui.screens.warden.WardenAssignStaffScreen(navController, appContainer, id)
+        }
+        composable(Routes.WARDEN_STAFF) {
+            com.hostelcare.app.ui.screens.warden.WardenStaffListScreen(navController, appContainer)
+        }
+        composable(Routes.WARDEN_ADD_STAFF) {
+            com.hostelcare.app.ui.screens.warden.WardenAddStaffScreen(navController, appContainer)
+        }
+        composable(Routes.WARDEN_STAFF_PROFILE) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("staffId") ?: ""
+            com.hostelcare.app.ui.screens.warden.WardenStaffProfileScreen(navController, appContainer, id)
+        }
+        composable(Routes.WARDEN_REPORTS) {
+            com.hostelcare.app.ui.screens.warden.WardenReportsScreen(navController, appContainer)
+        }
+        composable(Routes.WARDEN_PROFILE) {
+            com.hostelcare.app.ui.screens.warden.WardenProfileScreen(navController, appContainer)
+        }
+
+        // Staff Flow Screens
+        composable(Routes.STAFF_HOME) {
+            com.hostelcare.app.ui.screens.staff.StaffHomeScreen(navController, appContainer)
+        }
+        composable(Routes.STAFF_TASK_DETAILS) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("taskId") ?: ""
+            com.hostelcare.app.ui.screens.staff.StaffTaskDetailsScreen(navController, appContainer, id)
         }
     }
 }

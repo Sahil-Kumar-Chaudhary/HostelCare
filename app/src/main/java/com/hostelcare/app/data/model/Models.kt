@@ -2,7 +2,16 @@ package com.hostelcare.app.data.model
 
 import java.util.UUID
 
-enum class Role { STUDENT, ADMIN }
+enum class Role {
+    STUDENT,
+    WARDEN,
+    STAFF;
+
+    companion object {
+        @Deprecated("Use STAFF instead", ReplaceWith("Role.STAFF"))
+        val ADMIN = STAFF
+    }
+}
 
 data class User(
     val id: String = UUID.randomUUID().toString(),

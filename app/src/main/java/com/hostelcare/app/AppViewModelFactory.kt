@@ -25,6 +25,14 @@ class AppViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return AdminViewModel(repository) as T
         }
+        if (modelClass.isAssignableFrom(com.hostelcare.app.ui.screens.warden.WardenViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return com.hostelcare.app.ui.screens.warden.WardenViewModel(repository) as T
+        }
+        if (modelClass.isAssignableFrom(com.hostelcare.app.ui.screens.staff.StaffViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return com.hostelcare.app.ui.screens.staff.StaffViewModel(repository) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

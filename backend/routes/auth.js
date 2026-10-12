@@ -35,8 +35,15 @@ router.post("/register", async (req, res) => {
       roomNumber,
       password,
       confirmPassword,
-      acceptedTerms
+      acceptedTerms,
+      role
     } = req.body;
+
+    if (role && role.toString().trim().toLowerCase() !== "student") {
+      return res.status(400).json({
+        message: "Public registration is only permitted for student accounts"
+      });
+    }
 
     const yearValue = admissionYear || currentYear;
 
@@ -193,7 +200,7 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, studentId, password } = req.body;
+    const { email, studentId, password, portal, expectedRole } = req.body;
 
     if ((!email && !studentId) || !password) {
       return res.status(400).json({
@@ -224,6 +231,24 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // Role-portal validation: if a portal or expectedRole was provided, verify it matches
+    const requestedPortal = (portal || expectedRole || "").toString().trim().toLowerCase();
+    if (requestedPortal) {
+      const normalizedPortal = requestedPortal === "admin" ? "staff" : requestedPortal;
+      if (user.role !== normalizedPortal) {
+        return res.status(403).json({
+          message: `Access denied. Role mismatch for the selected portal.`
+        });
+      }
+    }
+
+    // Deactivated staff check
+    if (user.role === "staff" && user.isActive === false) {
+      return res.status(403).json({
+        message: "This staff account has been deactivated. Please contact your hostel warden."
+      });
+    }
+
     if (!process.env.JWT_SECRET) {
       console.error("JWT_SECRET is missing");
 
@@ -249,7 +274,9 @@ router.post("/login", async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        studentId: user.studentId,
+        studentId: user.studentId || "",
+        staffId: user.staffId || "",
+        department: user.department || "",
         email: user.email,
         phone: user.phone || "",
         collegeName: user.collegeName || "",
@@ -257,10 +284,12 @@ router.post("/login", async (req, res) => {
         currentYear: user.currentYear || "",
         semester: user.semester || "",
         hostelName: user.hostelName || "",
-        hostelBlock: user.hostelBlock,
-        roomNumber: user.roomNumber,
+        hostelBlock: user.hostelBlock || "",
+        roomNumber: user.roomNumber || "",
         profilePhoto: user.profilePhoto || "",
-        role: user.role
+        role: user.role,
+        isActive: user.isActive !== false,
+        mustChangePassword: !!user.mustChangePassword
       }
     });
   } catch (error) {
@@ -269,6 +298,42 @@ router.post("/login", async (req, res) => {
     res.status(500).json({
       message: "Server error"
     });
+  }
+});
+
+const auth = require("../middleware/auth");
+
+router.post("/change-password", auth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password are required" });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      return res.status(400).json({ message: "Incorrect current password" });
+    }
+
+    if (!validatePassword(newPassword)) {
+      return res.status(400).json({
+        message: "New password must be at least 8 characters, and include uppercase, lowercase, number, and special character"
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.mustChangePassword = false;
+    await user.save();
+
+    res.json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Change password error:", error.message);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

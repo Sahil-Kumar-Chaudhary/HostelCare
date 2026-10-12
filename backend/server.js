@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
@@ -8,6 +8,9 @@ const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const complaintRoutes = require('./routes/complaints');
 const aiRoutes = require('./routes/ai');
+const wardenRoutes = require('./routes/warden');
+const staffRoutes = require('./routes/staff');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +22,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/warden', wardenRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get("/", (req, res) => {
   res.json({
@@ -34,7 +40,7 @@ app.get("/api/protected", auth, (req, res) => {
 });
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, { dbName: process.env.DB_NAME || "HostelCareLocalTest" })
   .then(() => {
     console.log("MongoDB connected successfully");
 

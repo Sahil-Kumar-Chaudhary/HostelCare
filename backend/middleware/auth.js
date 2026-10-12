@@ -24,4 +24,39 @@ const auth = (req, res, next) => {
   }
 };
 
+/**
+ * Reusable role authorization middleware generator
+ * @param  {...string} allowedRoles Roles permitted to access the route
+ */
+const requireRole = (...allowedRoles) => {
+  const normalized = allowedRoles.map((r) => r.toLowerCase());
+  return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({
+        message: "Authentication required"
+      });
+    }
+
+    const userRole = req.user.role.toLowerCase();
+    if (!normalized.includes(userRole)) {
+      return res.status(403).json({
+        message: `Forbidden: requires one of [${allowedRoles.join(", ")}] role`
+      });
+    }
+
+    next();
+  };
+};
+
+// Reusable helpers attached directly to auth function
+auth.requireRole = requireRole;
+auth.requireWarden = requireRole("warden");
+auth.requireStaff = requireRole("staff", "warden");
+auth.requireStudent = requireRole("student");
+
 module.exports = auth;
+module.exports.auth = auth;
+module.exports.requireRole = requireRole;
+module.exports.requireWarden = auth.requireWarden;
+module.exports.requireStaff = auth.requireStaff;
+module.exports.requireStudent = auth.requireStudent;

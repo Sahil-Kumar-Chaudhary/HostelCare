@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.data.repository
+package com.hostelcare.app.data.repository
 
 import com.hostelcare.app.data.model.*
 import com.hostelcare.app.data.remote.ApiService
@@ -367,6 +367,387 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardenDashboard(): Result<com.hostelcare.app.data.remote.WardenDashboardResponse> {
+        return try {
+            val response = apiService.getWardenDashboard()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load dashboard: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardenComplaints(
+        search: String?,
+        status: String?,
+        category: String?,
+        priority: String?
+    ): Result<List<com.hostelcare.app.data.remote.WardenRecentComplaint>> {
+        return try {
+            val response = apiService.getWardenComplaints(search, status, category, priority)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.complaints)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load complaints: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardenComplaintDetail(id: String): Result<com.hostelcare.app.data.remote.WardenComplaintDetail> {
+        return try {
+            val response = apiService.getWardenComplaintDetail(id)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.complaint)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load complaint details: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateWardenComplaintStatus(
+        id: String,
+        status: String,
+        note: String?,
+        resolutionNote: String?
+    ): Result<Unit> {
+        return try {
+            val req = com.hostelcare.app.data.remote.UpdateComplaintStatusRequest(
+                status = status,
+                note = note,
+                resolutionNote = resolutionNote
+            )
+            val response = apiService.updateWardenComplaintStatus(id, req)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to update complaint status: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun assignWardenStaff(
+        id: String,
+        staffId: String,
+        instructions: String?
+    ): Result<Unit> {
+        return try {
+            val req = com.hostelcare.app.data.remote.AssignStaffRequest(
+                staffId = staffId,
+                instructions = instructions
+            )
+            val response = apiService.assignWardenStaff(id, req)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to assign staff: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardenStaff(
+        filter: String?,
+        search: String?
+    ): Result<List<com.hostelcare.app.data.remote.WardenStaffItem>> {
+        return try {
+            val response = apiService.getWardenStaff(filter, search)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.staff)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load staff list: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createWardenStaff(
+        request: com.hostelcare.app.data.remote.CreateStaffRequest
+    ): Result<Unit> {
+        return try {
+            val response = apiService.createWardenStaff(request)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to create staff: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardenStaffDetail(id: String): Result<com.hostelcare.app.data.remote.WardenStaffDetail> {
+        return try {
+            val response = apiService.getWardenStaffDetail(id)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.staff)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load staff details: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateWardenStaff(
+        id: String,
+        request: com.hostelcare.app.data.remote.UpdateStaffRequest
+    ): Result<Unit> {
+        return try {
+            val response = apiService.updateWardenStaff(id, request)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to update staff: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun toggleWardenStaffStatus(id: String, isActive: Boolean): Result<Unit> {
+        return try {
+            val response = apiService.toggleWardenStaffStatus(id, com.hostelcare.app.data.remote.ToggleStaffStatusRequest(isActive))
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to update staff status: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardenReports(timeRange: String?): Result<com.hostelcare.app.data.remote.WardenReportsResponse> {
+        return try {
+            val response = apiService.getWardenReports(timeRange)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load reports: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardenProfile(): Result<com.hostelcare.app.data.remote.WardenProfileData> {
+        return try {
+            val response = apiService.getWardenProfile()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.warden)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load warden profile: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateWardenProfile(name: String?, phone: String?): Result<Unit> {
+        return try {
+            val req = com.hostelcare.app.data.remote.UpdateWardenProfileRequest(name = name, phone = phone)
+            val response = apiService.updateWardenProfile(req)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to update profile: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return try {
+            val req = com.hostelcare.app.data.remote.ChangePasswordRequest(
+                currentPassword = currentPassword,
+                newPassword = newPassword
+            )
+            val response = apiService.changePassword(req)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to update password: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getStaffTasks(status: String?): Result<com.hostelcare.app.data.remote.StaffTasksResponse> {
+        return try {
+            val response = apiService.getStaffTasks(status)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load tasks: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getStaffTaskDetail(id: String): Result<com.hostelcare.app.data.remote.StaffTaskDetail> {
+        return try {
+            val response = apiService.getStaffTaskDetail(id)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.task)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load task details: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateStaffTaskStatus(id: String, status: String?, workNotes: String?): Result<Unit> {
+        return try {
+            val req = com.hostelcare.app.data.remote.UpdateStaffTaskStatusRequest(status = status, workNotes = workNotes)
+            val response = apiService.updateStaffTaskStatus(id, req)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to update task: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun completeStaffTask(id: String, completionNotes: String?, completionPhotoUrl: String?): Result<Unit> {
+        return try {
+            val req = com.hostelcare.app.data.remote.CompleteStaffTaskRequest(
+                completionNotes = completionNotes,
+                completionPhotoUrl = completionPhotoUrl
+            )
+            val response = apiService.completeStaffTask(id, req)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to submit completion: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getInAppNotifications(): Result<com.hostelcare.app.data.remote.InAppNotificationsResponse> {
+        return try {
+            val response = apiService.getInAppNotifications()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load notifications: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun markInAppNotificationRead(id: String): Result<Unit> {
+        return try {
+            val response = apiService.markInAppNotificationRead(id)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to mark notification as read"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun markAllInAppNotificationsRead(): Result<Unit> {
+        return try {
+            val response = apiService.markAllInAppNotificationsRead()
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to mark all notifications as read"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun extractErrorMessage(errorBody: String?, fallback: String): String {
+        if (errorBody.isNullOrBlank()) return fallback
+        return try {
+            val json = org.json.JSONObject(errorBody)
+            json.optString("message", fallback)
+        } catch (e: Exception) {
+            fallback
         }
     }
 }

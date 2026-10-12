@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
 
@@ -32,7 +32,7 @@ router.get("/", auth, async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        studentId: user.studentId,
+        studentId: user.studentId || "",
         email: user.email,
         phone: user.phone || "",
         collegeName: user.collegeName || "",
@@ -40,8 +40,8 @@ router.get("/", auth, async (req, res) => {
         currentYear: user.currentYear || "",
         semester: user.semester || "",
         hostelName: user.hostelName || "",
-        hostelBlock: user.hostelBlock,
-        roomNumber: user.roomNumber,
+        hostelBlock: user.hostelBlock || "",
+        roomNumber: user.roomNumber || "",
         profilePhoto: user.profilePhoto || "",
         role: user.role
       }
@@ -70,9 +70,20 @@ router.put("/", auth, async (req, res) => {
       hostelName
     } = req.body;
 
-    if (!name || !email || !hostelBlock || !roomNumber) {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    if (user.role === "student" && (!name || !email || !hostelBlock || !roomNumber)) {
       return res.status(400).json({
         message: "Please provide all required fields (name, email, hostelBlock, roomNumber)"
+      });
+    } else if (user.role !== "student" && (!name || !email)) {
+      return res.status(400).json({
+        message: "Please provide all required fields (name, email)"
       });
     }
 
@@ -85,17 +96,14 @@ router.put("/", auth, async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found"
-      });
-    }
-
     user.name = name.trim();
     user.email = trimmedEmail;
-    user.hostelBlock = hostelBlock.trim();
-    user.roomNumber = roomNumber.trim();
+    if (hostelBlock !== undefined) {
+      user.hostelBlock = hostelBlock.trim();
+    }
+    if (roomNumber !== undefined) {
+      user.roomNumber = roomNumber.trim();
+    }
     if (phone !== undefined) {
       user.phone = phone.trim();
     }
@@ -122,7 +130,7 @@ router.put("/", auth, async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        studentId: user.studentId,
+        studentId: user.studentId || "",
         email: user.email,
         phone: user.phone || "",
         collegeName: user.collegeName || "",
@@ -130,8 +138,8 @@ router.put("/", auth, async (req, res) => {
         currentYear: user.currentYear || "",
         semester: user.semester || "",
         hostelName: user.hostelName || "",
-        hostelBlock: user.hostelBlock,
-        roomNumber: user.roomNumber,
+        hostelBlock: user.hostelBlock || "",
+        roomNumber: user.roomNumber || "",
         profilePhoto: user.profilePhoto || "",
         role: user.role
       }

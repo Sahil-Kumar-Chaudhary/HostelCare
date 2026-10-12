@@ -81,6 +81,12 @@ const complaintSchema = new mongoose.Schema(
       default: "medium"
     },
 
+    hostelName: {
+      type: String,
+      default: "",
+      trim: true
+    },
+
     hostelBlock: {
       type: String,
       required: true,
@@ -120,6 +126,23 @@ const complaintSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null
+    },
+
+    assignmentInstructions: {
+      type: String,
+      default: "",
+      trim: true
+    },
+
+    completionPhotoUrl: {
+      type: String,
+      default: ""
+    },
+
+    workNotes: {
+      type: String,
+      default: "",
+      trim: true
     },
 
     resolutionNote: {

@@ -37,8 +37,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.hostelcare.app.AppViewModelFactory
 import com.hostelcare.app.HostelCareApp
+import com.hostelcare.app.data.model.Role
 import com.hostelcare.app.ui.components.HostelCareLogo
 import com.hostelcare.app.ui.components.StudentBottomNavigation
+import com.hostelcare.app.ui.components.WardenBottomNavigation
+import com.hostelcare.app.ui.components.StaffBottomNavigation
 import com.hostelcare.app.ui.navigation.Routes
 import com.hostelcare.app.ui.screens.auth.CustomTextField
 import com.hostelcare.app.ui.theme.*
@@ -51,6 +54,7 @@ import java.util.Locale
 fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: StudentViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle(null)
     val notifications by viewModel.notifications.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     
@@ -68,11 +72,34 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
     }
 
     Scaffold(
-        bottomBar = { StudentBottomNavigation(navController, Routes.NOTIFICATIONS) },
+        bottomBar = {
+            when (currentUser?.role) {
+                Role.WARDEN -> WardenBottomNavigation(navController, Routes.NOTIFICATIONS)
+                Role.STAFF -> StaffBottomNavigation(navController, Routes.NOTIFICATIONS)
+                else -> StudentBottomNavigation(navController, Routes.NOTIFICATIONS)
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Notifications", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (!navController.popBackStack()) {
+                            when (currentUser?.role) {
+                                Role.WARDEN -> navController.navigate(Routes.WARDEN_HOME)
+                                Role.STAFF -> navController.navigate(Routes.STAFF_HOME)
+                                else -> navController.navigate(Routes.STUDENT_HOME)
+                            }
+                        }
+                    }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
                 actions = {
                     TextButton(
                         onClick = {

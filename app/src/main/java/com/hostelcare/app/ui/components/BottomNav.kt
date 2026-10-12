@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.Engineering
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -116,6 +119,123 @@ fun AdminBottomNavigation(navController: NavController, currentRoute: String) {
                                     if (route == Routes.ADMIN_HOME) {
                                         popUpTo(Routes.ADMIN_HOME) { inclusive = true }
                                     }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WardenBottomNavigation(
+    navController: NavController,
+    currentRoute: String,
+    onTabSelected: ((String) -> Unit)? = null
+) {
+    val items = listOf(
+        Triple(Routes.WARDEN_HOME, "Home", Icons.Default.Home),
+        Triple(Routes.WARDEN_COMPLAINTS, "Complaints", Icons.AutoMirrored.Filled.List),
+        Triple(Routes.WARDEN_STAFF, "Staff", Icons.Default.People),
+        Triple(Routes.WARDEN_REPORTS, "Analytics", Icons.Default.Assessment),
+        Triple(Routes.WARDEN_PROFILE, "Profile", Icons.Default.Person)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(start = 12.dp, end = 12.dp, bottom = 10.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            shadowElevation = 8.dp,
+            tonalElevation = 1.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEach { (route, label, icon) ->
+                    val selected = currentRoute == route
+                    BottomNavItem(
+                        icon = icon,
+                        label = label,
+                        selected = selected,
+                        onClick = {
+                            if (currentRoute != route) {
+                                if (onTabSelected != null) {
+                                    onTabSelected(route)
+                                } else {
+                                    navController.navigate(route) {
+                                        popUpTo(Routes.WARDEN_HOME) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StaffBottomNavigation(
+    navController: NavController,
+    currentRoute: String,
+    onProfileClick: (() -> Unit)? = null
+) {
+    val items = listOf(
+        Triple(Routes.STAFF_HOME, "My Tasks", Icons.Default.Engineering),
+        Triple("staff_profile", "Profile", Icons.Default.Person)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(start = 24.dp, end = 24.dp, bottom = 10.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            shadowElevation = 8.dp,
+            tonalElevation = 1.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEach { (route, label, icon) ->
+                    val selected = currentRoute == route
+                    BottomNavItem(
+                        icon = icon,
+                        label = label,
+                        selected = selected,
+                        onClick = {
+                            if (route == "staff_profile" && onProfileClick != null) {
+                                onProfileClick()
+                            } else if (currentRoute != route) {
+                                navController.navigate(route) {
+                                    popUpTo(Routes.STAFF_HOME) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
                             }
                         }

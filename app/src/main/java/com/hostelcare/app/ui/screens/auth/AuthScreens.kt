@@ -114,8 +114,12 @@ fun SplashScreen(navController: NavController, app: HostelCareApp) {
         if (isSessionChecked) {
             delay(500)
             if (currentUser != null) {
-                if (currentUser!!.role == Role.ADMIN) navController.navigate(Routes.ADMIN_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
-                else navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                when (currentUser!!.role) {
+                    Role.STUDENT -> navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                    Role.STAFF -> navController.navigate(Routes.STAFF_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                    Role.WARDEN -> navController.navigate(Routes.WARDEN_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                    else -> navController.navigate(Routes.PORTAL_SELECTION) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                }
             } else {
                 navController.navigate(Routes.PORTAL_SELECTION) { popUpTo(Routes.SPLASH) { inclusive = true } }
             }

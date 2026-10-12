@@ -8,8 +8,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.net.InetAddress
 
 object RetrofitClient {
-    // Keep BASE_URL configurable. Use 10.0.2.2 for emulator localhost.
-    private const val BASE_URL = "https://hostelcare-backend-1r6q.onrender.com/"
+    // Dynamic BASE_URL: http://10.0.2.2:5000/ in debug, https://... in release
+    private val BASE_URL = com.hostelcare.app.BuildConfig.BASE_URL
 
     fun create(tokenManager: TokenManager): ApiService {
         val logging = HttpLoggingInterceptor().apply {

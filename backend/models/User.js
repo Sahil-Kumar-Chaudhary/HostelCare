@@ -9,9 +9,29 @@ const userSchema = new mongoose.Schema(
     },
     studentId: {
       type: String,
-      required: true,
-      unique: true,
+      required: function() {
+        return this.role === "student";
+      },
+      sparse: true,
       trim: true
+    },
+    staffId: {
+      type: String,
+      sparse: true,
+      trim: true
+    },
+    department: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false
     },
     email: {
       type: String,
@@ -51,12 +71,18 @@ const userSchema = new mongoose.Schema(
     },
     hostelBlock: {
       type: String,
-      required: true,
+      required: function() {
+        return this.role === "student";
+      },
+      default: "",
       trim: true
     },
     roomNumber: {
       type: String,
-      required: true,
+      required: function() {
+        return this.role === "student";
+      },
+      default: "",
       trim: true
     },
     phone: {
@@ -77,7 +103,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "staff"],
+      enum: ["student", "warden", "staff"],
       default: "student"
     }
   },

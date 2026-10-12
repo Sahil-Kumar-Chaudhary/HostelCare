@@ -22,6 +22,7 @@ val TextDark = Color(0xFF182230)
 val TextMuted = Color(0xFF64748B)
 val SuccessGreen = Color(0xFF10B981)
 val WarningOrange = Color(0xFFF59E0B)
+val PendingAmber = Color(0xFFF59E0B)
 val DangerRed = Color(0xFFEF4444)
 
 val LightBlue = Color(0xFFEBF3FF)
