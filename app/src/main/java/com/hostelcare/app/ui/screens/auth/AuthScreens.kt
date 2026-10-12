@@ -41,6 +41,7 @@ import com.hostelcare.app.data.model.Role
 import com.hostelcare.app.data.model.User
 import com.hostelcare.app.ui.navigation.Routes
 import com.hostelcare.app.ui.theme.*
+import com.hostelcare.app.ui.components.HostelCareLogo
 import kotlinx.coroutines.delay
 
 @Composable
@@ -87,18 +88,18 @@ fun CustomTextField(
 }
 
 @Composable
-fun AppLogoAndTitle() {
+fun AppLogoAndTitle(
+    logoSize: androidx.compose.ui.unit.Dp = 80.dp,
+    showSubtitle: Boolean = true
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier.size(80.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Home, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
-        }
-        Spacer(modifier = Modifier.height(24.dp))
+        HostelCareLogo(size = logoSize)
+        Spacer(modifier = Modifier.height(20.dp))
         Text("HostelCare", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Making hostel life easier.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (showSubtitle) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Making hostel life easier.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
@@ -122,9 +123,9 @@ fun SplashScreen(navController: NavController, app: HostelCareApp) {
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(modifier = Modifier.align(Alignment.Center).offset(y = (-40).dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            AppLogoAndTitle()
-            Spacer(modifier = Modifier.height(48.dp))
+        Column(modifier = Modifier.align(Alignment.Center).offset(y = (-30).dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            AppLogoAndTitle(logoSize = 110.dp)
+            Spacer(modifier = Modifier.height(36.dp))
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
         }
         
@@ -470,19 +471,7 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
             }
             Spacer(modifier = Modifier.width(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(PrimaryBlue, RoundedCornerShape(6.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Business,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                HostelCareLogo(size = 32.dp)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     buildAnnotatedString {

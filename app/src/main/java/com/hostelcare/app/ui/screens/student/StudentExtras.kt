@@ -37,6 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.hostelcare.app.AppViewModelFactory
 import com.hostelcare.app.HostelCareApp
+import com.hostelcare.app.ui.components.HostelCareLogo
 import com.hostelcare.app.ui.components.StudentBottomNavigation
 import com.hostelcare.app.ui.navigation.Routes
 import com.hostelcare.app.ui.screens.auth.CustomTextField
@@ -689,14 +690,7 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(PrimaryBlue, RoundedCornerShape(10.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Business, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                        }
+                        HostelCareLogo(size = 40.dp)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {

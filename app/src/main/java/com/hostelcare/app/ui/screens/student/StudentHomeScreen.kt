@@ -45,6 +45,7 @@ import com.hostelcare.app.HostelCareApp
 import com.hostelcare.app.data.model.ComplaintCategory
 import com.hostelcare.app.data.model.ComplaintStatus
 import com.hostelcare.app.ui.components.StudentBottomNavigation
+import com.hostelcare.app.ui.components.HostelCareLogo
 import com.hostelcare.app.ui.navigation.Routes
 import com.hostelcare.app.ui.screens.auth.CustomTextField
 import com.hostelcare.app.ui.theme.*
@@ -64,15 +65,22 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
     val pendingCount = complaints.count { it.status == ComplaintStatus.SUBMITTED }
     val resolvedCount = complaints.count { it.status == ComplaintStatus.RESOLVED }
 
+    val greeting = remember {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 0..11 -> "Good morning"
+            in 12..16 -> "Good afternoon"
+            else -> "Good evening"
+        }
+    }
+
     Scaffold(
         bottomBar = { StudentBottomNavigation(navController, Routes.STUDENT_HOME) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Home, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                }
+                HostelCareLogo(size = 40.dp)
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text("HostelCare", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
@@ -89,7 +97,7 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Good morning, ${user?.name?.split(" ")?.firstOrNull() ?: "Student"}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text("$greeting, ${user?.name?.split(" ")?.firstOrNull() ?: "Student"}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("Need something fixed in your room?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
