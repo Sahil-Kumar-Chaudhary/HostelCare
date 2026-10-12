@@ -16,16 +16,19 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 val PrimaryBlue = Color(0xFF0056D2)
-val BackgroundLight = Color(0xFFF9FAFB)
+val BackgroundLight = Color(0xFFF6F8FC)
 val SurfaceLight = Color(0xFFFFFFFF)
-val TextDark = Color(0xFF1F2937)
-val TextMuted = Color(0xFF6B7280)
+val TextDark = Color(0xFF182230)
+val TextMuted = Color(0xFF64748B)
 val SuccessGreen = Color(0xFF10B981)
 val WarningOrange = Color(0xFFF59E0B)
 val DangerRed = Color(0xFFEF4444)
 
 val LightBlue = Color(0xFFEBF3FF)
-val GrayBg = Color(0xFFF3F4F6)
+val GrayBg = Color(0xFFF1F5F9)
+val BorderLight = Color(0xFFD7E0EC)
+val DividerLight = Color(0xFFE3E9F2)
+
 val GreenPillBg = Color(0xFFE1F7E3)
 val RedPillBg = Color(0xFFFFEBEB)
 val OrangePillBg = Color(0xFFFFF3E0)
@@ -38,6 +41,8 @@ val TextLight = Color(0xFFF8FAFC)
 val TextMutedDark = Color(0xFF94A3B8)
 val SurfaceVariantDark = Color(0xFF334155)
 val LightBlueDark = Color(0xFF1E3A8A)
+val BorderDark = Color(0xFF334155)
+val DividerDark = Color(0xFF1E293B)
 
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryBlue,
@@ -55,8 +60,8 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = GrayBg,
     onSurfaceVariant = TextMuted,
     surfaceTint = Color.White,
-    outline = Color(0xFFD1D5DB),
-    outlineVariant = Color(0xFFE5E7EB),
+    outline = BorderLight,
+    outlineVariant = DividerLight,
     error = DangerRed,
     onError = Color.White
 )
@@ -77,8 +82,8 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = TextMutedDark,
     surfaceTint = SurfaceDark,
-    outline = Color(0xFF475569),
-    outlineVariant = Color(0xFF334155),
+    outline = BorderDark,
+    outlineVariant = DividerDark,
     error = DangerRed,
     onError = Color.White
 )
@@ -108,7 +113,7 @@ fun HostelCareTheme(
             if (context is Activity) {
                 val window = context.window
                 window.statusBarColor = colorScheme.background.toArgb()
-                window.navigationBarColor = colorScheme.surface.toArgb()
+                window.navigationBarColor = colorScheme.background.toArgb()
                 val controller = WindowCompat.getInsetsController(window, view)
                 controller.isAppearanceLightStatusBars = !darkTheme
                 controller.isAppearanceLightNavigationBars = !darkTheme

@@ -76,7 +76,7 @@ fun CustomTextField(
             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
             unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
             unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -207,18 +207,23 @@ fun LoginScreen(navController: NavController, app: HostelCareApp) {
         
         Spacer(modifier = Modifier.height(32.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
             Text("or", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))
-            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
         }
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        Box(
-            modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)).padding(16.dp),
-            contentAlignment = Alignment.Center
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text("Don't have an account?", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Create account", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { navController.navigate(Routes.SIGN_UP) })
@@ -288,7 +293,7 @@ fun RegistrationTextField(
             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
             unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedBorderColor = if (isError) DangerRed else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+            unfocusedBorderColor = if (isError) DangerRed else MaterialTheme.colorScheme.outline,
             focusedBorderColor = if (isError) DangerRed else MaterialTheme.colorScheme.primary,
             focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
             unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -564,7 +569,7 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
                             .weight(1f)
                             .height(2.dp)
                             .offset(y = (-8).dp)
-                            .background(if (stepNum < currentStep) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                            .background(if (stepNum < currentStep) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant)
                     )
                 }
             }
@@ -577,7 +582,7 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                 .padding(14.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -694,7 +699,7 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
                         Row(
                             modifier = Modifier
                                 .height(54.dp)
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                                 .clickable { showCountryMenu = true }
                                 .padding(horizontal = 10.dp),
@@ -1028,7 +1033,8 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {

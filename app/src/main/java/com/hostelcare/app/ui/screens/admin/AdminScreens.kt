@@ -58,19 +58,19 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
             Text("Complaints", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(12.dp)) {
+                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
                         Text("Pending", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("$pendingCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
-                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(12.dp)) {
+                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
                         Text("In Progress", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("$inProgressCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
-                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(12.dp)) {
+                Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
                         Text("Resolved", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("$resolvedCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -82,7 +82,7 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
             Spacer(modifier = Modifier.height(12.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(needsAttention) { c ->
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Spacer(modifier = Modifier.height(4.dp))
@@ -109,7 +109,7 @@ fun AdminComplaintListScreen(navController: NavController, app: HostelCareApp) {
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(complaints) { c ->
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.adminComplaintDetails(c.id)) }) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -135,7 +135,7 @@ fun AdminComplaintDetailsScreen(navController: NavController, app: HostelCareApp
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(complaint.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -148,7 +148,7 @@ fun AdminComplaintDetailsScreen(navController: NavController, app: HostelCareApp
                 }
             }
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -162,7 +162,7 @@ fun AdminComplaintDetailsScreen(navController: NavController, app: HostelCareApp
             }
             if (complaint.aiSummary != null) {
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("AI Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.height(8.dp))
@@ -200,7 +200,7 @@ fun AssignStaffScreen(navController: NavController, app: HostelCareApp, complain
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
             if (complaint != null) {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth()) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(complaint.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Text("Room ${complaint.roomNumber} · ${complaint.category.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -213,7 +213,7 @@ fun AssignStaffScreen(navController: NavController, app: HostelCareApp, complain
             Spacer(modifier = Modifier.height(12.dp))
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(staffList) { staff ->
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.fillMaxWidth().clickable { selectedId = staff.id }) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth().clickable { selectedId = staff.id }) {
                         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(selected = selectedId == staff.id, onClick = { selectedId = staff.id }, colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue))
                             Spacer(modifier = Modifier.width(8.dp))

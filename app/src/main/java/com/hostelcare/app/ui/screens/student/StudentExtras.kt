@@ -107,7 +107,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                         onClick = { filter = f },
                         shape = RoundedCornerShape(20.dp),
                         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outline)
                     ) {
                         Text(
                             text = f,
@@ -120,7 +120,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                 }
             }
             
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
             
             if (filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -180,13 +180,13 @@ fun NotificationCard(n: com.hostelcare.app.data.model.Notification, onClick: () 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = if (n.isRead) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Box(
-                modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
+                modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(iconInfo.first, contentDescription = null, tint = iconInfo.second, modifier = Modifier.size(20.dp))
@@ -966,16 +966,11 @@ fun ProfileSectionCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                shape = RoundedCornerShape(16.dp)
-            ),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -1013,7 +1008,7 @@ fun ProfileSectionCard(
                 }
             }
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                color = MaterialTheme.colorScheme.outlineVariant,
                 thickness = 1.dp
             )
             content()
@@ -1079,8 +1074,8 @@ fun ProfileNavigationRow(
         }
         if (showDivider) {
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                thickness = 0.8.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                thickness = 1.dp,
                 modifier = Modifier.padding(start = 54.dp)
             )
         }
@@ -1120,8 +1115,9 @@ fun ActionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: Stri
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(0.dp),
-        modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(16.dp)).clickable(onClick = onClick)
+        elevation = CardDefaults.cardElevation(1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(40.dp).background(iconBg, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
@@ -1222,7 +1218,7 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
         focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
         unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
         focusedBorderColor = MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline
     )
 
     Scaffold(

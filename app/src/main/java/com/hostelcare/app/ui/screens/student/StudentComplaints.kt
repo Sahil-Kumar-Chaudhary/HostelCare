@@ -98,7 +98,7 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
                         onClick = { filter = f },
                         shape = RoundedCornerShape(20.dp),
                         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outline)
                     ) {
                         Text(
                             text = f,
@@ -111,7 +111,7 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
                 }
             }
             
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
 
             if (filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -155,9 +155,9 @@ fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Uni
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
@@ -338,9 +338,9 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
@@ -367,7 +367,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                             }
                         }
                         
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
                         
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -380,7 +380,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     }
                                 }
                             }
-                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)))
+                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outlineVariant))
                             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                                 Row {
                                     Icon(Icons.Default.Build, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
@@ -391,7 +391,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     }
                                 }
                             }
-                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)))
+                            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outlineVariant))
                             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                                 Row {
                                     Icon(Icons.Default.Flag, contentDescription = null, tint = DangerRed, modifier = Modifier.size(18.dp))
@@ -422,9 +422,9 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -443,9 +443,9 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -461,7 +461,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     UriImage(uriStr = complaint.photoUri!!, modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(12.dp), fallbackIcon = Icons.Default.HideImage)
                                 }
                             } else {
-                                Box(modifier = Modifier.fillMaxWidth().height(80.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.fillMaxWidth().height(80.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.HideImage, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -478,9 +478,9 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = if (aiError != null) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, if (aiError != null) MaterialTheme.colorScheme.error.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                    border = BorderStroke(1.dp, if (aiError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -563,9 +563,9 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {

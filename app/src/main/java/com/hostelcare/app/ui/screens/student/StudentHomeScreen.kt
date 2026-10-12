@@ -89,7 +89,7 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(Icons.Default.NotificationsNone, null, tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(16.dp))
-                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surface, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape), contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -145,18 +145,27 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                     }
                     val dateStr = SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(c.createdAt))
 
-                    Column(modifier = Modifier.fillMaxWidth().clickable { navController.navigate(Routes.complaintDetails(c.id)) }) {
-                        Row(modifier = Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { navController.navigate(Routes.complaintDetails(c.id)) },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
+                    ) {
+                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(modifier = Modifier.size(40.dp).background(bg, CircleShape), contentAlignment = Alignment.Center) {
                                 Icon(icon, null, tint = fg, modifier = Modifier.size(20.dp))
                             }
-                            Spacer(modifier = Modifier.width(16.dp))
+                            Spacer(modifier = Modifier.width(14.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(c.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                                Text(c.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text("Room ${c.roomNumber} • ${c.category.name}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Column(horizontalAlignment = Alignment.End) {
                                 Box(modifier = Modifier.background(bg, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) {
                                     Text(c.status.name, color = fg, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
@@ -164,10 +173,9 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(dateStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                         }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                     }
                 }
                 
@@ -179,10 +187,10 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                     val context = androidx.compose.ui.platform.LocalContext.current
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         QuickActionCard("Report\nProblem", Icons.Default.Build, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary, Modifier.weight(1f)) { navController.navigate(Routes.NEW_COMPLAINT) }
-                        QuickActionCard("Hostel\nGuidelines", Icons.Default.MenuBook, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f)) { 
+                        QuickActionCard("Hostel\nGuidelines", Icons.Default.MenuBook, MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f)) { 
                             android.widget.Toast.makeText(context, "Guidelines opened", android.widget.Toast.LENGTH_SHORT).show()
                         }
-                        QuickActionCard("Contact\nWarden", Icons.Default.Phone, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f)) { 
+                        QuickActionCard("Contact\nWarden", Icons.Default.Phone, MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f)) { 
                             val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
                             intent.data = android.net.Uri.parse("tel:+1234567890")
                             context.startActivity(intent)
@@ -198,37 +206,41 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
 fun StatCard(label: String, value: String, icon: ImageVector, bg: Color, iconColor: Color, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(32.dp).background(bg, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = iconColor, modifier = Modifier.size(16.dp))
+        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(28.dp).background(bg, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = iconColor, modifier = Modifier.size(14.dp))
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(label, fontSize = 11.sp, maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
         }
     }
 }
 
 @Composable
 fun QuickActionCard(label: String, icon: ImageVector, bg: Color, fg: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Box(
-        modifier = modifier
-            .background(bg, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        color = bg,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        shadowElevation = 0.5.dp
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.padding(vertical = 16.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Icon(icon, null, tint = fg, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label, fontSize = 12.sp, color = fg, textAlign = TextAlign.Center, lineHeight = 16.sp)
+            Text(label, fontSize = 12.sp, color = fg, textAlign = TextAlign.Center, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -376,7 +388,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
         focusedTextColor = MaterialTheme.colorScheme.onSurface,
         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
         focusedBorderColor = PrimaryBlue,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
         focusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
         unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
         focusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
