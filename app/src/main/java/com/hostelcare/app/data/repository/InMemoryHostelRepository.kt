@@ -158,7 +158,10 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
                 currentUser.value = updated
                 Result.success(updated)
             } else {
-                Result.failure(Exception("Update failed: ${response.message()}"))
+                val errorJsonMsg = try {
+                    response.errorBody()?.string()?.let { org.json.JSONObject(it).optString("message", "") }
+                } catch (e: Exception) { null }
+                Result.failure(Exception(errorJsonMsg?.takeIf { it.isNotBlank() } ?: "Update failed: ${response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -247,11 +250,14 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
                     _complaints.update { listOf(created) + it }
                     Result.success(created)
                 } else {
-                    
+                    val errorJsonMsg = try {
+                        response.errorBody()?.string()?.let { org.json.JSONObject(it).optString("message", "") }
+                    } catch (e: Exception) { null }
                     val code = response.code()
-                    val msg = when (code) {
+                    val msg = errorJsonMsg?.takeIf { it.isNotBlank() } ?: when (code) {
                         400 -> "Please check the complaint details."
                         401 -> "Your session has expired. Please log in again."
+                        403 -> "You are not authorized to submit this complaint."
                         500 -> "Something went wrong on the server. Please try again."
                         else -> "Failed to submit complaint: $code"
                     }
@@ -275,11 +281,14 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
                     _complaints.update { listOf(created) + it }
                     Result.success(created)
                 } else {
-                    
+                    val errorJsonMsg = try {
+                        response.errorBody()?.string()?.let { org.json.JSONObject(it).optString("message", "") }
+                    } catch (e: Exception) { null }
                     val code = response.code()
-                    val msg = when (code) {
+                    val msg = errorJsonMsg?.takeIf { it.isNotBlank() } ?: when (code) {
                         400 -> "Please check the complaint details."
                         401 -> "Your session has expired. Please log in again."
+                        403 -> "You are not authorized to submit this complaint."
                         500 -> "Something went wrong on the server. Please try again."
                         else -> "Failed to submit complaint: $code"
                     }

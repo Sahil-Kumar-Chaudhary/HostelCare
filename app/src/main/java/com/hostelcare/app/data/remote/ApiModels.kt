@@ -219,6 +219,7 @@ data class WardenComplaintStudent(
 data class WardenComplaintStaff(
     val id: String?,
     val name: String?,
+    val staffId: String? = null,
     val department: String? = null,
     val phone: String? = null
 )
@@ -242,6 +243,7 @@ data class WardenComplaintDetail(
     val category: String,
     val priority: String,
     val status: String,
+    val hostelName: String? = null,
     val hostelBlock: String?,
     val roomNumber: String?,
     val photoUrl: String?,
@@ -262,6 +264,7 @@ data class WardenComplaintStudentDetail(
     val studentId: String?,
     val email: String?,
     val phone: String?,
+    val hostelName: String? = null,
     val roomNumber: String?,
     val hostelBlock: String?
 )

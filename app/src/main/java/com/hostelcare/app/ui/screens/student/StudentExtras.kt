@@ -507,7 +507,7 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    InfoItem(label = "Hostel Name", value = u.hostelName.ifEmpty { "Campus Residence" })
+                    InfoItem(label = "Hostel Name", value = u.hostelName.ifEmpty { "Not Assigned" })
                     InfoItem(label = "Hostel Block", value = u.hostelBlock.ifEmpty { "Not Assigned" })
                     InfoItem(label = "Room Number", value = u.roomNumber.ifEmpty { "Not Assigned" })
                     InfoItem(label = "Helpdesk Desk", value = "Warden Office, Block A Ground Floor")
@@ -1181,6 +1181,7 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
     
     var name by remember(user) { mutableStateOf(user?.name ?: "") }
     var email by remember(user) { mutableStateOf(user?.email ?: "") }
+    var hostelName by remember(user) { mutableStateOf(user?.hostelName ?: "") }
     var hostel by remember(user) { mutableStateOf(user?.hostelBlock ?: "") }
     var room by remember(user) { mutableStateOf(user?.roomNumber ?: "") }
     var phone by remember(user) { mutableStateOf(user?.phone ?: "") }
@@ -1258,13 +1259,22 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
                     onClick = { 
                         if (!com.hostelcare.app.utils.NetworkUtils.isNetworkAvailable(context)) {
                             coroutineScope.launch { snackbarHostState.showSnackbar("No internet connection") }
+                        } else if (name.isBlank() || email.isBlank() || hostelName.isBlank() || hostel.isBlank() || room.isBlank()) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Please fill all required fields") }
                         } else {
-                            viewModel.updateProfile(name, email, hostel, room, phone)
+                            viewModel.updateProfile(
+                                name = name.trim(),
+                                email = email.trim(),
+                                hostelBlock = hostel.trim(),
+                                roomNumber = room.trim(),
+                                phone = phone.trim(),
+                                hostelName = hostelName.trim()
+                            )
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = !isSubmitting,
+                    enabled = !isSubmitting && name.isNotBlank() && email.isNotBlank() && hostelName.isNotBlank() && hostel.isNotBlank() && room.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                 ) { 
                     if (isSubmitting) {
@@ -1324,16 +1334,33 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
             item { Spacer(modifier = Modifier.height(20.dp)) }
             
             item {
-                ProfileFormField("Hostel / Block", required = true) {
-                    Box {
-                        OutlinedTextField(value = hostel, onValueChange = { }, leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }, modifier = Modifier.fillMaxWidth(), readOnly = true, shape = RoundedCornerShape(12.dp), colors = inputColors)
-                        Box(modifier = Modifier.matchParentSize().clickable { hostelExpanded = true })
-                        DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                            listOf("Tagore Block A", "Tagore Block B", "Raman Block A", "Raman Block B", "Curie Block", "Newton Block").forEach { block ->
-                                DropdownMenuItem(text = { Text(block, color = MaterialTheme.colorScheme.onSurface) }, onClick = { hostel = block; hostelExpanded = false })
-                            }
-                        }
-                    }
+                ProfileFormField("Hostel Name", required = true) {
+                    OutlinedTextField(
+                        value = hostelName,
+                        onValueChange = { hostelName = it },
+                        placeholder = { Text("e.g. University Hostel", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Default.Home, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = inputColors
+                    )
+                }
+            }
+            item { Spacer(modifier = Modifier.height(20.dp)) }
+
+            item {
+                ProfileFormField("Block", required = true) {
+                    OutlinedTextField(
+                        value = hostel,
+                        onValueChange = { hostel = it },
+                        placeholder = { Text("e.g. Block B", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Default.Domain, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = inputColors
+                    )
                 }
             }
             item { Spacer(modifier = Modifier.height(20.dp)) }

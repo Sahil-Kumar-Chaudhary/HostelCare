@@ -24,7 +24,9 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:5000/\"")
+            val customUrl = project.findProperty("backendUrl") as? String ?: "http://10.0.2.2:5000/"
+            val formattedUrl = if (customUrl.endsWith("/")) customUrl else "$customUrl/"
+            buildConfigField("String", "BASE_URL", "\"$formattedUrl\"")
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://hostelcare-backend-1r6q.onrender.com/\"")

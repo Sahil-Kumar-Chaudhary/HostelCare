@@ -57,12 +57,22 @@ async function provisionWarden(options = {}) {
     );
   }
 
+  const targetDbName = options.dbName || process.env.MONGODB_DB_NAME || process.env.DB_NAME || "HostelCareDevDB";
+
+  // Explicit safety check against accidental production provisioning
+  const isProductionTarget = targetDbName === "HostelCareDB" || process.env.NODE_ENV === "production";
+  if (isProductionTarget && !options.confirmProduction) {
+    throw new Error(
+      `[Safety Guard] Target database is "${targetDbName}". Provisioning against production requires explicit confirmation. Set options.confirmProduction = true or pass --confirm-production via CLI.`
+    );
+  }
+
   let shouldCloseConnection = false;
   if (mongoose.connection.readyState === 0) {
     if (!mongoUri) {
       throw new Error("MONGO_URI is required to connect to the database.");
     }
-    const targetDbName = options.dbName || process.env.DB_NAME || "HostelCareLocalTest";
+    console.log(`[Provisioning] Connecting to target database: "${targetDbName}"`);
     await mongoose.connect(mongoUri, { dbName: targetDbName });
     shouldCloseConnection = true;
   }
@@ -150,7 +160,9 @@ if (require.main === module) {
     password: parsedArgs.password,
     hostelName: parsedArgs.hostel || parsedArgs.hostelName,
     hostelBlock: parsedArgs.block || parsedArgs.hostelBlock,
-    phone: parsedArgs.phone
+    phone: parsedArgs.phone,
+    dbName: parsedArgs.dbName || parsedArgs.db,
+    confirmProduction: args.includes("--confirm-production") || parsedArgs.confirmProduction === "true"
   };
 
   provisionWarden(options)

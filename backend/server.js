@@ -40,9 +40,11 @@ app.get("/api/protected", auth, (req, res) => {
 });
 
 mongoose
-  .connect(process.env.MONGO_URI, { dbName: process.env.DB_NAME || "HostelCareLocalTest" })
+  .connect(process.env.MONGO_URI, {
+    dbName: process.env.MONGODB_DB_NAME || process.env.DB_NAME || "HostelCareDevDB"
+  })
   .then(() => {
-    console.log("MongoDB connected successfully");
+    console.log(`MongoDB connected successfully to database: ${mongoose.connection.name}`);
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);

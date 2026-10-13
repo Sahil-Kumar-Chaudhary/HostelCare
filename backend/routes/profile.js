@@ -120,6 +120,11 @@ router.put("/", auth, async (req, res) => {
       user.semester = semester.trim();
     }
     if (hostelName !== undefined) {
+      if (typeof hostelName !== "string" || !hostelName.trim()) {
+        return res.status(400).json({
+          message: "Hostel name cannot be empty"
+        });
+      }
       user.hostelName = hostelName.trim();
     }
 

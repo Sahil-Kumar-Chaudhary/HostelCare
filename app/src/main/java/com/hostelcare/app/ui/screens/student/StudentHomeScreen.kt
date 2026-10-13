@@ -417,6 +417,42 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
             verticalArrangement = Arrangement.spacedBy(20.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
+            if (user?.hostelName.isNullOrBlank()) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Hostel Information Missing",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Please complete your hostel information in your profile before submitting a complaint.",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { navController.navigate(Routes.EDIT_PROFILE) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Complete Profile")
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 FormField("Problem Title", required = true) {
                     OutlinedTextField(
@@ -453,35 +489,45 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
             }
             
             item {
+                FormField("Hostel", required = false) {
+                    OutlinedTextField(
+                        value = user?.hostelName?.takeIf { it.isNotBlank() } ?: "Not Assigned",
+                        onValueChange = { },
+                        placeholder = { Text("Hostel name", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Default.Home, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        modifier = Modifier.fillMaxWidth(),
+                        readOnly = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = inputColors
+                    )
+                }
+            }
+
+            item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(modifier = Modifier.weight(1f)) {
-                        FormField("Hostel / Block", required = true) {
-                            Box {
-                                OutlinedTextField(
-                                    value = hostelBlock, onValueChange = { },
-                                    placeholder = { Text("Block", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                    leadingIcon = { Icon(Icons.Default.LocationCity, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                    trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                    modifier = Modifier.fillMaxWidth(), readOnly = true,
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = inputColors
-                                )
-                                Box(modifier = Modifier.matchParentSize().clickable { hostelExpanded = true })
-                                DropdownMenu(expanded = hostelExpanded, onDismissRequest = { hostelExpanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                                    listOf("Tagore Block A", "Tagore Block B", "Raman Block A", "Raman Block B", "Curie Block", "Newton Block").forEach { block ->
-                                        DropdownMenuItem(text = { Text(block, color = MaterialTheme.colorScheme.onSurface) }, onClick = { hostelBlock = block; hostelExpanded = false })
-                                    }
-                                }
-                            }
+                        FormField("Block", required = true) {
+                            OutlinedTextField(
+                                value = hostelBlock,
+                                onValueChange = { hostelBlock = it },
+                                placeholder = { Text("e.g. Block B", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                leadingIcon = { Icon(Icons.Default.Domain, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = inputColors
+                            )
                         }
                     }
                     Box(modifier = Modifier.weight(1f)) {
                         FormField("Room Number", required = true) {
                             OutlinedTextField(
-                                value = room, onValueChange = { room = it },
+                                value = room,
+                                onValueChange = { room = it },
                                 placeholder = { Text("e.g. 101", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                                 leadingIcon = { Icon(Icons.Default.MeetingRoom, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = inputColors
                             )
@@ -552,6 +598,12 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                             }
                             return@Button
                         }
+                        if (user?.hostelName.isNullOrBlank()) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Please complete your hostel information in your profile before submitting a complaint.")
+                            }
+                            return@Button
+                        }
                         val catEnum = when (category) {
                             "Plumbing" -> com.hostelcare.app.data.model.ComplaintCategory.PLUMBING
                             "Electrical" -> com.hostelcare.app.data.model.ComplaintCategory.ELECTRICAL
@@ -573,7 +625,7 @@ fun NewComplaintScreen(navController: NavController, app: HostelCareApp) {
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = !isSubmitting && title.isNotBlank() && desc.isNotBlank() && hostelBlock.isNotBlank() && room.isNotBlank(),
+                    enabled = !isSubmitting && !user?.hostelName.isNullOrBlank() && title.isNotBlank() && desc.isNotBlank() && hostelBlock.isNotBlank() && room.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                 ) {
                     if (isSubmitting) {

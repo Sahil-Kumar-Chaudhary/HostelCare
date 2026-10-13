@@ -874,6 +874,347 @@ async function runTests() {
     }
   });
 
+  // 13. Student Registration with Hostel Name
+  await testAsync("Registration: Student registration succeeds with entered hostelName and persists to MongoDB", async () => {
+    const origFindOne = User.findOne;
+    const origCreate = User.create;
+    try {
+      User.findOne = () => Promise.resolve(null);
+      let createdUser = null;
+      User.create = (doc) => {
+        createdUser = doc;
+        return Promise.resolve({ _id: "new_stu_123", ...doc });
+      };
+
+      const authRouter = require("../routes/auth");
+      const routeLayer = authRouter.stack.find(s => s.route && s.route.path === "/register");
+      const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+      let statusCode = 200;
+      let responseData = null;
+      const mockReq = {
+        body: {
+          name: "Amit Patel",
+          studentId: "12309999",
+          email: "amit.patel@gmail.com",
+          phone: "+91 9876543210",
+          collegeName: "Apex Institute of Tech",
+          course: "B.Tech Computer Science",
+          admissionYear: "2023",
+          hostelName: "Tagore Hall of Residence",
+          hostelBlock: "B",
+          roomNumber: "302",
+          password: "SecureStudentPass123!",
+          confirmPassword: "SecureStudentPass123!",
+          acceptedTerms: true,
+          role: "student"
+        }
+      };
+      const mockRes = {
+        status: (code) => { statusCode = code; return { json: (d) => { responseData = d; } }; },
+        json: (d) => { responseData = d; }
+      };
+
+      await handler(mockReq, mockRes);
+      assert.strictEqual(statusCode, 201, "Registration should return 201 Created");
+      assert(createdUser, "User should be created in MongoDB");
+      assert.strictEqual(createdUser.hostelName, "Tagore Hall of Residence", "hostelName must be saved from request");
+      assert.strictEqual(createdUser.role, "student");
+    } finally {
+      User.findOne = origFindOne;
+      User.create = origCreate;
+    }
+  });
+
+  await testAsync("Registration: Rejection when hostelName is missing or whitespace-only", async () => {
+    const authRouter = require("../routes/auth");
+    const routeLayer = authRouter.stack.find(s => s.route && s.route.path === "/register");
+    const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+    // 1. Missing hostelName
+    let statusCodeMissing = 200;
+    const mockReqMissing = {
+      body: {
+        name: "Amit Patel",
+        studentId: "12309999",
+        email: "amit.patel@gmail.com",
+        phone: "+91 9876543210",
+        collegeName: "Apex Institute of Tech",
+        course: "B.Tech Computer Science",
+        admissionYear: "2023",
+        hostelBlock: "B",
+        roomNumber: "302",
+        password: "SecureStudentPass123!",
+        confirmPassword: "SecureStudentPass123!",
+        acceptedTerms: true
+      }
+    };
+    const mockResMissing = {
+      status: (code) => { statusCodeMissing = code; return { json: () => {} }; },
+      json: () => {}
+    };
+    await handler(mockReqMissing, mockResMissing);
+    assert.strictEqual(statusCodeMissing, 400, "Registration without hostelName must return 400");
+
+    // 2. Whitespace-only hostelName
+    let statusCodeBlank = 200;
+    const mockReqBlank = {
+      body: {
+        ...mockReqMissing.body,
+        hostelName: "   "
+      }
+    };
+    const mockResBlank = {
+      status: (code) => { statusCodeBlank = code; return { json: () => {} }; },
+      json: () => {}
+    };
+    await handler(mockReqBlank, mockResBlank);
+    assert.strictEqual(statusCodeBlank, 400, "Registration with blank hostelName must return 400");
+  });
+
+  // 14. Complaint Submission Missing Hostel Rejection
+  await testAsync("Complaint Submission: Blocked with clear message when student profile lacks hostelName", async () => {
+    const origFindById = User.findById;
+    try {
+      User.findById = () => Promise.resolve({
+        _id: "student_no_hostel",
+        name: "Legacy Student",
+        email: "legacy@gmail.com",
+        role: "student",
+        hostelName: "", // Missing hostel assignment
+        hostelBlock: "B",
+        roomNumber: "927"
+      });
+
+      const complaintsRouter = require("../routes/complaints");
+      const routeLayer = complaintsRouter.stack.find(s => s.route && s.route.path === "/" && s.route.methods.post);
+      const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+      let statusCode = 200;
+      let responseData = null;
+      const mockReq = {
+        user: { userId: "student_no_hostel", role: "student" },
+        body: {
+          title: "Leaking faucet",
+          description: "Tap dripping continuously",
+          category: "plumbing",
+          hostelBlock: "B",
+          roomNumber: "927"
+        }
+      };
+      const mockRes = {
+        status: (code) => { statusCode = code; return { json: (d) => { responseData = d; } }; },
+        json: (d) => { responseData = d; }
+      };
+
+      await handler(mockReq, mockRes);
+      assert.strictEqual(statusCode, 400, "Must return 400 when student lacks hostel assignment");
+      assert(responseData && responseData.message, "Must include helpful error message");
+      assert.strictEqual(
+        responseData.message,
+        "Please complete your hostel information in your profile before submitting a complaint."
+      );
+    } finally {
+      User.findById = origFindById;
+    }
+  });
+
+  // 15. Complaint Submission Anti-Spoofing Tests
+  await testAsync("Complaint Submission: Rejects attempts to spoof foreign hostelName or mismatching block", async () => {
+    const origFindById = User.findById;
+    try {
+      User.findById = () => Promise.resolve({
+        _id: "student_auth",
+        name: "Valid Student",
+        email: "student@gmail.com",
+        role: "student",
+        hostelName: "Tagore Hostel",
+        hostelBlock: "B",
+        roomNumber: "204"
+      });
+
+      const complaintsRouter = require("../routes/complaints");
+      const routeLayer = complaintsRouter.stack.find(s => s.route && s.route.path === "/" && s.route.methods.post);
+      const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+      // 1. Spoofing different hostel in request body -> 403 Forbidden
+      let statusHostelSpoof = 200;
+      let resHostelSpoof = null;
+      const mockReqHostel = {
+        user: { userId: "student_auth", role: "student" },
+        body: {
+          title: "Broken fan",
+          description: "Ceiling fan making loud noise",
+          category: "electrical",
+          hostelName: "Raman Hostel", // Student belongs to Tagore Hostel!
+          hostelBlock: "B",
+          roomNumber: "204"
+        }
+      };
+      const mockResHostel = {
+        status: (code) => { statusHostelSpoof = code; return { json: (d) => { resHostelSpoof = d; } }; },
+        json: (d) => { resHostelSpoof = d; }
+      };
+
+      await handler(mockReqHostel, mockResHostel);
+      assert.strictEqual(statusHostelSpoof, 403, "Spoofing a foreign hostel must return 403 Forbidden");
+      assert.strictEqual(resHostelSpoof.message, "You cannot submit complaints for a hostel you do not belong to.");
+
+      // 2. Attempting to submit for a completely different block -> 400 Bad Request
+      let statusBlockSpoof = 200;
+      let resBlockSpoof = null;
+      const mockReqBlock = {
+        user: { userId: "student_auth", role: "student" },
+        body: {
+          title: "Broken chair",
+          description: "Chair leg is detached",
+          category: "furniture",
+          hostelName: "Tagore Hostel",
+          hostelBlock: "C", // Student is registered in Block B
+          roomNumber: "204"
+        }
+      };
+      const mockResBlock = {
+        status: (code) => { statusBlockSpoof = code; return { json: (d) => { resBlockSpoof = d; } }; },
+        json: (d) => { resBlockSpoof = d; }
+      };
+
+      await handler(mockReqBlock, mockResBlock);
+      assert.strictEqual(statusBlockSpoof, 400, "Mismatched block submission must return 400");
+    } finally {
+      User.findById = origFindById;
+    }
+  });
+
+  // 16. Profile Update for Existing Student Account
+  await testAsync("Profile Update: Allows student with missing hostelName to save valid hostelName in MongoDB", async () => {
+    const origFindById = User.findById;
+    const origFindOne = User.findOne;
+    try {
+      const mockUser = {
+        _id: "legacy_user_1",
+        name: "Sahil Kumar",
+        email: "sahil@gmail.com",
+        role: "student",
+        hostelName: "", // initially missing
+        hostelBlock: "B",
+        roomNumber: "927",
+        save: function() { return Promise.resolve(this); }
+      };
+
+      User.findById = () => Promise.resolve(mockUser);
+      User.findOne = () => Promise.resolve(null); // No email conflict
+
+      const profileRouter = require("../routes/profile");
+      const routeLayer = profileRouter.stack.find(s => s.route && s.route.path === "/" && s.route.methods.put);
+      const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+      // 1. Valid update with hostelName
+      let statusCode = 200;
+      let responseData = null;
+      const mockReq = {
+        user: { userId: "legacy_user_1", role: "student" },
+        body: {
+          name: "Sahil Kumar Chaudhary",
+          email: "sahil@gmail.com",
+          hostelName: "Tagore Hostel",
+          hostelBlock: "B",
+          roomNumber: "927"
+        }
+      };
+      const mockRes = {
+        status: (code) => { statusCode = code; return { json: (d) => { responseData = d; } }; },
+        json: (d) => { responseData = d; }
+      };
+
+      await handler(mockReq, mockRes);
+      assert.strictEqual(statusCode, 200, "Profile update should succeed with 200 OK");
+      assert.strictEqual(mockUser.hostelName, "Tagore Hostel", "User document should have updated hostelName");
+      assert.strictEqual(responseData.user.hostelName, "Tagore Hostel");
+
+      // 2. Reject empty or whitespace-only hostelName
+      let statusCodeEmpty = 200;
+      const mockReqEmpty = {
+        user: { userId: "legacy_user_1", role: "student" },
+        body: {
+          name: "Sahil Kumar",
+          email: "sahil@gmail.com",
+          hostelName: "   ",
+          hostelBlock: "B",
+          roomNumber: "927"
+        }
+      };
+      const mockResEmpty = {
+        status: (code) => { statusCodeEmpty = code; return { json: () => {} }; },
+        json: () => {}
+      };
+      await handler(mockReqEmpty, mockResEmpty);
+      assert.strictEqual(statusCodeEmpty, 400, "Whitespace hostelName in profile update must return 400");
+    } finally {
+      User.findById = origFindById;
+      User.findOne = origFindOne;
+    }
+  });
+
+  // 17. Warden Complaint Access Scoping: Unassigned complaints rejected
+  await testAsync("Warden Access: Unassigned complaints without hostelName return 403 Forbidden to Wardens", async () => {
+    const origFindByIdUser = User.findById;
+    const origFindUser = User.find;
+    const origFindByIdComplaint = Complaint.findById;
+
+    try {
+      User.findById = () => ({
+        select: () => Promise.resolve({
+          _id: "warden_test",
+          name: "Warden Test",
+          email: "warden.test@hostelcare.com",
+          role: "warden",
+          hostelName: "Tagore Hostel",
+          hostelBlock: "all"
+        })
+      });
+
+      User.find = () => ({
+        distinct: () => Promise.resolve(["stu_test"])
+      });
+
+      // Complaint without hostelName
+      Complaint.findById = () => ({
+        populate: () => ({
+          populate: () => ({
+            populate: () => Promise.resolve({
+              _id: "comp_no_hostel",
+              ticketId: "HC-076299",
+              title: "Legacy issue without hostel",
+              student: { _id: "stu_test", name: "Student Test" },
+              hostelName: "", // unassigned
+              hostelBlock: "B",
+              timeline: []
+            })
+          })
+        })
+      });
+
+      const wardenRouter = require("../routes/warden");
+      const routeLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/complaints/:id" && s.route.methods.get);
+      const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+      let statusCode = 200;
+      const mockReq = { user: { userId: "warden_test", role: "warden" }, params: { id: "comp_no_hostel" } };
+      const mockRes = {
+        status: (code) => { statusCode = code; return { json: () => {} }; },
+        json: () => {}
+      };
+
+      await handler(mockReq, mockRes);
+      assert.strictEqual(statusCode, 403, "Complaint without hostelName must be rejected with 403 until assigned");
+    } finally {
+      User.findById = origFindByIdUser;
+      User.find = origFindUser;
+      Complaint.findById = origFindByIdComplaint;
+    }
+  });
+
   console.log("\n==================================================");
   console.log(`Results: ${passed} PASSED, ${failed} FAILED`);
   console.log("==================================================");

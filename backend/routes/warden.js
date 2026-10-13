@@ -37,20 +37,19 @@ function checkBlockAuthorized(complaint, warden) {
 function isComplaintAuthorized(complaint, warden, studentIds) {
   if (!complaint) return false;
 
-  // 1. Direct match on complaint.hostelName
-  if (complaint.hostelName && warden.hostelName) {
-    if (complaint.hostelName.trim().toLowerCase() === warden.hostelName.trim().toLowerCase()) {
-      return checkBlockAuthorized(complaint, warden);
-    }
+  // 1. If a complaint has no hostel name, it must not be visible to any Warden until properly assigned.
+  if (!complaint.hostelName || !complaint.hostelName.trim()) {
+    return false;
   }
 
-  // 2. Student ID match from studentIds
-  const sId = complaint.student?._id ? complaint.student._id.toString() : complaint.student?.toString();
-  if (sId && studentIds.some((id) => id.toString() === sId)) {
-    return checkBlockAuthorized(complaint, warden);
+  // 2. Direct match on complaint.hostelName:
+  // A Warden for "Hostel A" must never see complaints from "Hostel B".
+  if (complaint.hostelName.trim().toLowerCase() !== warden.hostelName.trim().toLowerCase()) {
+    return false;
   }
 
-  return false;
+  // 3. Hostel name matches! Now check block authorization if warden has a specific block assigned.
+  return checkBlockAuthorized(complaint, warden);
 }
 
 /**
@@ -73,13 +72,16 @@ async function getWardenScope(wardenId) {
   }
 
   const cleanHostelName = warden.hostelName.trim();
+  const hostelRegex = new RegExp(`^\\s*${escapeRegex(cleanHostelName)}\\s*$`, "i");
+
   const studentIds = await User.find({
     role: "student",
-    hostelName: { $regex: new RegExp(`^${escapeRegex(cleanHostelName)}$`, "i") }
+    hostelName: { $regex: hostelRegex }
   }).distinct("_id");
 
   const complaintQuery = {
-    student: { $in: studentIds }
+    student: { $in: studentIds },
+    hostelName: { $regex: hostelRegex }
   };
 
   if (warden.hostelBlock && warden.hostelBlock.trim()) {
@@ -313,7 +315,7 @@ router.get("/complaints/:id", auth, auth.requireWarden, async (req, res) => {
     const complaint = await Complaint.findById(req.params.id)
       .populate({
         path: "student",
-        select: "name studentId email phone hostelBlock roomNumber"
+        select: "name studentId email phone hostelName hostelBlock roomNumber"
       })
       .populate({
         path: "assignedStaff",
@@ -342,6 +344,7 @@ router.get("/complaints/:id", auth, auth.requireWarden, async (req, res) => {
         category: complaint.category,
         priority: complaint.priority,
         status: complaint.status,
+        hostelName: complaint.hostelName || (complaint.student ? complaint.student.hostelName : "") || "",
         hostelBlock: complaint.hostelBlock,
         roomNumber: complaint.roomNumber,
         photoUrl: complaint.photoUrl || "",
@@ -358,14 +361,16 @@ router.get("/complaints/:id", auth, auth.requireWarden, async (req, res) => {
               studentId: complaint.student.studentId || "",
               email: complaint.student.email,
               phone: complaint.student.phone || "",
-              roomNumber: complaint.roomNumber,
-              hostelBlock: complaint.hostelBlock
+              hostelName: complaint.student.hostelName || complaint.hostelName || "",
+              hostelBlock: complaint.hostelBlock || complaint.student.hostelBlock || "",
+              roomNumber: complaint.roomNumber || complaint.student.roomNumber || ""
             }
           : null,
         assignedStaff: complaint.assignedStaff
           ? {
               id: complaint.assignedStaff._id.toString(),
               name: complaint.assignedStaff.name,
+              staffId: complaint.assignedStaff.staffId || "",
               department: complaint.assignedStaff.department || "",
               phone: complaint.assignedStaff.phone || ""
             }

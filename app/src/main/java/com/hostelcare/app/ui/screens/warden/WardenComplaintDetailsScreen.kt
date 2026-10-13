@@ -453,7 +453,7 @@ fun WardenComplaintDetailsScreen(
                             val student = c.student
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
-                                    Text("Name", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Student Name", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Text(student?.name ?: "-", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
@@ -466,15 +466,30 @@ fun WardenComplaintDetailsScreen(
 
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
-                                    Text("Room & Block", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Hostel", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val hName = student?.hostelName?.takeIf { it.isNotBlank() } ?: c.hostelName?.takeIf { it.isNotBlank() } ?: "Campus Hostel"
+                                    Text(hName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("Block & Room", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     val rm = if (!c.roomNumber.isNullOrBlank()) "Room ${c.roomNumber}" else "-"
                                     val bl = if (!c.hostelBlock.isNullOrBlank()) " (${c.hostelBlock})" else ""
                                     Text("$rm$bl", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                                 }
-                                if (!student?.phone.isNullOrBlank()) {
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text("Phone", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(student!!.phone ?: "-", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                            }
+
+                            if (!student?.phone.isNullOrBlank() || !c.ticketId.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Column {
+                                        Text("Complaint Ticket ID", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(c.ticketId ?: "-", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                    }
+                                    if (!student?.phone.isNullOrBlank()) {
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("Contact Phone", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(student!!.phone ?: "-", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                                        }
                                     }
                                 }
                             }
@@ -539,11 +554,19 @@ fun WardenComplaintDetailsScreen(
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
+                                        val staffIdText = if (!c.assignedStaff.staffId.isNullOrBlank()) "Staff ID: ${c.assignedStaff.staffId} · " else ""
                                         Text(
-                                            text = c.assignedStaff.department ?: "Maintenance Department",
+                                            text = "$staffIdText${c.assignedStaff.department ?: "Maintenance Department"}",
                                             fontSize = 12.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
+                                        if (!c.assignedStaff.phone.isNullOrBlank()) {
+                                            Text(
+                                                text = "Contact: ${c.assignedStaff.phone}",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                 }
 

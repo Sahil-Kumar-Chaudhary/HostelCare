@@ -8,8 +8,38 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.net.InetAddress
 
 object RetrofitClient {
-    // Dynamic BASE_URL: http://10.0.2.2:5000/ in debug, https://... in release
-    private val BASE_URL = com.hostelcare.app.BuildConfig.BASE_URL
+    @Volatile
+    private var customBaseUrl: String? = null
+
+    /**
+     * Override API base URL dynamically for physical Android device testing:
+     * - "http://127.0.0.1:5000/" with `adb reverse tcp:5000 tcp:5000`
+     * - "http://<PC_LAN_IP>:5000/" over shared local Wi-Fi
+     * Falls back to BuildConfig.BASE_URL ("http://10.0.2.2:5000/" for emulator)
+     */
+    private fun isEmulator(): Boolean {
+        return (android.os.Build.FINGERPRINT.startsWith("generic")
+                || android.os.Build.FINGERPRINT.startsWith("unknown")
+                || android.os.Build.MODEL.contains("google_sdk")
+                || android.os.Build.MODEL.contains("Emulator")
+                || android.os.Build.MODEL.contains("Android SDK built for x86")
+                || android.os.Build.MANUFACTURER.contains("Genymotion")
+                || (android.os.Build.BRAND.startsWith("generic") && android.os.Build.DEVICE.startsWith("generic"))
+                || "google_sdk" == android.os.Build.PRODUCT
+                || android.os.Build.HARDWARE.contains("goldfish")
+                || android.os.Build.HARDWARE.contains("ranchu")
+                || android.os.Build.PRODUCT.contains("sdk"))
+    }
+
+    val baseUrl: String
+        get() {
+            if (customBaseUrl != null) return customBaseUrl!!
+            val configured = com.hostelcare.app.BuildConfig.BASE_URL
+            if (configured == "http://10.0.2.2:5000/" && !isEmulator()) {
+                return "http://127.0.0.1:5000/"
+            }
+            return configured
+        }
 
     fun create(tokenManager: TokenManager): ApiService {
         val logging = HttpLoggingInterceptor().apply {
@@ -40,7 +70,7 @@ object RetrofitClient {
             .build()
 
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

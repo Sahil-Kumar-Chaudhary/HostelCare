@@ -44,6 +44,20 @@ router.post(
         return res.status(403).json({ message: "Only registered students can submit complaints" });
       }
 
+      // 2. Validate student has a saved hostel assignment in their profile
+      if (!student.hostelName || !student.hostelName.trim()) {
+        return res.status(400).json({
+          message: "Please complete your hostel information in your profile before submitting a complaint."
+        });
+      }
+
+      // Prevent spoofing: students cannot submit complaints for a hostel they do not belong to
+      if (req.body.hostelName && req.body.hostelName.trim().toLowerCase() !== student.hostelName.trim().toLowerCase()) {
+        return res.status(403).json({
+          message: "You cannot submit complaints for a hostel you do not belong to."
+        });
+      }
+
       const {
         title,
         description,
@@ -60,7 +74,7 @@ router.post(
         photoUrl = `data:${req.file.mimetype};base64,${base64Image}`;
       }
 
-      // 2. Validate required core fields
+      // Validate required core fields
       if (!title || !title.trim()) {
         return res.status(400).json({ message: "Complaint title is required" });
       }
@@ -71,11 +85,8 @@ router.post(
         return res.status(400).json({ message: "Complaint category is required" });
       }
 
-      // 3. Resolve location: use request or fall back to student's trusted profile
-      const resolvedHostelName =
-        (student.hostelName && student.hostelName.trim()) ||
-        (req.body.hostelName && req.body.hostelName.trim()) ||
-        "";
+      // 3. Resolve location: strictly use student's trusted profile hostelName
+      const resolvedHostelName = student.hostelName.trim();
       const resolvedBlock =
         (hostelBlock && hostelBlock.trim()) ||
         (student.hostelBlock && student.hostelBlock.trim()) ||
@@ -84,6 +95,17 @@ router.post(
         (roomNumber && roomNumber.trim()) ||
         (student.roomNumber && student.roomNumber.trim()) ||
         "";
+
+      // If student has a registered block, validate that provided block matches or is compatible with registered block
+      if (student.hostelBlock && student.hostelBlock.trim() && hostelBlock && hostelBlock.trim()) {
+        const studentBlock = student.hostelBlock.trim().toLowerCase();
+        const reqBlock = hostelBlock.trim().toLowerCase();
+        if (!reqBlock.includes(studentBlock) && !studentBlock.includes(reqBlock)) {
+          return res.status(400).json({
+            message: "Hostel block does not match your registered block."
+          });
+        }
+      }
 
       if (!resolvedBlock) {
         return res.status(400).json({ message: "Hostel block is required" });
