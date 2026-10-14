@@ -13,3 +13,5 @@ build_log.txt
 app/build/
 backend/.env
 backend/node_modules/
+backend/scripts/consolidate_and_cleanup_dbs.js
+backend/scripts/migrateDatabases.js

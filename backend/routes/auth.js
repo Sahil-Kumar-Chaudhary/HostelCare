@@ -208,9 +208,25 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const query = email
-      ? { email: email.trim().toLowerCase() }
-      : { studentId: studentId.trim() };
+    const cleanEmail = email ? email.toString().trim().toLowerCase() : null;
+    const cleanStudentId = studentId ? studentId.toString().trim() : null;
+
+    let query;
+    if (cleanEmail && cleanStudentId) {
+      query = { $or: [{ email: cleanEmail }, { studentId: cleanStudentId }] };
+    } else if (cleanEmail) {
+      if (!cleanEmail.includes("@")) {
+        query = { $or: [{ email: cleanEmail }, { studentId: cleanEmail }] };
+      } else {
+        query = { email: cleanEmail };
+      }
+    } else if (cleanStudentId) {
+      if (cleanStudentId.includes("@")) {
+        query = { email: cleanStudentId.toLowerCase() };
+      } else {
+        query = { studentId: cleanStudentId };
+      }
+    }
 
     const user = await User.findOne(query);
 

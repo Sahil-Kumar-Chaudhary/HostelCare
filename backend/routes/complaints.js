@@ -1,6 +1,8 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Complaint = require("../models/Complaint");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
 
 const multer = require("multer");
@@ -142,6 +144,48 @@ router.post(
           }
         ]
       });
+
+      // Create notifications for student and wardens of this hostel
+      try {
+        if (mongoose.Types.ObjectId.isValid(student._id) && mongoose.Types.ObjectId.isValid(complaint._id)) {
+          // 1. Student confirmation notification
+          const existingStudentNotif = await Notification.findOne({
+            recipient: student._id,
+            type: "complaint_created",
+            complaintId: complaint._id
+          });
+          if (!existingStudentNotif) {
+            await Notification.create({
+              recipient: student._id,
+              title: "Complaint Registered",
+              message: `Your complaint "${complaint.title}" has been registered successfully with ticket ID ${complaint.ticketId}.`,
+              type: "complaint_created",
+              complaintId: complaint._id
+            });
+          }
+
+          // 2. Warden notifications for this hostel
+          const wardens = await User.find({ role: "warden", hostelName: resolvedHostelName });
+          for (const w of wardens) {
+            const existingWardenNotif = await Notification.findOne({
+              recipient: w._id,
+              type: "complaint_created",
+              complaintId: complaint._id
+            });
+            if (!existingWardenNotif) {
+              await Notification.create({
+                recipient: w._id,
+                title: `New Complaint: ${complaint.title}`,
+                message: `New complaint ${complaint.ticketId || ""} lodged in Room ${complaint.roomNumber}, Block ${complaint.hostelBlock}.`,
+                type: "complaint_created",
+                complaintId: complaint._id
+              });
+            }
+          }
+        }
+      } catch (nErr) {
+        console.warn("Notification creation warning:", nErr.message);
+      }
 
       res.status(201).json({
         message: "Complaint created successfully",

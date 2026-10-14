@@ -1,34 +1,54 @@
 package com.hostelcare.app.data.remote
 
+import android.util.Log
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
+    private const val TAG = "HostelCareApi"
+
     @Volatile
     private var customBaseUrl: String? = null
+
+    fun setCustomBaseUrl(url: String?) {
+        customBaseUrl = if (url != null && !url.endsWith("/")) "$url/" else url
+    }
 
     /**
      * Override API base URL dynamically for physical Android device testing:
      * - "http://127.0.0.1:5000/" with `adb reverse tcp:5000 tcp:5000`
      * - "http://<PC_LAN_IP>:5000/" over shared local Wi-Fi
-     * Falls back to BuildConfig.BASE_URL ("http://10.0.2.2:5000/" for emulator)
+     * Falls back to BuildConfig.BASE_URL ("https://hostelcare-backend-1r6q.onrender.com/" by default)
      */
     private fun isEmulator(): Boolean {
-        return (android.os.Build.FINGERPRINT.startsWith("generic")
-                || android.os.Build.FINGERPRINT.startsWith("unknown")
-                || android.os.Build.MODEL.contains("google_sdk")
-                || android.os.Build.MODEL.contains("Emulator")
-                || android.os.Build.MODEL.contains("Android SDK built for x86")
-                || android.os.Build.MANUFACTURER.contains("Genymotion")
-                || (android.os.Build.BRAND.startsWith("generic") && android.os.Build.DEVICE.startsWith("generic"))
-                || "google_sdk" == android.os.Build.PRODUCT
-                || android.os.Build.HARDWARE.contains("goldfish")
-                || android.os.Build.HARDWARE.contains("ranchu")
-                || android.os.Build.PRODUCT.contains("sdk"))
+        return try {
+            val fp = android.os.Build.FINGERPRINT ?: ""
+            val model = android.os.Build.MODEL ?: ""
+            val mfg = android.os.Build.MANUFACTURER ?: ""
+            val brand = android.os.Build.BRAND ?: ""
+            val device = android.os.Build.DEVICE ?: ""
+            val prod = android.os.Build.PRODUCT ?: ""
+            val hw = android.os.Build.HARDWARE ?: ""
+
+            fp.startsWith("generic")
+                || fp.startsWith("unknown")
+                || model.contains("google_sdk")
+                || model.contains("Emulator")
+                || model.contains("Android SDK built for x86")
+                || mfg.contains("Genymotion")
+                || (brand.startsWith("generic") && device.startsWith("generic"))
+                || prod == "google_sdk"
+                || hw.contains("goldfish")
+                || hw.contains("ranchu")
+                || prod.contains("sdk")
+        } catch (_: Throwable) {
+            false
+        }
     }
 
     val baseUrl: String
@@ -42,8 +62,16 @@ object RetrofitClient {
         }
 
     fun create(tokenManager: TokenManager): ApiService {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+        val logging = HttpLoggingInterceptor { message ->
+            Log.d(TAG, message)
+        }.apply {
+            redactHeader("Authorization")
+            redactHeader("Cookie")
+            level = if (com.hostelcare.app.BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BASIC
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
         
         val fallbackDns = object : Dns {
@@ -64,6 +92,10 @@ object RetrofitClient {
         }
 
         val client = OkHttpClient.Builder()
+            .connectTimeout(45, TimeUnit.SECONDS)
+            .readTimeout(45, TimeUnit.SECONDS)
+            .writeTimeout(45, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .dns(fallbackDns)
             .addInterceptor(logging)
             .addInterceptor(AuthInterceptor(tokenManager))

@@ -22,9 +22,17 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         Staff(id = "staff4", name = "Vikramaditya Rao", roleTitle = "Duty Electrician")
     )
 
-    override suspend fun login(email: String, password: String): Result<User> {
+    override suspend fun login(email: String, password: String, portal: String?): Result<User> {
+        val trimmed = email.trim()
+        val isEmail = trimmed.contains("@")
+        val req = com.hostelcare.app.data.remote.LoginRequest(
+            email = if (isEmail) trimmed.lowercase() else null,
+            studentId = if (!isEmail) trimmed else null,
+            password = password,
+            portal = portal
+        )
         return try {
-            val response = apiService.login(com.hostelcare.app.data.remote.LoginRequest(email, password))
+            val response = apiService.login(req)
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 body.token?.let { tokenManager.saveToken(it) }
@@ -32,15 +40,52 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
                 currentUser.value = user
                 Result.success(user)
             } else {
-                Result.failure(Exception("Login failed: ${response.message()}"))
+                val errorMsg = try {
+                    val errBody = response.errorBody()?.string()
+                    if (!errBody.isNullOrBlank()) {
+                        val json = org.json.JSONObject(errBody)
+                        if (json.has("message") && !json.isNull("message")) {
+                            json.getString("message")
+                        } else if (json.has("error") && !json.isNull("error")) {
+                            json.getString("error")
+                        } else {
+                            "Login failed (code ${response.code()})"
+                        }
+                    } else {
+                        when (response.code()) {
+                            401 -> "Invalid credentials"
+                            403 -> "Access denied for the selected portal"
+                            404 -> "Account not found"
+                            500 -> "Server encountered an error. Please try again later."
+                            502, 503, 504 -> "Server is temporarily unavailable. Please try again shortly."
+                            else -> "Login failed (code ${response.code()})"
+                        }
+                    }
+                } catch (e: Exception) {
+                    when (response.code()) {
+                        401 -> "Invalid credentials"
+                        403 -> "Access denied for the selected portal"
+                        404 -> "Account not found"
+                        500 -> "Server encountered an error. Please try again later."
+                        502, 503, 504 -> "Server is temporarily unavailable. Please try again shortly."
+                        else -> "Login failed (code ${response.code()})"
+                    }
+                }
+                Result.failure(Exception(errorMsg))
             }
-        } 
-        catch (e: java.io.IOException) {
-            Result.failure(Exception("Unable to connect to the server. Please try again."))
+        } catch (e: java.net.SocketTimeoutException) {
+            Result.failure(Exception("Connection timed out. The server may be starting up, please try again in a few moments."))
+        } catch (e: java.net.UnknownHostException) {
+            Result.failure(Exception("Unable to reach server. Please check your internet connection."))
+        } catch (e: java.net.ConnectException) {
+            Result.failure(Exception("Could not connect to the server. Please verify your network connection and try again."))
+        } catch (e: javax.net.ssl.SSLException) {
+            Result.failure(Exception("Secure connection error. Please ensure your device clock is accurate and try again."))
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Network error: ${e.localizedMessage ?: "Unable to connect to the server."}"))
         } catch (e: Exception) {
-            Result.failure(Exception("Something went wrong on the server. Please try again."))
+            Result.failure(Exception(e.localizedMessage ?: "Something went wrong on the server. Please try again."))
         }
-
     }
 
     override suspend fun registerStudent(user: User, password: String, confirmPassword: String, acceptedTerms: Boolean): Result<User> {

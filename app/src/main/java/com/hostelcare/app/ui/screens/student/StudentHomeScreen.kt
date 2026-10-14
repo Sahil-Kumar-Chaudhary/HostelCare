@@ -60,6 +60,11 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
     val viewModel: StudentViewModel = viewModel(factory = factory)
     val user by viewModel.currentUser.collectAsStateWithLifecycle(null)
     val complaints by viewModel.complaints.collectAsStateWithLifecycle()
+    val unreadCount by viewModel.unreadCount.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadNotifications()
+    }
     
     val activeCount = complaints.count { it.status == ComplaintStatus.IN_PROGRESS || it.status == ComplaintStatus.ASSIGNED || it.status == ComplaintStatus.UNDER_REVIEW }
     val pendingCount = complaints.count { it.status == ComplaintStatus.SUBMITTED }
@@ -75,7 +80,7 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
     }
 
     Scaffold(
-        bottomBar = { StudentBottomNavigation(navController, Routes.STUDENT_HOME) },
+        bottomBar = { StudentBottomNavigation(navController, Routes.STUDENT_HOME, unreadNotificationCount = unreadCount) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -87,9 +92,40 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                     Text("Student Portal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.Default.NotificationsNone, null, tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(16.dp))
-                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surface, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape), contentAlignment = Alignment.Center) {
+                IconButton(onClick = { navController.navigate(Routes.NOTIFICATIONS) }) {
+                    BadgedBox(
+                        badge = {
+                            if (unreadCount > 0) {
+                                Badge(
+                                    containerColor = Color(0xFFEF4444),
+                                    contentColor = Color.White
+                                ) {
+                                    Text(
+                                        text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsNone,
+                            contentDescription = "Notifications",
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(MaterialTheme.colorScheme.surface, CircleShape)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                        .clickable { navController.navigate(Routes.PROFILE) },
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

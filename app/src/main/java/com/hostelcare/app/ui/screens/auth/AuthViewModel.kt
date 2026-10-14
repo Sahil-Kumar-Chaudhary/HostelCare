@@ -1,4 +1,4 @@
-﻿package com.hostelcare.app.ui.screens.auth
+package com.hostelcare.app.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,10 +23,10 @@ class AuthViewModel(private val repository: HostelRepository) : ViewModel() {
     private val _uiState = MutableStateFlow<AuthState>(AuthState.Idle)
     val uiState: StateFlow<AuthState> = _uiState.asStateFlow()
 
-    fun login(email: String, password: String, asAdmin: Boolean = false) {
+    fun login(email: String, password: String, portal: String? = null) {
         viewModelScope.launch {
             _uiState.value = AuthState.Loading
-            val result = repository.login(email, password)
+            val result = repository.login(email, password, portal)
             if (result.isSuccess) {
                 _uiState.value = AuthState.Success
             } else {

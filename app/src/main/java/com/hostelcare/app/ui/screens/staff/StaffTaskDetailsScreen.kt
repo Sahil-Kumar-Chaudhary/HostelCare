@@ -2,6 +2,7 @@ package com.hostelcare.app.ui.screens.staff
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,9 +26,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.hostelcare.app.AppViewModelFactory
 import com.hostelcare.app.HostelCareApp
-import com.hostelcare.app.ui.screens.auth.CustomTextField
-import com.hostelcare.app.ui.theme.*
+import com.hostelcare.app.ui.navigation.Routes
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,383 +42,491 @@ fun StaffTaskDetailsScreen(
     val viewModel: StaffViewModel = viewModel(factory = factory)
 
     val taskDetailState by viewModel.taskDetailState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    var showCompleteDialog by remember { mutableStateOf(false) }
-    var workNoteInput by remember { mutableStateOf("") }
-    var isSavingNote by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(taskId) {
         viewModel.loadTaskDetail(taskId)
     }
 
-    if (showCompleteDialog) {
-        var completionNote by remember { mutableStateOf("") }
-        var isSubmitting by remember { mutableStateOf(false) }
-
-        AlertDialog(
-            onDismissRequest = { if (!isSubmitting) showCompleteDialog = false },
-            title = { Text("Submit for Completion Review", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Describe the repair work carried out. The warden will review and mark the complaint resolved.",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    CustomTextField(
-                        value = completionNote,
-                        onValueChange = { completionNote = it },
-                        placeholder = "e.g. Replaced washer in bathroom tap; tested water flow."
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        isSubmitting = true
-                        viewModel.submitCompletion(
-                            id = taskId,
-                            completionNotes = completionNote.trim().ifBlank { null },
-                            completionPhotoUrl = null,
-                            onComplete = { success, err ->
-                                isSubmitting = false
-                                showCompleteDialog = false
-                                scope.launch {
-                                    if (success) {
-                                        snackbarHostState.showSnackbar("Work submitted for warden review")
-                                    } else {
-                                        snackbarHostState.showSnackbar(err ?: "Failed to submit completion")
-                                    }
-                                }
-                            }
-                        )
-                    },
-                    enabled = !isSubmitting,
-                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
-                ) {
-                    if (isSubmitting) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Submit Review")
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCompleteDialog = false }, enabled = !isSubmitting) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = if (taskDetailState is StaffTaskDetailUiState.Success) {
-                            (taskDetailState as StaffTaskDetailUiState.Success).task.ticketId ?: "Task Details"
-                        } else {
-                            "Task Details"
-                        },
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
+            Surface(
+                color = Color.White,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color(0xFF0F172A)
+                            )
+                        }
+                        Text(
+                            text = "Task Details",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
                         )
                     }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.loadTaskDetail(taskId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    IconButton(onClick = { /* menu */ }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Options",
+                            tint = Color(0xFF475569)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
-        }
+                }
+            }
+        },
+        containerColor = Color(0xFFF8FAFC)
     ) { paddingValues ->
         when (val state = taskDetailState) {
             is StaffTaskDetailUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFF2563EB))
                 }
             }
-
             is StaffTaskDetailUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(24.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = state.message, color = DangerRed, fontSize = 14.sp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(onClick = { viewModel.loadTaskDetail(taskId) }) {
+                        Text(text = state.message, color = Color(0xFFDC2626), fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { viewModel.loadTaskDetail(taskId) },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                        ) {
                             Text("Retry")
                         }
                     }
                 }
             }
-
             is StaffTaskDetailUiState.Success -> {
                 val task = state.task
-                val isAssigned = task.status.lowercase() == "assigned"
-                val isInProgress = task.status.lowercase() == "in_progress"
-                val isUnderReview = task.status.lowercase() == "under_review"
-                val isResolved = task.status.lowercase() == "resolved"
-
-                val statusColor = when (task.status.lowercase()) {
-                    "resolved" -> SuccessGreen
-                    "in_progress" -> PrimaryBlue
-                    "under_review" -> Color(0xFFD97706)
-                    else -> PendingAmber
+                val (categoryIcon, categoryTint, categoryBg) = getCategoryVisuals(task.category)
+                val fullLocation = buildString {
+                    append(task.hostelName ?: "BH1")
+                    if (!task.hostelBlock.isNullOrBlank()) {
+                        append(" • Block ${task.hostelBlock}")
+                    }
+                    if (!task.roomNumber.isNullOrBlank()) {
+                        append(" • Room ${task.roomNumber}")
+                    }
                 }
+
+                val formattedDate = formatFullDateTime(task.createdAt)
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Task Status Header Card
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        shadowElevation = 1.dp,
-                        modifier = Modifier.fillMaxWidth()
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        // Header Card
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.Top
                             ) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(categoryBg),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = task.category.uppercase(),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    Icon(
+                                        imageVector = categoryIcon,
+                                        contentDescription = null,
+                                        tint = categoryTint,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
 
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = statusColor.copy(alpha = 0.12f),
-                                    border = BorderStroke(0.5.dp, statusColor.copy(alpha = 0.3f))
-                                ) {
+                                Spacer(modifier = Modifier.width(14.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        Text(
+                                            text = task.ticketId ?: "Ticket",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFF64748B)
+                                        )
+                                        PriorityBadge(priority = task.priority)
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = task.title,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = fullLocation,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Reporter Card
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFF1F5F9)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(14.dp))
+
+                                Column {
+                                    Text(
+                                        text = "Reported by",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    val studentName = task.student?.name ?: "Student"
+                                    val studentId = task.student?.studentId?.let { "(ID: $it)" } ?: ""
+                                    Text(
+                                        text = "$studentName $studentId".trim(),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Description Card
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Description",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = task.description?.ifBlank { "No description provided." } ?: "No description provided.",
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF475569),
+                                    lineHeight = 19.sp
+                                )
+                            }
+                        }
+
+                        // Photos Card (if any)
+                        val photos = listOfNotNull(
+                            task.photoUrl?.takeIf { it.isNotBlank() },
+                            task.completionPhotoUrl?.takeIf { it.isNotBlank() }
+                        )
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Photos (${photos.size.coerceAtLeast(1)})",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    val displayCount = if (photos.isNotEmpty()) photos.size else 2
+                                    repeat(displayCount) { idx ->
                                         Box(
                                             modifier = Modifier
-                                                .size(6.dp)
-                                                .clip(CircleShape)
-                                                .background(statusColor)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = task.status.replace("_", " ").replaceFirstChar { it.uppercase() },
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = statusColor
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Text(
-                                text = task.title,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                text = task.description ?: "No description provided.",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 20.sp
-                            )
-                        }
-                    }
-
-                    // Location & Student Contact Card
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        shadowElevation = 1.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Location & Student", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val rm = if (!task.roomNumber.isNullOrBlank()) "Room ${task.roomNumber}" else "Hostel"
-                            val bl = if (!task.hostelBlock.isNullOrBlank()) " (${task.hostelBlock})" else ""
-                            Text("Location: $rm$bl", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("Student: ${task.student?.name ?: "-"}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                            if (!task.student?.phone.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Contact Phone: ${task.student!!.phone}", fontSize = 13.sp, color = PrimaryBlue)
-                            }
-                        }
-                    }
-
-                    // Warden Instructions Card (if any)
-                    if (!task.assignmentInstructions.isNullOrBlank()) {
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = PrimaryBlue.copy(alpha = 0.08f),
-                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Text("Warden Instructions", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(task.assignmentInstructions, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                        }
-                    }
-
-                    // Action Controls for Staff Member
-                    if (isAssigned) {
-                        Button(
-                            onClick = {
-                                viewModel.updateTaskProgress(
-                                    id = taskId,
-                                    status = "in_progress",
-                                    workNotes = "Staff started work",
-                                    onComplete = { success, err ->
-                                        scope.launch {
-                                            if (success) snackbarHostState.showSnackbar("Work started! Status is now In Progress")
-                                            else snackbarHostState.showSnackbar(err ?: "Failed to update status")
+                                                .size(100.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(Color(0xFFE2E8F0)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Image,
+                                                    contentDescription = "Photo ${idx + 1}",
+                                                    tint = Color(0xFF64748B),
+                                                    modifier = Modifier.size(32.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Photo ${idx + 1}",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFF64748B),
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
                                         }
                                     }
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Start Work on this Task", fontWeight = FontWeight.SemiBold)
+                                }
+                            }
                         }
-                    } else if (isInProgress) {
+
+                        // Details Table Card
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text("Work Progress Notes", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-
-                                if (!task.workNotes.isNullOrBlank()) {
-                                    Text("Current notes: ${task.workNotes}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-
-                                CustomTextField(
-                                    value = workNoteInput,
-                                    onValueChange = { workNoteInput = it },
-                                    placeholder = "Add latest progress note..."
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "Details",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
                                 )
 
-                                Button(
-                                    onClick = {
-                                        if (workNoteInput.isBlank()) return@Button
-                                        isSavingNote = true
-                                        viewModel.updateTaskProgress(
-                                            id = taskId,
-                                            status = null,
-                                            workNotes = workNoteInput.trim(),
-                                            onComplete = { success, err ->
-                                                isSavingNote = false
-                                                if (success) {
-                                                    workNoteInput = ""
-                                                    scope.launch { snackbarHostState.showSnackbar("Progress note saved") }
-                                                }
-                                            }
-                                        )
-                                    },
-                                    enabled = !isSavingNote && workNoteInput.isNotBlank(),
-                                    modifier = Modifier.fillMaxWidth()
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Save Note")
+                                    Text(text = "Category", fontSize = 13.sp, color = Color(0xFF64748B))
+                                    Text(
+                                        text = task.category.replaceFirstChar { it.uppercase() },
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF0F172A)
+                                    )
                                 }
-                            }
-                        }
 
-                        Button(
-                            onClick = { showCompleteDialog = true },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Submit Work for Completion Review", fontWeight = FontWeight.SemiBold)
-                        }
-                    } else if (isUnderReview) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFEF3C7),
-                            border = BorderStroke(1.dp, Color(0xFFD97706).copy(alpha = 0.3f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.HourglassTop, contentDescription = null, tint = Color(0xFFD97706))
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = "Work completed! Submitted for Warden review and sign-off.",
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF92400E)
-                                )
-                            }
-                        }
-                    } else if (isResolved) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = SuccessGreen.copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, SuccessGreen.copy(alpha = 0.3f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SuccessGreen)
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = "Task marked fully resolved and verified by hostel warden.",
-                                    fontSize = 13.sp,
-                                    color = SuccessGreen,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = "Status", fontSize = 13.sp, color = Color(0xFF64748B))
+                                    StatusPill(status = task.status)
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = "Created On", fontSize = 13.sp, color = Color(0xFF64748B))
+                                    Text(
+                                        text = formattedDate,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    // Bottom Action Button
+                    Surface(
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(16.dp)
+                        ) {
+                            when (task.status.lowercase()) {
+                                "assigned" -> {
+                                    Button(
+                                        onClick = {
+                                            viewModel.updateTaskProgress(taskId, "in_progress", null) { success, _ ->
+                                                if (success) {
+                                                    navController.navigate(Routes.staffUpdateStatus(taskId))
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(50.dp)
+                                    ) {
+                                        Text("Start Work", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                                "in_progress" -> {
+                                    Button(
+                                        onClick = {
+                                            navController.navigate(Routes.staffUpdateStatus(taskId))
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(50.dp)
+                                    ) {
+                                        Text("Update Status", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                                "under_review" -> {
+                                    Button(
+                                        onClick = {
+                                            navController.navigate(Routes.staffWorkCompleted(taskId))
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(50.dp)
+                                    ) {
+                                        Text("View Submitted Work", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                                else -> {
+                                    Button(
+                                        onClick = { navController.popBackStack() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(50.dp)
+                                    ) {
+                                        Text("Completed", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StatusPill(status: String) {
+    val norm = status.lowercase().trim()
+    val (bg, text, label) = when (norm) {
+        "assigned" -> Triple(Color(0xFFEFF6FF), Color(0xFF2563EB), "Assigned")
+        "in_progress" -> Triple(Color(0xFFFEF3C7), Color(0xFFD97706), "In Progress")
+        "under_review" -> Triple(Color(0xFFF3E8FF), Color(0xFF7C3AED), "Under Review")
+        "resolved" -> Triple(Color(0xFFDCFCE7), Color(0xFF16A34A), "Completed")
+        else -> Triple(Color(0xFFF1F5F9), Color(0xFF64748B), status)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = bg
+    ) {
+        Text(
+            text = label,
+            color = text,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+    }
+}
+
+fun formatFullDateTime(isoString: String?): String {
+    if (isoString.isNullOrBlank()) return "Recent"
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        val date = parser.parse(isoString) ?: return isoString
+        val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.US)
+        formatter.format(date)
+    } catch (e: Exception) {
+        isoString
     }
 }

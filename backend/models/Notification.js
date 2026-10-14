@@ -25,8 +25,11 @@ const notificationSchema = new mongoose.Schema(
         "complaint_priority",
         "complaint_assigned",
         "work_started",
+        "work_submitted",
         "completion_requested",
         "complaint_resolved",
+        "complaint_reopened",
+        "status_updated",
         "system"
       ],
       default: "system"

@@ -21,8 +21,10 @@ data class RegisterRequest(
 )
 
 data class LoginRequest(
-    val email: String,
-    val password: String
+    val email: String? = null,
+    val studentId: String? = null,
+    val password: String,
+    val portal: String? = null
 )
 
 data class AuthResponse(
@@ -148,7 +150,7 @@ data class NetworkComplaint(
         aiSummary = aiSummary
     )
 }
-data class AiAnalyzeRequest(val complaintId: String? = null, 
+data class AiAnalyzeRequest(val complaintId: String? = null,
     val title: String,
     val description: String,
     val category: String? = null,
@@ -346,7 +348,8 @@ data class StaffStatsData(
     val totalAssigned: Int = 0,
     val completedCount: Int = 0,
     val inProgressCount: Int = 0,
-    val pendingCount: Int = 0
+    val pendingCount: Int = 0,
+    val pendingReviewCount: Int = 0
 )
 
 data class StaffRecentTask(
@@ -438,6 +441,7 @@ data class StaffTaskItem(
     val category: String,
     val priority: String,
     val status: String,
+    val hostelName: String? = null,
     val hostelBlock: String?,
     val roomNumber: String?,
     val photoUrl: String?,
@@ -451,9 +455,12 @@ data class StaffTaskItem(
 data class StaffTaskStudent(
     val id: String?,
     val name: String?,
+    val studentId: String? = null,
     val phone: String?,
+    val email: String? = null,
     val roomNumber: String?,
-    val hostelBlock: String?
+    val hostelBlock: String?,
+    val hostelName: String? = null
 )
 
 data class StaffTaskDetailResponse(
@@ -469,6 +476,7 @@ data class StaffTaskDetail(
     val category: String,
     val priority: String,
     val status: String,
+    val hostelName: String? = null,
     val hostelBlock: String?,
     val roomNumber: String?,
     val photoUrl: String?,
@@ -498,13 +506,13 @@ data class InAppNotificationsResponse(
 )
 
 data class InAppNotificationItem(
-    val id: String,
-    val title: String,
-    val message: String,
-    val type: String,
-    val complaintId: String?,
-    val isRead: Boolean,
-    val createdAt: String?
+    @SerializedName(value = "id", alternate = ["_id"]) val id: String = "",
+    val title: String = "",
+    val message: String = "",
+    val type: String = "system",
+    @SerializedName(value = "complaintId", alternate = ["complaint"]) val complaintId: String? = null,
+    val isRead: Boolean = false,
+    val createdAt: String? = null
 )
 
 data class SimpleSuccessResponse(

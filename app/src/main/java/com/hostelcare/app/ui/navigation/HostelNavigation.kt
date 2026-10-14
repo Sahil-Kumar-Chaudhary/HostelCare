@@ -1,6 +1,8 @@
 package com.hostelcare.app.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -42,10 +44,16 @@ object Routes {
     const val WARDEN_STAFF_PROFILE = "warden_staff_profile/{staffId}"
     const val WARDEN_REPORTS = "warden_reports"
     const val WARDEN_PROFILE = "warden_profile"
+    const val WARDEN_NOTIFICATIONS = "warden_notifications"
 
-    // Staff Portal Routes
+    // Staff Portal Routes (Screens 1 - 8)
     const val STAFF_HOME = "staff_home"
+    const val STAFF_TASKS = "staff_tasks"
     const val STAFF_TASK_DETAILS = "staff_task_details/{taskId}"
+    const val STAFF_UPDATE_STATUS = "staff_update_status/{taskId}"
+    const val STAFF_WORK_COMPLETED = "staff_work_completed/{taskId}"
+    const val STAFF_NOTIFICATIONS = "staff_notifications"
+    const val STAFF_PROFILE = "staff_profile"
 
     fun complaintDetails(id: String) = "complaint_details/$id"
     fun feedback(id: String) = "feedback/$id"
@@ -57,6 +65,8 @@ object Routes {
     fun wardenAssignStaff(id: String) = "warden_assign_staff/$id"
     fun wardenStaffProfile(id: String) = "warden_staff_profile/$id"
     fun staffTaskDetails(id: String) = "staff_task_details/$id"
+    fun staffUpdateStatus(id: String) = "staff_update_status/$id"
+    fun staffWorkCompleted(id: String) = "staff_work_completed/$id"
 }
 
 @Composable
@@ -102,7 +112,12 @@ fun HostelCareAppNavHost(
             com.hostelcare.app.ui.screens.student.ComplaintDetailsScreen(navController, appContainer, id)
         }
         composable(Routes.NOTIFICATIONS) {
-            com.hostelcare.app.ui.screens.student.NotificationsScreen(navController, appContainer)
+            val user by appContainer.repository.currentUserFlow().collectAsStateWithLifecycle(null)
+            when (user?.role) {
+                com.hostelcare.app.data.model.Role.WARDEN -> com.hostelcare.app.ui.screens.warden.WardenNotificationsScreen(navController, appContainer)
+                com.hostelcare.app.data.model.Role.STAFF -> com.hostelcare.app.ui.screens.staff.StaffNotificationsScreen(navController, appContainer)
+                else -> com.hostelcare.app.ui.screens.student.NotificationsScreen(navController, appContainer)
+            }
         }
         composable(Routes.PROFILE) {
             com.hostelcare.app.ui.screens.student.ProfileScreen(navController, appContainer)
@@ -170,14 +185,34 @@ fun HostelCareAppNavHost(
         composable(Routes.WARDEN_PROFILE) {
             com.hostelcare.app.ui.screens.warden.WardenProfileScreen(navController, appContainer)
         }
+        composable(Routes.WARDEN_NOTIFICATIONS) {
+            com.hostelcare.app.ui.screens.warden.WardenNotificationsScreen(navController, appContainer)
+        }
 
-        // Staff Flow Screens
+        // Staff Flow Screens (Screens 1 - 8)
         composable(Routes.STAFF_HOME) {
             com.hostelcare.app.ui.screens.staff.StaffHomeScreen(navController, appContainer)
+        }
+        composable(Routes.STAFF_TASKS) {
+            com.hostelcare.app.ui.screens.staff.StaffTasksScreen(navController, appContainer)
         }
         composable(Routes.STAFF_TASK_DETAILS) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("taskId") ?: ""
             com.hostelcare.app.ui.screens.staff.StaffTaskDetailsScreen(navController, appContainer, id)
+        }
+        composable(Routes.STAFF_UPDATE_STATUS) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("taskId") ?: ""
+            com.hostelcare.app.ui.screens.staff.StaffUpdateStatusScreen(navController, appContainer, id)
+        }
+        composable(Routes.STAFF_WORK_COMPLETED) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("taskId") ?: ""
+            com.hostelcare.app.ui.screens.staff.StaffWorkCompletedScreen(navController, appContainer, id)
+        }
+        composable(Routes.STAFF_NOTIFICATIONS) {
+            com.hostelcare.app.ui.screens.staff.StaffNotificationsScreen(navController, appContainer)
+        }
+        composable(Routes.STAFF_PROFILE) {
+            com.hostelcare.app.ui.screens.staff.StaffProfileScreen(navController, appContainer)
         }
     }
 }

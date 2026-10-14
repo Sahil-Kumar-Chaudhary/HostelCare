@@ -54,124 +54,228 @@ import java.util.Locale
 fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: StudentViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
-    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle(null)
-    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
-    val coroutineScope = rememberCoroutineScope()
-    
-    var filter by remember { mutableStateOf("All") }
-    val filters = listOf("All", "Updates", "Assigned", "Resolved", "System")
-    
-    val filtered = notifications.filter {
-        when (filter) {
-            "Updates" -> it.type == com.hostelcare.app.data.model.NotificationType.SUBMITTED || it.type == com.hostelcare.app.data.model.NotificationType.STATUS_UPDATED || it.type == com.hostelcare.app.data.model.NotificationType.AI_ANALYSIS_COMPLETED
-            "Assigned" -> it.type == com.hostelcare.app.data.model.NotificationType.ASSIGNED
-            "Resolved" -> it.type == com.hostelcare.app.data.model.NotificationType.RESOLVED
-            "System" -> it.type == com.hostelcare.app.data.model.NotificationType.ADVISORY
-            else -> true
-        }
+    val notificationsState by viewModel.notificationsState.collectAsStateWithLifecycle()
+    val unreadCount by viewModel.unreadCount.collectAsStateWithLifecycle()
+
+    var selectedTab by remember { mutableStateOf("all") } // "all" or "unread"
+
+    LaunchedEffect(Unit) {
+        viewModel.loadNotifications()
     }
 
     Scaffold(
-        bottomBar = {
-            when (currentUser?.role) {
-                Role.WARDEN -> WardenBottomNavigation(navController, Routes.NOTIFICATIONS)
-                Role.STAFF -> StaffBottomNavigation(navController, Routes.NOTIFICATIONS)
-                else -> StudentBottomNavigation(navController, Routes.NOTIFICATIONS)
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (!navController.popBackStack()) {
-                            when (currentUser?.role) {
-                                Role.WARDEN -> navController.navigate(Routes.WARDEN_HOME)
-                                Role.STAFF -> navController.navigate(Routes.STAFF_HOME)
-                                else -> navController.navigate(Routes.STUDENT_HOME)
+            Surface(
+                color = Color.White,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = {
+                            if (!navController.popBackStack()) {
+                                navController.navigate(Routes.STUDENT_HOME)
                             }
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color(0xFF0F172A)
+                            )
                         }
-                    }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
+                        Text(
+                            text = "Notifications",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
                         )
                     }
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            coroutineScope.launch {
-                                notifications.filter { !it.isRead }.forEach { n ->
-                                    app.repository.markNotificationAsRead(n.id)
-                                }
-                            }
-                        }
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Mark all read", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+
+                    IconButton(onClick = { viewModel.markAllInAppNotificationsRead() }) {
+                        Icon(
+                            imageVector = Icons.Default.DoneAll,
+                            contentDescription = "Mark all read",
+                            tint = Color(0xFF475569)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                }
+            }
+        },
+        bottomBar = {
+            StudentBottomNavigation(
+                navController = navController,
+                currentRoute = Routes.NOTIFICATIONS,
+                unreadNotificationCount = unreadCount
             )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+        },
+        containerColor = Color(0xFFF8FAFC)
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            val (allCount, unreadTabCount) = when (val state = notificationsState) {
+                is StudentNotificationsUiState.Success -> Pair(state.notifications.size, state.unreadCount)
+                else -> Pair(0, 0)
+            }
+
+            // Tabs Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                filters.forEach { f ->
-                    val isSelected = filter == f
-                    Surface(
-                        onClick = { filter = f },
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outline)
+                val isAllSelected = selectedTab == "all"
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isAllSelected) Color(0xFF2563EB) else Color.White,
+                    border = BorderStroke(1.dp, if (isAllSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedTab = "all" }
+                ) {
+                    Box(
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = f,
-                            color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = "All ($allCount)",
+                            color = if (isAllSelected) Color.White else Color(0xFF64748B),
                             fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
+
+                val isUnreadSelected = selectedTab == "unread"
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isUnreadSelected) Color(0xFF2563EB) else Color.White,
+                    border = BorderStroke(1.dp, if (isUnreadSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedTab = "unread" }
+                ) {
+                    Box(
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Unread ($unreadTabCount)",
+                            color = if (isUnreadSelected) Color.White else Color(0xFF64748B),
+                            fontSize = 13.sp,
+                            fontWeight = if (isUnreadSelected) FontWeight.Bold else FontWeight.Medium
                         )
                     }
                 }
             }
-            
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
-            
-            if (filtered.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.NotificationsOff, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outlineVariant)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("No notifications yet", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("You'll see complaint updates and\nimportant hostel announcements here.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, textAlign = TextAlign.Center, lineHeight = 20.sp)
+
+            // Notifications List
+            when (val state = notificationsState) {
+                is StudentNotificationsUiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF2563EB))
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filtered) { n ->
-                        NotificationCard(n) {
-                            coroutineScope.launch {
-                                app.repository.markNotificationAsRead(n.id)
+                is StudentNotificationsUiState.Empty -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.NotificationsOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = Color(0xFF94A3B8)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "No notifications yet",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF0F172A)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "You'll see complaint updates and important hostel announcements here.",
+                                color = Color(0xFF64748B),
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 20.sp
+                            )
+                        }
+                    }
+                }
+                is StudentNotificationsUiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = state.message, color = Color(0xFFDC2626), fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.loadNotifications() }) {
+                                Text("Retry")
                             }
-                            if (n.complaintId != null) {
-                                navController.navigate(Routes.complaintDetails(n.complaintId))
+                        }
+                    }
+                }
+                is StudentNotificationsUiState.Success -> {
+                    val filtered = if (selectedTab == "unread") {
+                        state.notifications.filter { !it.isRead }
+                    } else {
+                        state.notifications
+                    }
+
+                    if (filtered.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (selectedTab == "unread") "No unread notifications." else "No notifications.",
+                                color = Color(0xFF64748B),
+                                fontSize = 14.sp
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(filtered, key = { it.id }) { item ->
+                                StudentNotificationCard(
+                                    item = item,
+                                    onClick = {
+                                        if (!item.isRead) {
+                                            viewModel.markInAppNotificationRead(item.id)
+                                        }
+                                        if (!item.complaintId.isNullOrBlank()) {
+                                            navController.navigate(Routes.complaintDetails(item.complaintId))
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -182,59 +286,134 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
 }
 
 @Composable
-fun NotificationCard(n: com.hostelcare.app.data.model.Notification, onClick: () -> Unit) {
-    val iconInfo = when (n.type) {
-        com.hostelcare.app.data.model.NotificationType.AI_ANALYSIS_COMPLETED -> Pair(Icons.Default.AutoAwesome, PrimaryBlue)
-        com.hostelcare.app.data.model.NotificationType.SUBMITTED -> Pair(Icons.Default.Assignment, PrimaryBlue)
-        com.hostelcare.app.data.model.NotificationType.ASSIGNED -> Pair(Icons.Default.PersonOutline, Color(0xFFD97706))
-        com.hostelcare.app.data.model.NotificationType.IN_PROGRESS, com.hostelcare.app.data.model.NotificationType.STATUS_UPDATED -> Pair(Icons.Default.Settings, Color(0xFF7C3AED))
-        com.hostelcare.app.data.model.NotificationType.RESOLVED -> Pair(Icons.Default.CheckCircleOutline, Color(0xFF16A34A))
-        com.hostelcare.app.data.model.NotificationType.ADVISORY -> Pair(Icons.Default.Info, TextMuted)
-    }
+fun StudentNotificationCard(
+    item: com.hostelcare.app.data.remote.InAppNotificationItem,
+    onClick: () -> Unit
+) {
+    val (icon, iconTint, iconBg) = getStudentNotificationVisuals(item.type, item.title)
+    val timeAgo = formatStudentTimeAgo(item.createdAt)
 
-    val timeDiff = System.currentTimeMillis() - n.createdAt
-    val mins = timeDiff / 60000
-    val hours = mins / 60
-    val days = hours / 24
-    
-    val timeStr = when {
-        mins < 60 -> "${maxOf(1, mins)} min ago"
-        hours < 24 -> "$hours hours ago"
-        days == 1L -> "1 day ago"
-        else -> "$days days ago"
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = if (n.isRead) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    Surface(
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
-        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
             Box(
-                modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(iconInfo.first, contentDescription = null, tint = iconInfo.second, modifier = Modifier.size(20.dp))
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
+                )
             }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
+
+            Spacer(modifier = Modifier.width(14.dp))
+
             Column(modifier = Modifier.weight(1f)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                    Text(n.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f).padding(end = 8.dp))
-                    Text(timeStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    if (!item.isRead) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444))
+                        )
+                    }
                 }
+
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(n.message, color = if (n.isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, lineHeight = 20.sp)
-            }
-            
-            if (!n.isRead) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(modifier = Modifier.size(8.dp).background(PrimaryBlue, CircleShape).align(Alignment.CenterVertically))
+
+                Text(
+                    text = item.message,
+                    fontSize = 13.sp,
+                    color = Color(0xFF475569),
+                    lineHeight = 18.sp
+                )
+
+                if (timeAgo.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = timeAgo,
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
             }
         }
+    }
+}
+
+fun getStudentNotificationVisuals(type: String, title: String): Triple<androidx.compose.ui.graphics.vector.ImageVector, Color, Color> {
+    val t = type.lowercase()
+    val tit = title.lowercase()
+    return when {
+        t == "complaint_created" || tit.contains("registered") ->
+            Triple(Icons.Default.Description, Color(0xFF2563EB), Color(0xFFEFF6FF))
+        t == "complaint_assigned" || tit.contains("assigned") ->
+            Triple(Icons.Default.Engineering, Color(0xFF7C3AED), Color(0xFFF3E8FF))
+        t == "work_started" || tit.contains("started") ->
+            Triple(Icons.Default.Build, Color(0xFF0284C7), Color(0xFFE0F2FE))
+        t == "work_submitted" || tit.contains("submitted") ->
+            Triple(Icons.Default.HourglassTop, Color(0xFFD97706), Color(0xFFFEF3C7))
+        t == "complaint_resolved" || tit.contains("resolved") ->
+            Triple(Icons.Default.CheckCircle, Color(0xFF16A34A), Color(0xFFDCFCE7))
+        t == "complaint_reopened" || tit.contains("reopened") ->
+            Triple(Icons.Default.Replay, Color(0xFFEF4444), Color(0xFFFEE2E2))
+        t == "status_updated" || tit.contains("status") ->
+            Triple(Icons.Default.Settings, Color(0xFF64748B), Color(0xFFF1F5F9))
+        else ->
+            Triple(Icons.Default.Notifications, Color(0xFF64748B), Color(0xFFF1F5F9))
+    }
+}
+
+fun formatStudentTimeAgo(isoString: String?): String {
+    if (isoString.isNullOrBlank()) return ""
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }
+        val date = parser.parse(isoString) ?: return ""
+        val now = System.currentTimeMillis()
+        val diffMs = now - date.time
+        val diffMins = diffMs / (1000 * 60)
+        val diffHours = diffMins / 60
+        val diffDays = diffHours / 24
+
+        when {
+            diffMins < 1 -> "Just now"
+            diffMins < 60 -> "$diffMins min ago"
+            diffHours < 24 -> "$diffHours hours ago"
+            diffDays == 1L -> "1 day ago"
+            else -> "$diffDays days ago"
+        }
+    } catch (e: Exception) {
+        ""
     }
 }
 

@@ -27,7 +27,11 @@ import androidx.navigation.NavController
 import com.hostelcare.app.ui.navigation.Routes
 
 @Composable
-fun StudentBottomNavigation(navController: NavController, currentRoute: String) {
+fun StudentBottomNavigation(
+    navController: NavController,
+    currentRoute: String,
+    unreadNotificationCount: Int = 0
+) {
     val items = listOf(
         Triple(Routes.STUDENT_HOME, "Home", Icons.Default.Home),
         Triple(Routes.MY_COMPLAINTS, "Complaints", Icons.AutoMirrored.Filled.List),
@@ -58,16 +62,18 @@ fun StudentBottomNavigation(navController: NavController, currentRoute: String) 
             ) {
                 items.forEach { (route, label, icon) ->
                     val selected = currentRoute == route
+                    val badge = if (route == Routes.NOTIFICATIONS) unreadNotificationCount else 0
                     BottomNavItem(
                         icon = icon,
                         label = label,
                         selected = selected,
+                        badgeCount = badge,
                         onClick = {
                             if (currentRoute != route) {
                                 navController.navigate(route) {
-                                    if (route == Routes.STUDENT_HOME) {
-                                        popUpTo(Routes.STUDENT_HOME) { inclusive = true }
-                                    }
+                                    popUpTo(Routes.STUDENT_HOME) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
                             }
                         }
@@ -194,18 +200,21 @@ fun WardenBottomNavigation(
 fun StaffBottomNavigation(
     navController: NavController,
     currentRoute: String,
+    unreadNotificationCount: Int = 0,
     onProfileClick: (() -> Unit)? = null
 ) {
     val items = listOf(
-        Triple(Routes.STAFF_HOME, "My Tasks", Icons.Default.Engineering),
-        Triple("staff_profile", "Profile", Icons.Default.Person)
+        Triple(Routes.STAFF_HOME, "Home", Icons.Default.Home),
+        Triple(Routes.STAFF_TASKS, "Tasks", Icons.AutoMirrored.Filled.List),
+        Triple(Routes.STAFF_NOTIFICATIONS, "Notifications", Icons.Default.Notifications),
+        Triple(Routes.STAFF_PROFILE, "Profile", Icons.Default.Person)
     )
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 24.dp, end = 24.dp, bottom = 10.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
     ) {
         Surface(
             shape = RoundedCornerShape(28.dp),
@@ -218,18 +227,20 @@ fun StaffBottomNavigation(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEach { (route, label, icon) ->
                     val selected = currentRoute == route
+                    val badge = if (route == Routes.STAFF_NOTIFICATIONS) unreadNotificationCount else 0
                     BottomNavItem(
                         icon = icon,
                         label = label,
                         selected = selected,
+                        badgeCount = badge,
                         onClick = {
-                            if (route == "staff_profile" && onProfileClick != null) {
+                            if (route == Routes.STAFF_PROFILE && onProfileClick != null) {
                                 onProfileClick()
                             } else if (currentRoute != route) {
                                 navController.navigate(route) {
@@ -251,6 +262,7 @@ private fun BottomNavItem(
     icon: ImageVector,
     label: String,
     selected: Boolean,
+    badgeCount: Int = 0,
     onClick: () -> Unit
 ) {
     val capsuleBg = if (selected) {
@@ -269,19 +281,36 @@ private fun BottomNavItem(
             .clip(RoundedCornerShape(16.dp))
             .background(capsuleBg)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = contentColor,
-                modifier = Modifier.size(22.dp)
-            )
+            BadgedBox(
+                badge = {
+                    if (badgeCount > 0) {
+                        Badge(
+                            containerColor = Color(0xFFEF4444),
+                            contentColor = Color.White
+                        ) {
+                            Text(
+                                text = if (badgeCount > 99) "99+" else badgeCount.toString(),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = contentColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,

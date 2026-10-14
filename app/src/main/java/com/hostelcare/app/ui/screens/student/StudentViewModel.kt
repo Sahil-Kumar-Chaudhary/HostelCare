@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hostelcare.app.ai.AiComplaintAnalyzer
 import com.hostelcare.app.data.model.*
+import com.hostelcare.app.data.remote.InAppNotificationItem
 import com.hostelcare.app.data.repository.HostelRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,6 +21,12 @@ class StudentViewModel(
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications: StateFlow<List<Notification>> = _notifications.asStateFlow()
+
+    private val _notificationsState = MutableStateFlow<StudentNotificationsUiState>(StudentNotificationsUiState.Loading)
+    val notificationsState: StateFlow<StudentNotificationsUiState> = _notificationsState.asStateFlow()
+
+    private val _unreadCount = MutableStateFlow(0)
+    val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
 
     private val _newComplaintState = MutableStateFlow<NewComplaintState>(NewComplaintState.Idle)
     val newComplaintState: StateFlow<NewComplaintState> = _newComplaintState.asStateFlow()
@@ -45,6 +52,9 @@ class StudentViewModel(
                         repository.getNotificationsForUser(user.id).collect {
                             _notifications.value = it
                         }
+                    }
+                    launch {
+                        loadNotifications()
                     }
                 }
             }
@@ -93,6 +103,7 @@ class StudentViewModel(
                     _newComplaintState.value = NewComplaintState.Success(createdComplaint.id)
                     _draftComplaint.value = null
                     repository.refreshComplaints()
+                    loadNotifications()
                 } else {
                     _newComplaintState.value = NewComplaintState.Error("Submission failed")
                 }
@@ -136,6 +147,47 @@ class StudentViewModel(
     fun markNotificationRead(id: String) {
         viewModelScope.launch {
             repository.markNotificationAsRead(id)
+            repository.markInAppNotificationRead(id)
+            loadNotifications()
+        }
+    }
+
+    fun markInAppNotificationRead(id: String) {
+        viewModelScope.launch {
+            repository.markInAppNotificationRead(id)
+            loadNotifications()
+        }
+    }
+
+    fun markAllInAppNotificationsRead() {
+        viewModelScope.launch {
+            repository.markAllInAppNotificationsRead()
+            loadNotifications()
+        }
+    }
+
+    fun loadNotifications() {
+        viewModelScope.launch {
+            _notificationsState.value = StudentNotificationsUiState.Loading
+            val result = repository.getInAppNotifications()
+            if (result.isSuccess) {
+                val data = result.getOrNull()
+                if (data != null) {
+                    _unreadCount.value = data.unreadCount
+                    if (data.notifications.isEmpty()) {
+                        _notificationsState.value = StudentNotificationsUiState.Empty
+                    } else {
+                        _notificationsState.value = StudentNotificationsUiState.Success(data.notifications, data.unreadCount)
+                    }
+                } else {
+                    _unreadCount.value = 0
+                    _notificationsState.value = StudentNotificationsUiState.Empty
+                }
+            } else {
+                _notificationsState.value = StudentNotificationsUiState.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to load notifications"
+                )
+            }
         }
     }
 
@@ -258,4 +310,11 @@ sealed class ComplaintDetailsState {
     object Loading : ComplaintDetailsState()
     data class Success(val complaint: com.hostelcare.app.data.model.Complaint) : ComplaintDetailsState()
     data class Error(val message: String) : ComplaintDetailsState()
+}
+
+sealed class StudentNotificationsUiState {
+    object Loading : StudentNotificationsUiState()
+    data class Success(val notifications: List<InAppNotificationItem>, val unreadCount: Int) : StudentNotificationsUiState()
+    object Empty : StudentNotificationsUiState()
+    data class Error(val message: String) : StudentNotificationsUiState()
 }

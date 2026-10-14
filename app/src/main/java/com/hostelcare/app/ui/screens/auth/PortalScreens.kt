@@ -852,7 +852,7 @@ fun WardenLoginScreen(navController: NavController, app: HostelCareApp) {
                             return@Button
                         }
                         customErrorMessage = null
-                        viewModel.login(email.trim(), password)
+                        viewModel.login(email.trim(), password, portal = "warden")
                     },
                     enabled = uiState !is AuthState.Loading,
                     modifier = Modifier
@@ -974,25 +974,25 @@ fun StaffLoginScreen(navController: NavController, app: HostelCareApp) {
 
                 // Staff Hero Avatar
                 RoleHeroBadge(
-                    icon = Icons.Default.Engineering,
-                    iconTint = Color(0xFF16A34A),
-                    containerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFDCFCE7) else Color(0xFF064E3B).copy(alpha = 0.35f),
+                    icon = Icons.Default.Build,
+                    iconTint = Color(0xFF2563EB),
+                    containerColor = Color(0xFFE0EDFF),
                     badgeIcon = Icons.Default.Build,
-                    badgeTint = Color(0xFF16A34A),
+                    badgeTint = Color(0xFF2563EB),
                     badgeSize = badgeSize
                 )
 
                 Spacer(modifier = Modifier.height(if (isShort) 12.dp else 20.dp))
 
                 Text(
-                    text = "Maintenance Staff Login",
+                    text = "Staff Login",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "View assigned tasks and update repair progress",
+                    text = "Access your assigned tasks and update progress",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -1094,7 +1094,7 @@ fun StaffLoginScreen(navController: NavController, app: HostelCareApp) {
                             return@Button
                         }
                         customErrorMessage = null
-                        viewModel.login(email.trim(), password)
+                        viewModel.login(email.trim(), password, portal = "staff")
                     },
                     enabled = uiState !is AuthState.Loading,
                     modifier = Modifier

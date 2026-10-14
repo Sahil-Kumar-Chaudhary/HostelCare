@@ -353,7 +353,7 @@ fun LoginScreen(navController: NavController, app: HostelCareApp) {
                             return@Button
                         }
                         customErrorMessage = null
-                        viewModel.login(email.trim(), password)
+                        viewModel.login(email.trim(), password, portal = "student")
                     },
                     enabled = uiState !is AuthState.Loading,
                     modifier = Modifier

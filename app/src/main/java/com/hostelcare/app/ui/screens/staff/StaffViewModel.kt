@@ -2,6 +2,7 @@ package com.hostelcare.app.ui.screens.staff
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hostelcare.app.data.remote.InAppNotificationItem
 import com.hostelcare.app.data.remote.StaffStatsData
 import com.hostelcare.app.data.remote.StaffTaskDetail
 import com.hostelcare.app.data.remote.StaffTaskItem
@@ -24,6 +25,13 @@ sealed class StaffTaskDetailUiState {
     data class Error(val message: String) : StaffTaskDetailUiState()
 }
 
+sealed class StaffNotificationsUiState {
+    object Loading : StaffNotificationsUiState()
+    data class Success(val unreadCount: Int, val notifications: List<InAppNotificationItem>) : StaffNotificationsUiState()
+    data class Empty(val message: String = "No notifications yet.") : StaffNotificationsUiState()
+    data class Error(val message: String) : StaffNotificationsUiState()
+}
+
 class StaffViewModel(private val repository: HostelRepository) : ViewModel() {
     val currentUser = repository.currentUserFlow()
 
@@ -33,11 +41,18 @@ class StaffViewModel(private val repository: HostelRepository) : ViewModel() {
     private val _taskDetailState = MutableStateFlow<StaffTaskDetailUiState>(StaffTaskDetailUiState.Loading)
     val taskDetailState: StateFlow<StaffTaskDetailUiState> = _taskDetailState.asStateFlow()
 
+    private val _notificationsState = MutableStateFlow<StaffNotificationsUiState>(StaffNotificationsUiState.Loading)
+    val notificationsState: StateFlow<StaffNotificationsUiState> = _notificationsState.asStateFlow()
+
+    private val _unreadCount = MutableStateFlow(0)
+    val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     init {
         loadTasks()
+        loadNotifications()
     }
 
     fun loadTasks(status: String? = null, isExplicitRefresh: Boolean = false) {
@@ -93,6 +108,7 @@ class StaffViewModel(private val repository: HostelRepository) : ViewModel() {
             if (result.isSuccess) {
                 loadTaskDetail(id)
                 loadTasks(isExplicitRefresh = true)
+                loadNotifications()
                 onComplete(true, null)
             } else {
                 onComplete(false, result.exceptionOrNull()?.message ?: "Failed to update task progress")
@@ -106,10 +122,48 @@ class StaffViewModel(private val repository: HostelRepository) : ViewModel() {
             if (result.isSuccess) {
                 loadTaskDetail(id)
                 loadTasks(isExplicitRefresh = true)
+                loadNotifications()
                 onComplete(true, null)
             } else {
                 onComplete(false, result.exceptionOrNull()?.message ?: "Failed to submit completion")
             }
+        }
+    }
+
+    fun loadNotifications() {
+        viewModelScope.launch {
+            val result = repository.getInAppNotifications()
+            if (result.isSuccess) {
+                val data = result.getOrNull()
+                if (data != null) {
+                    _unreadCount.value = data.unreadCount
+                    if (data.notifications.isEmpty()) {
+                        _notificationsState.value = StaffNotificationsUiState.Empty()
+                    } else {
+                        _notificationsState.value = StaffNotificationsUiState.Success(data.unreadCount, data.notifications)
+                    }
+                } else {
+                    _notificationsState.value = StaffNotificationsUiState.Empty()
+                }
+            } else {
+                _notificationsState.value = StaffNotificationsUiState.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to load notifications"
+                )
+            }
+        }
+    }
+
+    fun markNotificationRead(id: String) {
+        viewModelScope.launch {
+            repository.markInAppNotificationRead(id)
+            loadNotifications()
+        }
+    }
+
+    fun markAllNotificationsRead() {
+        viewModelScope.launch {
+            repository.markAllInAppNotificationsRead()
+            loadNotifications()
         }
     }
 

@@ -98,8 +98,12 @@ class WardenViewModel(private val repository: HostelRepository) : ViewModel() {
     private val _notificationsState = MutableStateFlow<WardenNotificationsUiState>(WardenNotificationsUiState.Loading)
     val notificationsState: StateFlow<WardenNotificationsUiState> = _notificationsState.asStateFlow()
 
+    private val _unreadCount = MutableStateFlow(0)
+    val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
+
     init {
         loadDashboard()
+        loadNotifications()
     }
 
     // 1. Dashboard
@@ -107,6 +111,7 @@ class WardenViewModel(private val repository: HostelRepository) : ViewModel() {
         viewModelScope.launch {
             if (isExplicitRefresh) {
                 _isRefreshing.value = true
+                loadNotifications()
             } else if (_uiState.value !is WardenDashboardUiState.Success) {
                 _uiState.value = WardenDashboardUiState.Loading
             }
@@ -357,8 +362,10 @@ class WardenViewModel(private val repository: HostelRepository) : ViewModel() {
             if (result.isSuccess) {
                 val data = result.getOrNull()
                 if (data != null) {
+                    _unreadCount.value = data.unreadCount
                     _notificationsState.value = WardenNotificationsUiState.Success(data.notifications, data.unreadCount)
                 } else {
+                    _unreadCount.value = 0
                     _notificationsState.value = WardenNotificationsUiState.Success(emptyList(), 0)
                 }
             } else {

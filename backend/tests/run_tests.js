@@ -1215,6 +1215,193 @@ async function runTests() {
     }
   });
 
+  // 18. Notifications Lifecycle, Scoping, and Deduplication Tests
+  await testAsync("Notifications: Schema enforces valid types and recipient requirement", async () => {
+    const Notification = require("../models/Notification");
+    const validNotif = new Notification({
+      recipient: new mongoose.Types.ObjectId(),
+      title: "Complaint Registered",
+      message: "Ticket HC-123456 registered successfully.",
+      type: "complaint_created",
+      complaintId: new mongoose.Types.ObjectId()
+    });
+    const err = validNotif.validateSync();
+    assert(!err, "Valid notification should pass validation");
+
+    const invalidNotif = new Notification({
+      title: "Test",
+      message: "Test message",
+      type: "invalid_type"
+    });
+    const errInvalid = invalidNotif.validateSync();
+    assert(errInvalid, "Notification without recipient and with invalid type should fail validation");
+    assert(errInvalid.errors.recipient, "recipient is required");
+    assert(errInvalid.errors.type, "type must be valid enum");
+  });
+
+  await testAsync("Notifications API: Recipient isolation, read marking, and count accuracy", async () => {
+    const Notification = require("../models/Notification");
+    const origFind = Notification.find;
+    const origCount = Notification.countDocuments;
+    const origFindOne = Notification.findOne;
+    const origUpdateMany = Notification.updateMany;
+
+    const notifRouter = require("../routes/notifications");
+    const getLayer = notifRouter.stack.find(s => s.route && s.route.path === "/" && s.route.methods.get);
+    const getHandler = getLayer.route.stack[getLayer.route.stack.length - 1].handle;
+
+    const markReadLayer = notifRouter.stack.find(s => s.route && s.route.path === "/:id/read" && s.route.methods.patch);
+    const markReadHandler = markReadLayer.route.stack[markReadLayer.route.stack.length - 1].handle;
+
+    const markAllLayer = notifRouter.stack.find(s => s.route && s.route.path === "/mark-all-read" && s.route.methods.patch);
+    const markAllHandler = markAllLayer.route.stack[markAllLayer.route.stack.length - 1].handle;
+
+    try {
+      const userAId = "507f191e810c19729de860ea";
+      const notifId = "507f1f77bcf86cd799439011";
+
+      let capturedQuery = null;
+      Notification.find = (q) => {
+        capturedQuery = q;
+        return {
+          sort: () => ({
+            limit: () => Promise.resolve([
+              { _id: notifId, title: "Your Task", message: "Details", type: "complaint_assigned", isRead: false, createdAt: new Date() }
+            ])
+          })
+        };
+      };
+      Notification.countDocuments = (q) => {
+        assert.strictEqual(q.recipient, userAId);
+        assert.strictEqual(q.isRead, false);
+        return Promise.resolve(1);
+      };
+
+      let resData = null;
+      await getHandler({ user: { userId: userAId } }, { json: (d) => { resData = d; } });
+      assert(resData && resData.success, "GET /api/notifications should succeed");
+      assert.strictEqual(capturedQuery.recipient, userAId, "Query must strictly isolate to authenticated recipient");
+      assert.strictEqual(resData.unreadCount, 1);
+      assert.strictEqual(resData.notifications.length, 1);
+
+      // Mark single read
+      let saved = false;
+      Notification.findOne = (q) => {
+        assert.strictEqual(q._id, notifId);
+        assert.strictEqual(q.recipient, userAId);
+        return Promise.resolve({
+          _id: notifId,
+          isRead: false,
+          save: () => { saved = true; return Promise.resolve(); }
+        });
+      };
+      await markReadHandler({ user: { userId: userAId }, params: { id: notifId } }, { json: (d) => { resData = d; } });
+      assert(saved, "Notification should be marked read and saved");
+
+      // Mark all read
+      let updatedFilter = null;
+      Notification.updateMany = (filter, update) => {
+        updatedFilter = filter;
+        assert.strictEqual(update.$set.isRead, true);
+        return Promise.resolve({ modifiedCount: 5 });
+      };
+      await markAllHandler({ user: { userId: userAId } }, { json: (d) => { resData = d; } });
+      assert.strictEqual(updatedFilter.recipient, userAId);
+      assert.strictEqual(updatedFilter.isRead, false);
+    } finally {
+      Notification.find = origFind;
+      Notification.countDocuments = origCount;
+      Notification.findOne = origFindOne;
+      Notification.updateMany = origUpdateMany;
+    }
+  });
+
+  await testAsync("Notifications Lifecycle: Status update creates student/staff notifications with deduplication", async () => {
+    const Notification = require("../models/Notification");
+    const origFindOneNotif = Notification.findOne;
+    const origCreateNotif = Notification.create;
+    const origFindByIdComplaint = Complaint.findById;
+    const origFindByIdUser = User.findById;
+    const origFindUser = User.find;
+
+    try {
+      const studentId = new mongoose.Types.ObjectId();
+      const staffId = new mongoose.Types.ObjectId();
+      const complaintId = new mongoose.Types.ObjectId();
+      const wardenId = new mongoose.Types.ObjectId();
+
+      let complaintDoc = {
+        _id: complaintId,
+        ticketId: "HC-999888",
+        title: "Broken window",
+        hostelName: "BH1",
+        hostelBlock: "B",
+        student: studentId,
+        assignedStaff: staffId,
+        status: "under_review",
+        timeline: [],
+        save: () => Promise.resolve()
+      };
+
+      Complaint.findById = () => Promise.resolve(complaintDoc);
+      User.findById = () => ({
+        select: () => Promise.resolve({
+          _id: wardenId,
+          role: "warden",
+          hostelName: "BH1",
+          hostelBlock: "all"
+        })
+      });
+      User.find = () => ({
+        distinct: () => Promise.resolve([studentId.toString()])
+      });
+
+      const createdNotifications = [];
+      Notification.findOne = () => Promise.resolve(null);
+      Notification.create = (doc) => {
+        createdNotifications.push(doc);
+        return Promise.resolve(doc);
+      };
+
+      const wardenRouter = require("../routes/warden");
+      const statusLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/complaints/:id/status" && s.route.methods.patch);
+      const statusHandler = statusLayer.route.stack[statusLayer.route.stack.length - 1].handle;
+
+      const mockReq = {
+        user: { userId: wardenId.toString(), role: "warden" },
+        params: { id: complaintId.toString() },
+        body: { status: "resolved", resolutionNote: "Window glass replaced and sealed." }
+      };
+      let resJson = null;
+      await statusHandler(mockReq, {
+        status: () => ({ json: (d) => { resJson = d; } }),
+        json: (d) => { resJson = d; }
+      });
+
+      assert(resJson && resJson.success, "Status update should succeed");
+      assert.strictEqual(createdNotifications.length, 2, "Should create 2 notifications: 1 for student, 1 for staff");
+      assert.strictEqual(createdNotifications[0].type, "complaint_resolved");
+      assert.strictEqual(createdNotifications[0].recipient.toString(), studentId.toString());
+      assert.strictEqual(createdNotifications[1].type, "complaint_resolved");
+      assert.strictEqual(createdNotifications[1].recipient.toString(), staffId.toString());
+
+      // Deduplication test: when duplicate is found within 30 seconds, do not create duplicate
+      createdNotifications.length = 0;
+      Notification.findOne = () => Promise.resolve({ _id: new mongoose.Types.ObjectId() });
+      await statusHandler(mockReq, {
+        status: () => ({ json: () => {} }),
+        json: () => {}
+      });
+      assert.strictEqual(createdNotifications.length, 0, "Deduplication must prevent duplicate notification creation");
+    } finally {
+      Notification.findOne = origFindOneNotif;
+      Notification.create = origCreateNotif;
+      Complaint.findById = origFindByIdComplaint;
+      User.findById = origFindByIdUser;
+      User.find = origFindUser;
+    }
+  });
+
   console.log("\n==================================================");
   console.log(`Results: ${passed} PASSED, ${failed} FAILED`);
   console.log("==================================================");

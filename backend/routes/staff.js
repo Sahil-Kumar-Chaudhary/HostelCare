@@ -20,17 +20,18 @@ router.get("/tasks", auth, auth.requireStaff, async (req, res) => {
       query.status = status.toLowerCase();
     }
 
-    const [tasks, totalAssigned, inProgressCount, completedCount, pendingCount] = await Promise.all([
+    const [tasks, totalAssigned, inProgressCount, completedCount, pendingCount, pendingReviewCount] = await Promise.all([
       Complaint.find(query)
         .sort({ updatedAt: -1 })
         .populate({
           path: "student",
-          select: "name studentId phone roomNumber hostelBlock"
+          select: "name studentId phone roomNumber hostelBlock hostelName"
         }),
       Complaint.countDocuments({ assignedStaff: req.user.userId }),
       Complaint.countDocuments({ assignedStaff: req.user.userId, status: "in_progress" }),
       Complaint.countDocuments({ assignedStaff: req.user.userId, status: "resolved" }),
-      Complaint.countDocuments({ assignedStaff: req.user.userId, status: "assigned" })
+      Complaint.countDocuments({ assignedStaff: req.user.userId, status: "assigned" }),
+      Complaint.countDocuments({ assignedStaff: req.user.userId, status: "under_review" })
     ]);
 
     const formattedTasks = tasks.map((t) => ({
@@ -41,6 +42,7 @@ router.get("/tasks", auth, auth.requireStaff, async (req, res) => {
       category: t.category,
       priority: t.priority,
       status: t.status,
+      hostelName: t.hostelName || (t.student && t.student.hostelName) || "",
       hostelBlock: t.hostelBlock,
       roomNumber: t.roomNumber,
       photoUrl: t.photoUrl || "",
@@ -52,9 +54,11 @@ router.get("/tasks", auth, auth.requireStaff, async (req, res) => {
         ? {
             id: t.student._id ? t.student._id.toString() : "",
             name: t.student.name || "Student",
+            studentId: t.student.studentId || "",
             phone: t.student.phone || "",
             roomNumber: t.roomNumber,
-            hostelBlock: t.hostelBlock
+            hostelBlock: t.hostelBlock,
+            hostelName: t.hostelName || (t.student && t.student.hostelName) || ""
           }
         : null
     }));
@@ -65,7 +69,8 @@ router.get("/tasks", auth, auth.requireStaff, async (req, res) => {
         totalAssigned,
         inProgressCount,
         completedCount,
-        pendingCount
+        pendingCount,
+        pendingReviewCount
       },
       tasks: formattedTasks
     });
@@ -109,6 +114,7 @@ router.get("/tasks/:id", auth, auth.requireStaff, async (req, res) => {
         category: task.category,
         priority: task.priority,
         status: task.status,
+        hostelName: task.hostelName || (task.student && task.student.hostelName) || "",
         hostelBlock: task.hostelBlock,
         roomNumber: task.roomNumber,
         photoUrl: task.photoUrl || "",
@@ -119,10 +125,14 @@ router.get("/tasks/:id", auth, auth.requireStaff, async (req, res) => {
         createdAt: task.createdAt,
         student: task.student
           ? {
+              id: task.student._id ? task.student._id.toString() : "",
               name: task.student.name,
+              studentId: task.student.studentId || "",
               phone: task.student.phone || "",
+              email: task.student.email || "",
               roomNumber: task.roomNumber,
-              hostelBlock: task.hostelBlock
+              hostelBlock: task.hostelBlock,
+              hostelName: task.hostelName || task.student.hostelName || ""
             }
           : null,
         timeline: task.timeline || []
@@ -164,6 +174,28 @@ router.patch("/tasks/:id/status", auth, auth.requireStaff, async (req, res) => {
     });
 
     await task.save();
+
+    // Create notification for student when work starts
+    try {
+      if (task.student && mongoose.Types.ObjectId.isValid(task.student) && mongoose.Types.ObjectId.isValid(task._id)) {
+        const existingNotif = await Notification.findOne({
+          recipient: task.student,
+          type: "work_started",
+          complaintId: task._id
+        });
+        if (!existingNotif) {
+          await Notification.create({
+            recipient: task.student,
+            title: "Work Started",
+            message: `Maintenance staff has started work on ticket ${task.ticketId || ""}.`,
+            type: "work_started",
+            complaintId: task._id
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.warn("Notification error:", notifErr.message);
+    }
 
     res.json({
       success: true,
@@ -211,16 +243,47 @@ router.post("/tasks/:id/complete", auth, auth.requireStaff, async (req, res) => 
 
     // Create notification for Warden(s) of this hostel
     try {
-      const student = await User.findById(task.student);
-      const hostelName = task.hostelName || (student && student.hostelName);
-      if (hostelName) {
-        const wardens = await User.find({ role: "warden", hostelName: hostelName });
-        for (const w of wardens) {
+      if (mongoose.Types.ObjectId.isValid(task.student) && mongoose.Types.ObjectId.isValid(task._id)) {
+        const student = await User.findById(task.student);
+        const hostelName = task.hostelName || (student && student.hostelName);
+        if (hostelName) {
+          const wardens = await User.find({ role: "warden", hostelName: hostelName });
+          for (const w of wardens) {
+            const existingWardenNotif = await Notification.findOne({
+              recipient: w._id,
+              type: "completion_requested",
+              complaintId: task._id
+            });
+            if (!existingWardenNotif) {
+              await Notification.create({
+                recipient: w._id,
+                title: `Completion Review: ${task.title}`,
+                message: `Staff member completed work on ${task.ticketId} in Room ${task.roomNumber}. Review and resolve.`,
+                type: "completion_requested",
+                complaintId: task._id
+              });
+            }
+          }
+        }
+      }
+    } catch (notifErr) {
+      console.warn("Notification error:", notifErr.message);
+    }
+
+    // Create notification for Student
+    try {
+      if (task.student && mongoose.Types.ObjectId.isValid(task.student) && mongoose.Types.ObjectId.isValid(task._id)) {
+        const existingStudentNotif = await Notification.findOne({
+          recipient: task.student,
+          type: "work_submitted",
+          complaintId: task._id
+        });
+        if (!existingStudentNotif) {
           await Notification.create({
-            recipient: w._id,
-            title: `Completion Review: ${task.title}`,
-            message: `Staff member completed work on ${task.ticketId} in Room ${task.roomNumber}. Review and resolve.`,
-            type: "completion_requested",
+            recipient: task.student,
+            title: "Work Submitted for Review",
+            message: `Work on ticket ${task.ticketId || ""} has been completed by staff and submitted for warden review.`,
+            type: "work_submitted",
             complaintId: task._id
           });
         }

@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface HostelRepository {
     // Auth & Users
-    suspend fun login(email: String, password: String): Result<User>
+    suspend fun login(email: String, password: String, portal: String? = null): Result<User>
     suspend fun registerStudent(user: User, password: String, confirmPassword: String = password, acceptedTerms: Boolean = true): Result<User>
     suspend fun getCurrentUser(): User?
     suspend fun logout()

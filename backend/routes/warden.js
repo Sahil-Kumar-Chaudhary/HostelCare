@@ -430,15 +430,53 @@ router.patch("/complaints/:id/status", auth, auth.requireWarden, async (req, res
 
     await complaint.save();
 
-    // Create notification for the student
+    // Create notification for the student and assigned staff
     try {
-      await Notification.create({
+      const studentNotifType = normalizedStatus === "resolved" ? "complaint_resolved" : (normalizedStatus === "in_progress" ? "complaint_reopened" : "status_updated");
+      const studentTitle = normalizedStatus === "resolved" ? "Complaint Resolved" : (normalizedStatus === "in_progress" ? "Complaint In Progress" : "Complaint Status Updated");
+      const studentMsg = normalizedStatus === "resolved"
+        ? `Your complaint "${complaint.title}" has been resolved. Note: ${complaint.resolutionNote || "Work verified by Warden."}`
+        : `Your complaint "${complaint.title}" is now marked as ${normalizedStatus.replace("_", " ")}.`;
+
+      const existingStudentNotif = await Notification.findOne({
         recipient: complaint.student,
-        title: `Complaint Status Updated: ${normalizedStatus.replace("_", " ").toUpperCase()}`,
-        message: `Your complaint "${complaint.title}" is now marked as ${normalizedStatus.replace("_", " ")}.`,
-        type: "status_updated",
-        complaintId: complaint._id
+        type: studentNotifType,
+        complaintId: complaint._id,
+        createdAt: { $gte: new Date(Date.now() - 30000) }
       });
+      if (!existingStudentNotif) {
+        await Notification.create({
+          recipient: complaint.student,
+          title: studentTitle,
+          message: studentMsg,
+          type: studentNotifType,
+          complaintId: complaint._id
+        });
+      }
+
+      if (complaint.assignedStaff) {
+        const staffNotifType = normalizedStatus === "resolved" ? "complaint_resolved" : (normalizedStatus === "in_progress" ? "complaint_reopened" : "status_updated");
+        const staffTitle = normalizedStatus === "resolved" ? "Work Approved & Resolved" : (normalizedStatus === "in_progress" ? "Work Returned by Warden" : "Task Status Updated");
+        const staffMsg = normalizedStatus === "resolved"
+          ? `Work on ticket ${complaint.ticketId || "task"} has been verified and resolved by Warden.`
+          : `Warden updated ticket ${complaint.ticketId || "task"} status to ${normalizedStatus.replace("_", " ")}: ${note || "Please check details."}`;
+
+        const existingStaffNotif = await Notification.findOne({
+          recipient: complaint.assignedStaff,
+          type: staffNotifType,
+          complaintId: complaint._id,
+          createdAt: { $gte: new Date(Date.now() - 30000) }
+        });
+        if (!existingStaffNotif) {
+          await Notification.create({
+            recipient: complaint.assignedStaff,
+            title: staffTitle,
+            message: staffMsg,
+            type: staffNotifType,
+            complaintId: complaint._id
+          });
+        }
+      }
     } catch (notifErr) {
       console.warn("Notification creation warning:", notifErr.message);
     }
@@ -503,23 +541,41 @@ router.post("/complaints/:id/assign", auth, auth.requireWarden, async (req, res)
 
     await complaint.save();
 
-    // Create notifications for staff and student
+    // Create notifications for staff and student with deduplication
     try {
-      await Notification.create({
-        recipient: staff._id,
-        title: `New Task Assigned: ${complaint.title}`,
-        message: `You have been assigned complaint ${complaint.ticketId} in Room ${complaint.roomNumber}. ${instructions || ""}`,
-        type: "complaint_assigned",
-        complaintId: complaint._id
-      });
+      if (mongoose.Types.ObjectId.isValid(staff._id) && mongoose.Types.ObjectId.isValid(complaint._id)) {
+        const existingStaffNotif = await Notification.findOne({
+          recipient: staff._id,
+          type: "complaint_assigned",
+          complaintId: complaint._id
+        });
+        if (!existingStaffNotif) {
+          await Notification.create({
+            recipient: staff._id,
+            title: "Task Assigned",
+            message: `You have been assigned to ${complaint.ticketId || "complaint"} (${complaint.title}).`,
+            type: "complaint_assigned",
+            complaintId: complaint._id
+          });
+        }
+      }
 
-      await Notification.create({
-        recipient: complaint.student,
-        title: `Staff Assigned to Your Complaint`,
-        message: `${staff.name} (${staff.department || "Staff"}) has been assigned to your complaint "${complaint.title}".`,
-        type: "complaint_assigned",
-        complaintId: complaint._id
-      });
+      if (mongoose.Types.ObjectId.isValid(complaint.student) && mongoose.Types.ObjectId.isValid(complaint._id)) {
+        const existingStudentNotif = await Notification.findOne({
+          recipient: complaint.student,
+          type: "complaint_assigned",
+          complaintId: complaint._id
+        });
+        if (!existingStudentNotif) {
+          await Notification.create({
+            recipient: complaint.student,
+            title: "Staff Assigned to Your Complaint",
+            message: `${staff.name} (${staff.department || "Staff"}) has been assigned to your complaint "${complaint.title}".`,
+            type: "complaint_assigned",
+            complaintId: complaint._id
+          });
+        }
+      }
     } catch (notifErr) {
       console.warn("Notification creation warning:", notifErr.message);
     }
