@@ -43,6 +43,9 @@ import com.hostelcare.app.ui.navigation.Routes
 import com.hostelcare.app.ui.theme.*
 import com.hostelcare.app.ui.components.HostelCareLogo
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.firstOrNull
 
 @Composable
 fun CustomTextField(
@@ -103,25 +106,42 @@ fun AppLogoAndTitle(
     }
 }
 
+fun getDestinationForRole(role: Role?): String {
+    return when (role) {
+        Role.STUDENT -> Routes.STUDENT_HOME
+        Role.STAFF -> Routes.STAFF_HOME
+        Role.WARDEN -> Routes.WARDEN_HOME
+        else -> Routes.PORTAL_SELECTION
+    }
+}
+
+const val SPLASH_DURATION_MS = 5000L
+
 @Composable
 fun SplashScreen(navController: NavController, app: HostelCareApp) {
     val factory = AppViewModelFactory(app.repository, app.aiAnalyzer)
     val viewModel: AuthViewModel = viewModel(factory = factory)
-    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle(null)
-    val isSessionChecked by viewModel.isSessionChecked.collectAsStateWithLifecycle(false)
-    
-    LaunchedEffect(currentUser, isSessionChecked) {
-        if (isSessionChecked) {
-            delay(500)
-            if (currentUser != null) {
-                when (currentUser!!.role) {
-                    Role.STUDENT -> navController.navigate(Routes.STUDENT_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
-                    Role.STAFF -> navController.navigate(Routes.STAFF_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
-                    Role.WARDEN -> navController.navigate(Routes.WARDEN_HOME) { popUpTo(Routes.SPLASH) { inclusive = true } }
-                    else -> navController.navigate(Routes.PORTAL_SELECTION) { popUpTo(Routes.SPLASH) { inclusive = true } }
-                }
-            } else {
-                navController.navigate(Routes.PORTAL_SELECTION) { popUpTo(Routes.SPLASH) { inclusive = true } }
+    val splashStartTimestamp = rememberSaveable { System.currentTimeMillis() }
+    var hasNavigated by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (hasNavigated) return@LaunchedEffect
+
+        val elapsed = System.currentTimeMillis() - splashStartTimestamp
+        val remainingTime = (SPLASH_DURATION_MS - elapsed).coerceAtLeast(0L)
+        if (remainingTime > 0) {
+            delay(remainingTime)
+        }
+
+        if (!hasNavigated) {
+            hasNavigated = true
+            val currentUser = withTimeoutOrNull(2000L) {
+                app.repository.getCurrentUser()
+            } ?: app.repository.currentUserFlow().firstOrNull()
+
+            val destination = getDestinationForRole(currentUser?.role)
+            navController.navigate(destination) {
+                popUpTo(Routes.SPLASH) { inclusive = true }
             }
         }
     }

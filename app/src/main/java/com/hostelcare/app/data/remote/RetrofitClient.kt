@@ -55,6 +55,10 @@ object RetrofitClient {
         get() {
             if (customBaseUrl != null) return customBaseUrl!!
             val configured = com.hostelcare.app.BuildConfig.BASE_URL
+            // Never rewrite HTTPS production URLs to local addresses
+            if (configured.startsWith("https://", ignoreCase = true)) {
+                return configured
+            }
             if (configured == "http://10.0.2.2:5000/" && !isEmulator()) {
                 return "http://127.0.0.1:5000/"
             }
@@ -62,6 +66,8 @@ object RetrofitClient {
         }
 
     fun create(tokenManager: TokenManager): ApiService {
+        val currentBaseUrl = baseUrl
+        Log.i(TAG, "Initializing RetrofitClient with baseUrl: $currentBaseUrl (configured: ${com.hostelcare.app.BuildConfig.BASE_URL}, isEmulator: ${isEmulator()})")
         val logging = HttpLoggingInterceptor { message ->
             Log.d(TAG, message)
         }.apply {
