@@ -267,11 +267,18 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         }
     }
 
-        override suspend fun triggerAiAnalysis(complaintId: String): Result<Unit> {
+    override suspend fun triggerAiAnalysis(complaintId: String, forceRetry: Boolean): Result<Unit> {
         return try {
-            val req = com.hostelcare.app.data.remote.AiAnalyzeRequest(complaintId = complaintId, title = "", description = "", category = null)
+            val req = com.hostelcare.app.data.remote.AiAnalyzeRequest(
+                complaintId = complaintId,
+                title = "",
+                description = "",
+                category = null,
+                forceRetry = forceRetry
+            )
             val response = apiService.analyzeComplaint(req)
             if (response.isSuccessful) {
+                fetchComplaint(complaintId)
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("AI analysis failed"))

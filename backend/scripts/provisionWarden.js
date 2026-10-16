@@ -57,7 +57,7 @@ async function provisionWarden(options = {}) {
     );
   }
 
-  const targetDbName = options.dbName || process.env.MONGODB_DB_NAME || process.env.DB_NAME || "HostelCareDevDB";
+  const targetDbName = options.dbName || process.env.MONGODB_DB_NAME || process.env.DB_NAME || "HostelCareDB";
 
   // Explicit safety check against accidental production provisioning
   const isProductionTarget = targetDbName === "HostelCareDB" || process.env.NODE_ENV === "production";

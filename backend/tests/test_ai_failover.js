@@ -498,8 +498,11 @@ async function runAiFailoverTests() {
         const origFindById = Complaint.findById;
         const origAI = aiProviderManager.analyzeComplaint;
 
+        const origFindOneAndUpdate = Complaint.findOneAndUpdate;
+
         try {
             let saveCount = 0;
+            let providerCallCount = 0;
             const mockComplaint = {
                 _id: new mongoose.Types.ObjectId(),
                 ticketId: "HC-987654",
@@ -512,6 +515,7 @@ async function runAiFailoverTests() {
                 hostelBlock: "B",
                 roomNumber: "302",
                 aiSummary: null,
+                aiStatus: "not_started",
                 save: async function() {
                     saveCount++;
                     return this;
@@ -519,20 +523,33 @@ async function runAiFailoverTests() {
             };
 
             Complaint.findById = async (id) => {
-                if (id.toString() === mockComplaint._id.toString()) return mockComplaint;
+                if (id && id.toString() === mockComplaint._id.toString()) return mockComplaint;
                 return null;
             };
 
-            aiProviderManager.analyzeComplaint = async () => ({
-                success: true,
-                analysis: {
-                    category: "electrical",
-                    priority: "high",
-                    summary: "Geyser heating coil burnt out"
-                },
-                provider: "openrouter",
-                failedOver: true
-            });
+            Complaint.findOneAndUpdate = async (query, update) => {
+                if (query._id && query._id.toString() === mockComplaint._id.toString()) {
+                    if (update.$set) {
+                        Object.assign(mockComplaint, update.$set);
+                    }
+                    return mockComplaint;
+                }
+                return null;
+            };
+
+            aiProviderManager.analyzeComplaint = async () => {
+                providerCallCount++;
+                return {
+                    success: true,
+                    analysis: {
+                        category: "electrical",
+                        priority: "high",
+                        summary: "Geyser heating coil burnt out"
+                    },
+                    provider: "openrouter",
+                    failedOver: true
+                };
+            };
 
             // Mock route call
             const aiRouter = require("../routes/ai");
@@ -559,16 +576,28 @@ async function runAiFailoverTests() {
             assert.strictEqual(responseData.complaint.ticketId, "HC-987654", "Ticket ID must remain intact");
             assert.strictEqual(responseData.complaint.status, "submitted", "Status must remain submitted without altering workflow");
             assert.strictEqual(responseData.complaint.aiSummary, "Geyser heating coil burnt out");
+            assert.strictEqual(responseData.complaint.aiStatus, "completed");
             assert.strictEqual(responseData.complaint.priority, "high");
+            assert.strictEqual(providerCallCount, 1, "Provider should be called on first execution");
             assert.strictEqual(saveCount, 1);
 
-            // Retry AI analysis on the same complaint
+            // Reopening complaint (second run without forceRetry) -> MUST return cached result without provider call!
             await handler(mockReq, mockRes);
             assert.strictEqual(statusCode, 200);
+            assert.strictEqual(responseData.cached, true, "Reopening complaint must return cached assessment");
+            assert.strictEqual(providerCallCount, 1, "AI provider must NOT be called on reopen");
+            assert.strictEqual(saveCount, 1, "Save count must not increase on cached read");
+
+            // Explicit retry with forceRetry = true -> re-invokes provider and updates complaint
+            mockReq.body.forceRetry = true;
+            await handler(mockReq, mockRes);
+            assert.strictEqual(statusCode, 200);
+            assert.strictEqual(providerCallCount, 2, "forceRetry must re-invoke provider");
             assert.strictEqual(saveCount, 2, "Second run updates the existing complaint without creating new complaints");
             assert.strictEqual(responseData.complaint._id.toString(), mockComplaint._id.toString());
         } finally {
             Complaint.findById = origFindById;
+            Complaint.findOneAndUpdate = origFindOneAndUpdate;
             aiProviderManager.analyzeComplaint = origAI;
         }
     });
@@ -585,6 +614,188 @@ async function runAiFailoverTests() {
         assert.strictEqual(status.gemini.coolingDown, false);
         assert.strictEqual(status.openrouter.coolingDown, false);
         assert.strictEqual(typeof status.gemini.totalRequests, "number");
+    });
+
+    // SCENARIO 14: Concurrent analysis requests are safely locked
+    await test("Scenario 14: Concurrent analysis request returns inProgress without duplicate provider execution", async () => {
+        const origFindById = Complaint.findById;
+        const origFindOneAndUpdate = Complaint.findOneAndUpdate;
+        const origAI = aiProviderManager.analyzeComplaint;
+
+        try {
+            let providerCalls = 0;
+            const inProgressComplaint = {
+                _id: new mongoose.Types.ObjectId(),
+                ticketId: "HC-112233",
+                title: "Water pump noise",
+                description: "Continuous vibrating noise",
+                category: "plumbing",
+                priority: "medium",
+                status: "submitted",
+                student: new mongoose.Types.ObjectId("507f1f77bcf86cd799439011"),
+                hostelBlock: "A",
+                roomNumber: "101",
+                aiSummary: null,
+                aiStatus: "processing",
+                updatedAt: new Date()
+            };
+
+            Complaint.findById = async () => inProgressComplaint;
+            aiProviderManager.analyzeComplaint = async () => {
+                providerCalls++;
+                return { success: true, analysis: { category: "plumbing", priority: "medium", summary: "Pump noise" } };
+            };
+
+            const aiRouter = require("../routes/ai");
+            const routeLayer = aiRouter.stack.find(s => s.route && s.route.path === "/analyze-complaint" && s.route.methods.post);
+            const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+            const mockReq = {
+                user: { userId: "507f1f77bcf86cd799439011", role: "student" },
+                body: { complaintId: inProgressComplaint._id.toString() }
+            };
+
+            let responseData = null;
+            let statusCode = 0;
+            const mockRes = {
+                status: (code) => { statusCode = code; return { json: (d) => { responseData = d; } }; },
+                json: (d) => { responseData = d; }
+            };
+
+            await handler(mockReq, mockRes);
+
+            assert.strictEqual(statusCode, 200);
+            assert.strictEqual(responseData.inProgress, true, "Must report inProgress when concurrent request is active");
+            assert.strictEqual(providerCalls, 0, "No duplicate provider call should be made");
+        } finally {
+            Complaint.findById = origFindById;
+            Complaint.findOneAndUpdate = origFindOneAndUpdate;
+            aiProviderManager.analyzeComplaint = origAI;
+        }
+    });
+
+    // SCENARIO 15: Backward-compatibility for documents lacking aiStatus
+    await test("Scenario 15: Legacy complaint with aiSummary but missing aiStatus is returned from cache", async () => {
+        const origFindById = Complaint.findById;
+        const origAI = aiProviderManager.analyzeComplaint;
+
+        try {
+            let providerCalls = 0;
+            const legacyComplaint = {
+                _id: new mongoose.Types.ObjectId(),
+                ticketId: "HC-777666",
+                title: "Broken wardrobe hinge",
+                description: "Hinge screws came loose",
+                category: "furniture",
+                priority: "low",
+                status: "submitted",
+                student: new mongoose.Types.ObjectId("507f1f77bcf86cd799439011"),
+                hostelBlock: "C",
+                roomNumber: "205",
+                aiSummary: "Loose screws on wardrobe hinge.",
+                // aiStatus deliberately undefined to test backward compatibility
+            };
+
+            Complaint.findById = async () => legacyComplaint;
+            aiProviderManager.analyzeComplaint = async () => {
+                providerCalls++;
+                return { success: true };
+            };
+
+            const aiRouter = require("../routes/ai");
+            const routeLayer = aiRouter.stack.find(s => s.route && s.route.path === "/analyze-complaint" && s.route.methods.post);
+            const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+            const mockReq = {
+                user: { userId: "507f1f77bcf86cd799439011", role: "student" },
+                body: { complaintId: legacyComplaint._id.toString() }
+            };
+
+            let responseData = null;
+            let statusCode = 0;
+            const mockRes = {
+                status: (code) => { statusCode = code; return { json: (d) => { responseData = d; } }; },
+                json: (d) => { responseData = d; }
+            };
+
+            await handler(mockReq, mockRes);
+
+            assert.strictEqual(statusCode, 200);
+            assert.strictEqual(responseData.cached, true, "Legacy complaint must return cached result");
+            assert.strictEqual(providerCalls, 0, "No provider call should be made for legacy completed complaint");
+            assert.strictEqual(responseData.analysis.summary, "Loose screws on wardrobe hinge.");
+        } finally {
+            Complaint.findById = origFindById;
+            aiProviderManager.analyzeComplaint = origAI;
+        }
+    });
+
+    // SCENARIO 16: Provider failure preserves ticket and marks aiStatus = 'failed'
+    await test("Scenario 16: Both AI providers failing marks aiStatus = 'failed' and preserves ticket and complaint status", async () => {
+        const origFindById = Complaint.findById;
+        const origFindOneAndUpdate = Complaint.findOneAndUpdate;
+        const origAI = aiProviderManager.analyzeComplaint;
+
+        try {
+            let saved = false;
+            const failingComplaint = {
+                _id: new mongoose.Types.ObjectId(),
+                ticketId: "HC-554433",
+                title: "Corridor light flicker",
+                description: "Light in hallway is blinking rapidly",
+                category: "electrical",
+                priority: "medium",
+                status: "submitted",
+                student: new mongoose.Types.ObjectId("507f1f77bcf86cd799439011"),
+                hostelBlock: "A",
+                roomNumber: "110",
+                aiSummary: null,
+                aiStatus: "not_started",
+                save: async function() {
+                    saved = true;
+                    return this;
+                }
+            };
+
+            Complaint.findById = async () => failingComplaint;
+            Complaint.findOneAndUpdate = async (q, u) => {
+                if (u.$set) Object.assign(failingComplaint, u.$set);
+                return failingComplaint;
+            };
+
+            aiProviderManager.analyzeComplaint = async () => ({
+                success: false,
+                error: "All AI providers failed"
+            });
+
+            const aiRouter = require("../routes/ai");
+            const routeLayer = aiRouter.stack.find(s => s.route && s.route.path === "/analyze-complaint" && s.route.methods.post);
+            const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+            const mockReq = {
+                user: { userId: "507f1f77bcf86cd799439011", role: "student" },
+                body: { complaintId: failingComplaint._id.toString() }
+            };
+
+            let responseData = null;
+            let statusCode = 0;
+            const mockRes = {
+                status: (code) => { statusCode = code; return { json: (d) => { responseData = d; } }; },
+                json: (d) => { responseData = d; }
+            };
+
+            await handler(mockReq, mockRes);
+
+            assert.strictEqual(statusCode, 503);
+            assert.strictEqual(saved, true);
+            assert.strictEqual(failingComplaint.aiStatus, "failed", "aiStatus must be set to 'failed'");
+            assert.strictEqual(failingComplaint.status, "submitted", "Main ticket lifecycle status must remain intact");
+            assert.strictEqual(failingComplaint.ticketId, "HC-554433", "Ticket ID must remain intact");
+        } finally {
+            Complaint.findById = origFindById;
+            Complaint.findOneAndUpdate = origFindOneAndUpdate;
+            aiProviderManager.analyzeComplaint = origAI;
+        }
     });
 
     console.log("\n==================================================");

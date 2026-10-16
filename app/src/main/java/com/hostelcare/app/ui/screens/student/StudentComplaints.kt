@@ -242,24 +242,11 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
         viewModel.fetchComplaintDetails(complaintId)
     }
 
-    LaunchedEffect(detailsState) {
-        if (detailsState is ComplaintDetailsState.Success) {
-            val c = (detailsState as ComplaintDetailsState.Success).complaint
-            if (c.aiSummary.isNullOrBlank() && !isAnalyzing && aiError == null) {
-                isAnalyzing = true
-                                if (!NetworkUtils.isNetworkAvailable(context)) {
-                    aiError = "No internet connection. Please check your connection and try again."
-                    isAnalyzing = false
-                } else {
-                    val result = app.repository.triggerAiAnalysis(c.id)
-                    isAnalyzing = false
-                    if (result.isSuccess) {
-                        viewModel.fetchComplaintDetails(c.id)
-                    } else {
-                        aiError = "AI analysis is temporarily unavailable."
-                    }
-                }
-            }
+    LaunchedEffect(complaintId, (detailsState as? ComplaintDetailsState.Success)?.complaint?.aiStatus) {
+        val currentStatus = (detailsState as? ComplaintDetailsState.Success)?.complaint?.aiStatus
+        if (currentStatus == "processing") {
+            kotlinx.coroutines.delay(3000)
+            viewModel.fetchComplaintDetails(complaintId)
         }
     }
 
@@ -387,7 +374,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text("Category", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                                        Text(if (complaint.aiSummary.isNullOrBlank() && aiError == null) "Not assigned yet" else complaint.category.name.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+                                        Text(complaint.category.name.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -398,7 +385,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text("Priority", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                                        Text(if (complaint.aiSummary.isNullOrBlank() && aiError == null) "Not assigned yet" else complaint.priority.name.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+                                        Text(complaint.priority.name.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -475,12 +462,17 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             }
 
             item {
+                val isCompleted = !complaint.aiSummary.isNullOrBlank() || complaint.aiStatus == "completed"
+                val isProcessing = isAnalyzing || complaint.aiStatus == "processing"
+                val isFailed = aiError != null || (!isCompleted && !isProcessing && complaint.aiStatus == "failed")
+                val displayError = aiError ?: if (complaint.aiStatus == "failed") "AI analysis is temporarily unavailable." else null
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = if (aiError != null) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = if (isFailed) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, if (aiError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline)
+                    border = BorderStroke(1.dp, if (isFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -489,7 +481,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("AI Assessment", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             }
-                            if (aiError != null) {
+                            if (isFailed) {
                                 OutlinedButton(
                                     onClick = { 
                                         aiError = null
@@ -500,7 +492,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                                                 isAnalyzing = false
                                                 return@launch
                                             }
-                                            val result = app.repository.triggerAiAnalysis(complaint.id)
+                                            val result = app.repository.triggerAiAnalysis(complaint.id, forceRetry = true)
                                             isAnalyzing = false
                                             if (result.isSuccess) {
                                                 viewModel.fetchComplaintDetails(complaint.id)
@@ -523,23 +515,23 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        if (aiError != null) {
+                        if (isFailed) {
                             Row(verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = DangerRed, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
-                                    Text(aiError!!, color = DangerRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text(displayError ?: "AI analysis is temporarily unavailable.", color = DangerRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("We couldn't analyze this complaint right now. Your complaint has been submitted successfully, and you can continue tracking its status. AI analysis will be retried automatically.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, lineHeight = 18.sp)
+                                    Text("We couldn't analyze this complaint right now. Your complaint has been submitted successfully, and you can continue tracking its status. Use the Retry button to try again.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, lineHeight = 18.sp)
                                 }
                             }
-                        } else if (isAnalyzing || complaint.aiSummary.isNullOrBlank()) {
+                        } else if (isProcessing) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), color = PrimaryBlue, strokeWidth = 2.dp)
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text("Analyzing complaint details...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             }
-                        } else {
+                        } else if (isCompleted) {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("Category", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
@@ -553,7 +545,39 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                             Spacer(modifier = Modifier.height(12.dp))
                             Text("Summary", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(complaint.aiSummary!!, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, lineHeight = 20.sp)
+                            Text(complaint.aiSummary ?: "", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, lineHeight = 20.sp)
+                        } else {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("No AI assessment performed yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                                OutlinedButton(
+                                    onClick = {
+                                        aiError = null
+                                        isAnalyzing = true
+                                        coroutineScope.launch {
+                                            if (!NetworkUtils.isNetworkAvailable(context)) {
+                                                aiError = "No internet connection. Please check your connection and try again."
+                                                isAnalyzing = false
+                                                return@launch
+                                            }
+                                            val result = app.repository.triggerAiAnalysis(complaint.id, forceRetry = false)
+                                            isAnalyzing = false
+                                            if (result.isSuccess) {
+                                                viewModel.fetchComplaintDetails(complaint.id)
+                                            } else {
+                                                aiError = "AI analysis is temporarily unavailable."
+                                            }
+                                        }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(32.dp),
+                                    border = BorderStroke(1.dp, PrimaryBlue),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
+                                ) {
+                                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Analyze", fontSize = 12.sp)
+                                }
+                            }
                         }
                     }
                 }

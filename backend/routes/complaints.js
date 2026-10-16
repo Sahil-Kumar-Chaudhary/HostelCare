@@ -135,6 +135,7 @@ router.post(
         roomNumber: resolvedRoom,
         photoUrl: photoUrl || "",
         aiSummary: (aiSummary && aiSummary.trim()) || "",
+        aiStatus: (aiSummary && aiSummary.trim()) ? "completed" : "not_started",
         status: "submitted",
         timeline: [
           {

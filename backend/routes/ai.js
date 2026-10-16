@@ -29,33 +29,107 @@ router.post('/analyze-complaint', auth, async (req, res) => {
                 return res.status(404).json({ message: "Complaint not found" });
             }
 
-            // Verify ownership or staff/admin role
+            // Verify ownership or staff/admin/warden role
             if (complaint.student.toString() !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'staff' && req.user.role !== 'warden') {
                 return res.status(403).json({ message: "Not authorized to analyze this complaint" });
             }
 
+            // Phase B3: Return stored assessment immediately if already completed and valid
+            const hasExistingSummary = Boolean(complaint.aiSummary && complaint.aiSummary.trim().length > 0);
+            const isCompleted = complaint.aiStatus === 'completed' || (hasExistingSummary && complaint.aiStatus !== 'failed');
+            if (isCompleted && !req.body.forceRetry) {
+                if (complaint.aiStatus !== 'completed' && typeof complaint.save === 'function') {
+                    complaint.aiStatus = 'completed';
+                    await complaint.save();
+                }
+                return res.status(200).json({
+                    message: "Complaint analyzed successfully",
+                    cached: true,
+                    analysis: {
+                        category: complaint.category,
+                        priority: complaint.priority,
+                        summary: complaint.aiSummary
+                    },
+                    provider: complaint.aiProvider || "persisted",
+                    failedOver: false,
+                    complaint
+                });
+            }
+
+            // Phase B3: Avoid duplicate simultaneous provider calls if already in progress
+            const isProcessingRecent = complaint.aiStatus === 'processing' && complaint.updatedAt && (Date.now() - new Date(complaint.updatedAt).getTime() < 30000);
+            if (isProcessingRecent && !req.body.forceRetry) {
+                return res.status(200).json({
+                    message: "AI analysis is currently in progress",
+                    inProgress: true,
+                    complaint
+                });
+            }
+
+            // Atomic claim to prevent concurrent duplicate processing
+            const claimQuery = { _id: complaintId };
+            if (!req.body.forceRetry) {
+                claimQuery.$or = [
+                    { aiStatus: { $in: ['not_started', 'failed', null] } },
+                    { aiSummary: { $in: ['', null] } },
+                    { updatedAt: { $lt: new Date(Date.now() - 30000) } }
+                ];
+            }
+
+            const claimedComplaint = await Complaint.findOneAndUpdate(
+                claimQuery,
+                {
+                    $set: {
+                        aiStatus: 'processing',
+                        aiError: ''
+                    }
+                },
+                { returnDocument: 'after' }
+            );
+
+            if (!claimedComplaint) {
+                return res.status(200).json({
+                    message: "AI analysis is currently in progress",
+                    inProgress: true,
+                    complaint
+                });
+            }
+
             const analysisResult = await aiProviderManager.analyzeComplaint(
-                complaint.title,
-                complaint.description,
-                complaint.category,
-                complaint.photoUrl
+                claimedComplaint.title,
+                claimedComplaint.description,
+                claimedComplaint.category,
+                claimedComplaint.photoUrl
             );
 
             if (!analysisResult.success) {
-                return res.status(503).json({ message: "AI analysis is currently unavailable. Please try again." });
+                claimedComplaint.aiStatus = 'failed';
+                claimedComplaint.aiError = analysisResult.error || "AI analysis failed";
+                await claimedComplaint.save();
+
+                return res.status(503).json({
+                    message: "AI analysis is currently unavailable. Please try again.",
+                    aiStatus: "failed",
+                    error: claimedComplaint.aiError,
+                    complaint: claimedComplaint
+                });
             }
 
-            complaint.category = analysisResult.analysis.category;
-            complaint.priority = analysisResult.analysis.priority;
-            complaint.aiSummary = analysisResult.analysis.summary;
-            await complaint.save();
+            claimedComplaint.category = analysisResult.analysis.category;
+            claimedComplaint.priority = analysisResult.analysis.priority;
+            claimedComplaint.aiSummary = analysisResult.analysis.summary;
+            claimedComplaint.aiStatus = 'completed';
+            claimedComplaint.aiProvider = analysisResult.provider || '';
+            claimedComplaint.aiAssessedAt = new Date();
+            claimedComplaint.aiError = '';
+            await claimedComplaint.save();
 
             return res.status(200).json({
                 message: "Complaint analyzed successfully",
                 analysis: analysisResult.analysis,
                 provider: analysisResult.provider,
                 failedOver: analysisResult.failedOver || false,
-                complaint
+                complaint: claimedComplaint
             });
         }
 

@@ -21,7 +21,7 @@ interface HostelRepository {
     // Complaints
     fun getComplaintsForStudent(studentId: String): Flow<List<Complaint>>
     suspend fun refreshComplaints()
-    suspend fun triggerAiAnalysis(complaintId: String): Result<Unit>
+    suspend fun triggerAiAnalysis(complaintId: String, forceRetry: Boolean = false): Result<Unit>
     suspend fun fetchComplaint(id: String): Result<Complaint>
     fun getAllComplaints(): Flow<List<Complaint>>
     fun getComplaint(id: String): Flow<Complaint?>

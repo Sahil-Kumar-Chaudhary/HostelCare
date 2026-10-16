@@ -122,6 +122,8 @@ data class NetworkComplaint(
     val roomNumber: String,
     val photoUrl: String?,
     val aiSummary: String?,
+    val aiStatus: String? = null,
+    val aiProvider: String? = null,
     val status: String,
     val assignedStaff: String?,
     val resolutionNote: String?,
@@ -147,14 +149,18 @@ data class NetworkComplaint(
         studentId = student,
         assignedStaffId = assignedStaff,
         resolutionNote = resolutionNote,
-        aiSummary = aiSummary
+        aiSummary = aiSummary,
+        aiStatus = aiStatus,
+        aiProvider = aiProvider
     )
 }
-data class AiAnalyzeRequest(val complaintId: String? = null,
+data class AiAnalyzeRequest(
+    val complaintId: String? = null,
     val title: String,
     val description: String,
     val category: String? = null,
-    val image: String? = null
+    val image: String? = null,
+    val forceRetry: Boolean? = null
 )
 
 data class AiAnalysisData(
@@ -165,7 +171,11 @@ data class AiAnalysisData(
 
 data class AiAnalyzeResponse(
     val message: String,
-    val analysis: AiAnalysisData
+    val analysis: AiAnalysisData? = null,
+    val cached: Boolean? = null,
+    val provider: String? = null,
+    val failedOver: Boolean? = null,
+    val inProgress: Boolean? = null
 )
 
 

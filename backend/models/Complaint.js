@@ -110,6 +110,29 @@ const complaintSchema = new mongoose.Schema(
       trim: true
     },
 
+    aiStatus: {
+      type: String,
+      enum: ["not_started", "processing", "completed", "failed"],
+      default: "not_started"
+    },
+
+    aiProvider: {
+      type: String,
+      default: "",
+      trim: true
+    },
+
+    aiAssessedAt: {
+      type: Date,
+      default: null
+    },
+
+    aiError: {
+      type: String,
+      default: "",
+      trim: true
+    },
+
     status: {
       type: String,
       enum: [

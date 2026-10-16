@@ -42,7 +42,7 @@ app.get("/api/protected", auth, (req, res) => {
 
 mongoose
   .connect(process.env.MONGO_URI, {
-    dbName: process.env.MONGODB_DB_NAME || process.env.DB_NAME || "HostelCareDevDB"
+    dbName: process.env.MONGODB_DB_NAME || process.env.DB_NAME || "HostelCareDB"
   })
   .then(() => {
     console.log(`MongoDB connected successfully to database: ${mongoose.connection.name}`);

@@ -59,7 +59,9 @@ data class Complaint(
     val resolutionNote: String? = null,
     val feedbackRating: Int? = null,
     val feedbackNote: String? = null,
-    val aiSummary: String? = null
+    val aiSummary: String? = null,
+    val aiStatus: String? = null,
+    val aiProvider: String? = null
 )
 
 data class Staff(

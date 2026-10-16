@@ -104,6 +104,7 @@ class StudentViewModel(
                     _draftComplaint.value = null
                     repository.refreshComplaints()
                     loadNotifications()
+                    triggerAiAnalysis(createdComplaint.id)
                 } else {
                     _newComplaintState.value = NewComplaintState.Error("Submission failed")
                 }
@@ -116,9 +117,9 @@ class StudentViewModel(
     private val _complaintDetailsState = MutableStateFlow<ComplaintDetailsState>(ComplaintDetailsState.Loading)
     val complaintDetailsState: StateFlow<ComplaintDetailsState> = _complaintDetailsState.asStateFlow()
 
-        fun triggerAiAnalysis(complaintId: String) {
+    fun triggerAiAnalysis(complaintId: String, forceRetry: Boolean = false) {
         viewModelScope.launch {
-            val result = repository.triggerAiAnalysis(complaintId)
+            val result = repository.triggerAiAnalysis(complaintId, forceRetry)
             if (result.isSuccess) {
                 // refresh details
                 fetchComplaintDetails(complaintId)
