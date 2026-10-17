@@ -17,6 +17,9 @@ function validatePassword(pwd) {
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const { generateUniqueWardenId } = require("../utils/idGenerator");
+const { isValidHostelForGender, getCanonicalHostelName } = require("../utils/hostelUtils");
+
 /**
  * Secure one-time Warden provisioning utility.
  * Reads operator parameters from options object, environment variables, or CLI arguments.
@@ -29,6 +32,7 @@ async function provisionWarden(options = {}) {
   const hostelName = options.hostelName || process.env.WARDEN_HOSTEL_NAME;
   const hostelBlock = options.hostelBlock || process.env.WARDEN_HOSTEL_BLOCK || "";
   const phone = options.phone || process.env.WARDEN_PHONE || "";
+  const gender = options.gender || process.env.WARDEN_GENDER;
   const mongoUri = options.mongoUri || process.env.MONGO_URI;
 
   if (!name || !email || !password || !hostelName) {
@@ -39,9 +43,22 @@ async function provisionWarden(options = {}) {
 
   const cleanName = name.trim();
   const cleanEmail = email.trim().toLowerCase();
-  const cleanHostelName = hostelName.trim();
+  let cleanHostelName = hostelName.trim();
   const cleanHostelBlock = hostelBlock.trim();
   const cleanPhone = phone.trim();
+  let cleanGender = "";
+
+  if (gender) {
+    const rawGender = gender.trim().toLowerCase();
+    if (["male", "female"].includes(rawGender)) {
+      cleanGender = rawGender === "male" ? "Male" : "Female";
+      const check = isValidHostelForGender(cleanGender, cleanHostelName);
+      if (!check.valid) {
+        throw new Error(check.message);
+      }
+      cleanHostelName = check.canonicalHostel;
+    }
+  }
 
   if (!cleanName || !cleanEmail || !cleanHostelName) {
     throw new Error("Name, email, and hostel name cannot be blank.");
@@ -90,6 +107,7 @@ async function provisionWarden(options = {}) {
         message: "Account already exists; refused to overwrite.",
         user: {
           id: existingUser._id.toString(),
+          wardenId: existingUser.wardenId || "",
           name: existingUser.name,
           email: existingUser.email,
           role: existingUser.role,
@@ -98,6 +116,9 @@ async function provisionWarden(options = {}) {
       };
     }
 
+    // Generate collision-safe Warden ID
+    const generatedWardenId = options.wardenId || (await generateUniqueWardenId(User));
+
     // Hash password securely with bcrypt
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -105,6 +126,8 @@ async function provisionWarden(options = {}) {
     const warden = await User.create({
       name: cleanName,
       email: cleanEmail,
+      wardenId: generatedWardenId,
+      gender: cleanGender || undefined,
       password: hashedPassword,
       hostelName: cleanHostelName,
       hostelBlock: cleanHostelBlock,
@@ -115,7 +138,7 @@ async function provisionWarden(options = {}) {
     });
 
     console.log(
-      `[Provisioning] Warden account successfully provisioned for "${cleanName}" (${cleanEmail}) - Assigned to "${cleanHostelName}".`
+      `[Provisioning] Warden account successfully provisioned for "${cleanName}" (${cleanEmail}, ID: ${generatedWardenId}) - Assigned to "${cleanHostelName}".`
     );
 
     return {
@@ -124,8 +147,10 @@ async function provisionWarden(options = {}) {
       message: "Warden account provisioned successfully.",
       user: {
         id: warden._id.toString(),
+        wardenId: warden.wardenId,
         name: warden.name,
         email: warden.email,
+        gender: warden.gender,
         role: warden.role,
         hostelName: warden.hostelName,
         hostelBlock: warden.hostelBlock
@@ -161,6 +186,7 @@ if (require.main === module) {
     hostelName: parsedArgs.hostel || parsedArgs.hostelName,
     hostelBlock: parsedArgs.block || parsedArgs.hostelBlock,
     phone: parsedArgs.phone,
+    gender: parsedArgs.gender,
     dbName: parsedArgs.dbName || parsedArgs.db,
     confirmProduction: args.includes("--confirm-production") || parsedArgs.confirmProduction === "true"
   };

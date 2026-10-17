@@ -4,6 +4,7 @@ const Complaint = require("../models/Complaint");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+const { buildHostelRegex, buildBlockFilter } = require("../utils/hostelUtils");
 
 const router = express.Router();
 
@@ -247,8 +248,16 @@ router.post("/tasks/:id/complete", auth, auth.requireStaff, async (req, res) => 
         const student = await User.findById(task.student);
         const hostelName = task.hostelName || (student && student.hostelName);
         if (hostelName) {
-          const wardens = await User.find({ role: "warden", hostelName: hostelName });
+          const hostelRegex = buildHostelRegex(hostelName);
+          const wardens = await User.find({ role: "warden", hostelName: { $regex: hostelRegex } });
           for (const w of wardens) {
+            if (w.hostelBlock && w.hostelBlock.trim() && w.hostelBlock.trim().toLowerCase() !== "all") {
+              const blockRegex = buildBlockFilter(w.hostelBlock);
+              if (blockRegex && !blockRegex.test(task.hostelBlock || "")) {
+                continue;
+              }
+            }
+
             const existingWardenNotif = await Notification.findOne({
               recipient: w._id,
               type: "completion_requested",

@@ -544,10 +544,26 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
     // Step 1: Personal Details
     var name by remember { mutableStateOf("") }
     var studentId by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var selectedCountryCode by remember { mutableStateOf("+91") }
     var showCountryMenu by remember { mutableStateOf(false) }
     var phone by remember { mutableStateOf("") }
+
+    // Canonical hostel options by gender
+    val maleHostels = remember {
+        listOf("BH-1", "BH-2", "BH-3", "BH-4", "BH-5", "BH-6", "BH-7", "BH-8", "BH-9", "BH-10")
+    }
+    val femaleHostels = remember {
+        listOf("GH-1", "GH-2", "GH-3", "GH-4", "GH-5", "GH-6", "GH-7", "GH-8", "GH-9", "GH-10")
+    }
+    val availableHostels = remember(gender) {
+        when (gender) {
+            "Male" -> maleHostels
+            "Female" -> femaleHostels
+            else -> maleHostels + femaleHostels
+        }
+    }
 
     // Step 2: College Details
     var collegeName by remember { mutableStateOf("") }
@@ -557,6 +573,7 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
 
     // Step 3: Hostel Details
     var hostelName by remember { mutableStateOf("") }
+    var showHostelMenu by remember { mutableStateOf(false) }
     var hostelBlock by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
 
@@ -634,6 +651,8 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
         if (studentId.trim().isBlank()) errs["studentId"] = "Student ID is required"
         else if (!studentId.trim().matches(Regex("^[a-zA-Z0-9\\-_]+$"))) errs["studentId"] = "Student ID must be alphanumeric"
 
+        if (gender.isBlank()) errs["gender"] = "Please select your gender"
+
         val cleanEmail = email.trim().lowercase()
         val gmailRegex = Regex("^[a-zA-Z0-9_.+-]+@gmail\\.com$")
         if (cleanEmail.isBlank()) {
@@ -662,7 +681,14 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
 
     fun validateStep3(): Boolean {
         val errs = mutableMapOf<String, String>()
-        if (hostelName.trim().isBlank()) errs["hostelName"] = "Hostel name is required"
+        if (hostelName.trim().isBlank()) {
+            errs["hostelName"] = "Please select your hostel"
+        } else if (gender == "Male" && !maleHostels.contains(hostelName.trim())) {
+            errs["hostelName"] = "Please select a valid male hostel"
+        } else if (gender == "Female" && !femaleHostels.contains(hostelName.trim())) {
+            errs["hostelName"] = "Please select a valid female hostel"
+        }
+
         if (hostelBlock.trim().isBlank()) errs["hostelBlock"] = "Block is required"
         if (room.trim().isBlank()) errs["room"] = "Room number is required"
         step3Errors = errs
@@ -900,6 +926,63 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
             Spacer(modifier = Modifier.height(16.dp))
 
             RegistrationFormField(
+                label = "Gender",
+                required = true,
+                error = step1Errors["gender"],
+                helper = "Determines your available hostel buildings"
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    listOf("Male", "Female").forEach { g ->
+                        val isSelected = gender == g
+                        Surface(
+                            onClick = {
+                                gender = g
+                                step1Errors = step1Errors - "gender"
+                                if (g == "Male" && !maleHostels.contains(hostelName)) {
+                                    hostelName = ""
+                                } else if (g == "Female" && !femaleHostels.contains(hostelName)) {
+                                    hostelName = ""
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) PrimaryBlue.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outline
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(selectedColor = PrimaryBlue)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = g,
+                                    fontSize = 15.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            RegistrationFormField(
                 label = "Email",
                 required = true,
                 error = step1Errors["email"]
@@ -1107,19 +1190,52 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
 
         // STEP 3: HOSTEL DETAILS
         if (currentStep == 3) {
+            val hostelHelperText = when (gender) {
+                "Male" -> "Showing Male Hostels (BH-1 to BH-10)"
+                "Female" -> "Showing Female Hostels (GH-1 to GH-10)"
+                else -> "Select your assigned hostel"
+            }
+
             RegistrationFormField(
                 label = "Hostel Name",
                 required = true,
                 error = step3Errors["hostelName"],
-                helper = "e.g. University Hostel"
+                helper = hostelHelperText
             ) {
-                RegistrationTextField(
-                    value = hostelName,
-                    onValueChange = { hostelName = it; step3Errors = step3Errors - "hostelName" },
-                    placeholder = "Enter hostel name",
-                    leadingIcon = { Icon(Icons.Default.Home, null, tint = TextMuted) },
-                    isError = step3Errors.containsKey("hostelName")
-                )
+                Box {
+                    RegistrationTextField(
+                        value = hostelName,
+                        onValueChange = {},
+                        placeholder = if (gender.isNotBlank()) "Select $gender Hostel" else "Select Hostel",
+                        leadingIcon = { Icon(Icons.Default.Home, null, tint = TextMuted) },
+                        trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null, tint = TextMuted) },
+                        readOnly = true,
+                        isError = step3Errors.containsKey("hostelName")
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { showHostelMenu = true }
+                    )
+                    DropdownMenu(
+                        expanded = showHostelMenu,
+                        onDismissRequest = { showHostelMenu = false },
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .heightIn(max = 280.dp)
+                    ) {
+                        availableHostels.forEach { hName ->
+                            DropdownMenuItem(
+                                text = { Text(hName, color = MaterialTheme.colorScheme.onSurface) },
+                                onClick = {
+                                    hostelName = hName
+                                    showHostelMenu = false
+                                    step3Errors = step3Errors - "hostelName"
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1457,6 +1573,7 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
                                 name = name.trim(),
                                 email = email.trim().lowercase(),
                                 studentId = studentId.trim(),
+                                gender = gender.trim(),
                                 phone = fullPhone,
                                 collegeName = collegeName.trim(),
                                 course = course.trim(),

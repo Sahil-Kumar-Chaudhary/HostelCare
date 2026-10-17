@@ -4,6 +4,7 @@ const Complaint = require("../models/Complaint");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+const { buildHostelRegex, isHostelMatch, buildBlockFilter } = require("../utils/hostelUtils");
 
 const multer = require("multer");
 const upload = multer({
@@ -54,7 +55,7 @@ router.post(
       }
 
       // Prevent spoofing: students cannot submit complaints for a hostel they do not belong to
-      if (req.body.hostelName && req.body.hostelName.trim().toLowerCase() !== student.hostelName.trim().toLowerCase()) {
+      if (req.body.hostelName && !isHostelMatch(req.body.hostelName, student.hostelName)) {
         return res.status(403).json({
           message: "You cannot submit complaints for a hostel you do not belong to."
         });
@@ -166,8 +167,17 @@ router.post(
           }
 
           // 2. Warden notifications for this hostel
-          const wardens = await User.find({ role: "warden", hostelName: resolvedHostelName });
+          const hostelRegex = buildHostelRegex(resolvedHostelName);
+          const wardens = await User.find({ role: "warden", hostelName: { $regex: hostelRegex } });
           for (const w of wardens) {
+            // Check block authorization if warden has a specific block assigned
+            if (w.hostelBlock && w.hostelBlock.trim() && w.hostelBlock.trim().toLowerCase() !== "all") {
+              const blockRegex = buildBlockFilter(w.hostelBlock);
+              if (blockRegex && !blockRegex.test(complaint.hostelBlock || "")) {
+                continue; // Skip warden who does not cover this block
+              }
+            }
+
             const existingWardenNotif = await Notification.findOne({
               recipient: w._id,
               type: "complaint_created",

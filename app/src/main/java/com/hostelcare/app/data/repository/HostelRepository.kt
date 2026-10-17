@@ -52,6 +52,8 @@ interface HostelRepository {
     suspend fun getWardenReports(timeRange: String? = null): Result<com.hostelcare.app.data.remote.WardenReportsResponse>
     suspend fun getWardenProfile(): Result<com.hostelcare.app.data.remote.WardenProfileData>
     suspend fun updateWardenProfile(name: String?, phone: String?): Result<Unit>
+    suspend fun getWardens(): Result<List<com.hostelcare.app.data.remote.WardenItem>>
+    suspend fun createWarden(request: com.hostelcare.app.data.remote.CreateWardenRequest): Result<com.hostelcare.app.data.remote.CreateWardenResponse>
     suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit>
 
     // Staff Portal

@@ -246,13 +246,11 @@ fun WardenDashboardScreen(
                         item {
                             WardenQuickActionsSection(
                                 onActionClicked = { actionName ->
-                                    scope.launch {
-                                        when (actionName) {
-                                            "All Complaints" -> snackbarHostState.showSnackbar("Complaints list will be fully navigable in Step 3B")
-                                            "Assign Staff" -> snackbarHostState.showSnackbar("Assign Staff workflow is scheduled for Step 3B")
-                                            "Manage Staff" -> snackbarHostState.showSnackbar("Staff Management is scheduled for Step 3C")
-                                            "Reports" -> snackbarHostState.showSnackbar("Reports & Analytics will be available in future updates")
-                                        }
+                                    when (actionName) {
+                                        "All Complaints" -> navController.navigate(Routes.WARDEN_COMPLAINTS)
+                                        "Assign Staff" -> navController.navigate(Routes.WARDEN_COMPLAINTS)
+                                        "Manage Staff" -> navController.navigate(Routes.WARDEN_STAFF)
+                                        "Reports" -> navController.navigate(Routes.WARDEN_REPORTS)
                                     }
                                 }
                             )

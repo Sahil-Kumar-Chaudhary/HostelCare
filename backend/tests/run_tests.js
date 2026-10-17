@@ -4,8 +4,10 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const Complaint = require("../models/Complaint");
+const Notification = require("../models/Notification");
 const authMiddleware = require("../middleware/auth");
 const { provisionWarden, validatePassword } = require("../scripts/provisionWarden");
+const { normalizeHostelName, buildHostelRegex, isHostelMatch, buildBlockFilter, checkBlockAuthorized } = require("../utils/hostelUtils");
 
 const TEST_JWT_SECRET = "test_jwt_secret_key_1234567890_test";
 process.env.JWT_SECRET = TEST_JWT_SECRET;
@@ -896,12 +898,13 @@ async function runTests() {
         body: {
           name: "Amit Patel",
           studentId: "12309999",
+          gender: "Male",
           email: "amit.patel@gmail.com",
           phone: "+91 9876543210",
           collegeName: "Apex Institute of Tech",
           course: "B.Tech Computer Science",
           admissionYear: "2023",
-          hostelName: "Tagore Hall of Residence",
+          hostelName: "BH-1",
           hostelBlock: "B",
           roomNumber: "302",
           password: "SecureStudentPass123!",
@@ -918,7 +921,8 @@ async function runTests() {
       await handler(mockReq, mockRes);
       assert.strictEqual(statusCode, 201, "Registration should return 201 Created");
       assert(createdUser, "User should be created in MongoDB");
-      assert.strictEqual(createdUser.hostelName, "Tagore Hall of Residence", "hostelName must be saved from request");
+      assert.strictEqual(createdUser.hostelName, "BH-1", "hostelName must be saved as canonical format");
+      assert.strictEqual(createdUser.gender, "Male", "gender must be saved from request");
       assert.strictEqual(createdUser.role, "student");
     } finally {
       User.findOne = origFindOne;
@@ -937,6 +941,7 @@ async function runTests() {
       body: {
         name: "Amit Patel",
         studentId: "12309999",
+        gender: "Male",
         email: "amit.patel@gmail.com",
         phone: "+91 9876543210",
         collegeName: "Apex Institute of Tech",
@@ -1399,6 +1404,467 @@ async function runTests() {
       Complaint.findById = origFindByIdComplaint;
       User.findById = origFindByIdUser;
       User.find = origFindUser;
+    }
+  });
+
+  // 36. Hostel Name Normalization & Flexible Matching Tests
+  test("Hostel Normalization: Utility correctly normalizes and matches equivalent hostel representations", () => {
+    assert.strictEqual(isHostelMatch("BH1", "BH-1"), true, "BH1 should match BH-1");
+    assert.strictEqual(isHostelMatch("BH1", "BH 1"), true, "BH1 should match BH 1");
+    assert.strictEqual(isHostelMatch("BH1", "B.H. 1"), true, "BH1 should match B.H. 1");
+    assert.strictEqual(isHostelMatch("BH-1", "BH1"), true, "BH-1 should match BH1");
+    assert.strictEqual(isHostelMatch("BH-1", "bh-1"), true, "Case-insensitive matching");
+    assert.strictEqual(isHostelMatch("BH-1", "BH - 1"), true, "Spaces and hyphens handled");
+    assert.strictEqual(isHostelMatch("BH1", "BH2"), false, "Different numbers must not match");
+    assert.strictEqual(isHostelMatch("BH1", "GH1"), false, "Different prefixes must not match");
+    assert.strictEqual(isHostelMatch("Hostel A", "Hostel-A"), true, "Hostel A matches Hostel-A");
+    assert.strictEqual(isHostelMatch("Hostel A", "Hostel B"), false, "Hostel A does not match Hostel B");
+
+    const r1 = buildHostelRegex("BH1");
+    assert(r1.test("BH-1"), "Regex for BH1 must match BH-1");
+    assert(r1.test("BH1"), "Regex for BH1 must match BH1");
+    assert(r1.test("BH 1"), "Regex for BH1 must match BH 1");
+    assert(!r1.test("BH2"), "Regex for BH1 must reject BH2");
+    assert(!r1.test("GH1"), "Regex for BH1 must reject GH1");
+
+    const r2 = buildHostelRegex("BH-1");
+    assert(r2.test("BH1"), "Regex for BH-1 must match BH1");
+    assert(r2.test("BH-1"), "Regex for BH-1 must match BH-1");
+  });
+
+  // 37. Warden Scoping with Cross-Format Hostel Names (BH1 vs BH-1)
+  await testAsync("Warden Scope: Warden with BH1 matches complaints and students from BH-1 within authorized block", async () => {
+    const origFindById = User.findById;
+    const origUserFind = User.find;
+    const origCountDocuments = Complaint.countDocuments;
+    const origComplaintFind = Complaint.find;
+
+    try {
+      const mockWardenId = new mongoose.Types.ObjectId();
+      const mockStudentId = new mongoose.Types.ObjectId();
+
+      User.findById = () => ({
+        select: () => Promise.resolve({
+          _id: mockWardenId,
+          name: "Chief Warden",
+          email: "warden@hostelcare.com",
+          role: "warden",
+          hostelName: "BH1",
+          hostelBlock: "B"
+        })
+      });
+
+      let capturedUserQuery = null;
+      User.find = (q) => {
+        capturedUserQuery = q;
+        return {
+          distinct: () => Promise.resolve([mockStudentId])
+        };
+      };
+
+      let capturedComplaintQuery = null;
+      Complaint.countDocuments = (q) => {
+        capturedComplaintQuery = q;
+        return Promise.resolve(1);
+      };
+
+      Complaint.find = () => ({
+        sort: () => ({
+          limit: () => ({
+            populate: () => ({
+              populate: () => Promise.resolve([
+                {
+                  _id: new mongoose.Types.ObjectId(),
+                  ticketId: "HC-928758",
+                  title: "Table damage",
+                  description: "study table damage",
+                  category: "furniture",
+                  priority: "medium",
+                  status: "submitted",
+                  hostelName: "BH-1",
+                  hostelBlock: "B",
+                  roomNumber: "927",
+                  createdAt: new Date().toISOString(),
+                  student: {
+                    _id: mockStudentId,
+                    name: "Sahil Kumar",
+                    studentId: "12305507",
+                    email: "sahilku707@gmail.com",
+                    hostelBlock: "B",
+                    roomNumber: "927"
+                  },
+                  assignedStaff: null
+                }
+              ])
+            })
+          })
+        })
+      });
+
+      const wardenRouter = require("../routes/warden");
+      const routeLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/dashboard");
+      const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+      let resData = null;
+      await handler(
+        { user: { userId: mockWardenId.toString(), role: "warden" } },
+        { status: () => ({ json: (d) => { resData = d; } }), json: (d) => { resData = d; } }
+      );
+
+      assert(resData && resData.success, "Warden dashboard must return success: true");
+      assert.strictEqual(resData.stats.total, 1, "Total complaints should be 1");
+      assert.strictEqual(resData.recentComplaints.length, 1);
+      assert.strictEqual(resData.recentComplaints[0].ticketId, "HC-928758");
+
+      // Verify that User.find regex matched BH-1
+      assert(capturedUserQuery.hostelName.$regex.test("BH-1"), "User query regex must match BH-1");
+      assert(capturedUserQuery.hostelName.$regex.test("BH1"), "User query regex must match BH1");
+      assert(!capturedUserQuery.hostelName.$regex.test("BH2"), "User query regex must reject BH2");
+
+      // Verify authorization helper
+      const authorizedComplaint = {
+        hostelName: "BH-1",
+        hostelBlock: "B"
+      };
+      const foreignHostelComplaint = {
+        hostelName: "BH2",
+        hostelBlock: "B"
+      };
+      const mismatchBlockComplaint = {
+        hostelName: "BH-1",
+        hostelBlock: "A"
+      };
+      const wardenObj = {
+        hostelName: "BH1",
+        hostelBlock: "B"
+      };
+
+      assert.strictEqual(isHostelMatch(authorizedComplaint.hostelName, wardenObj.hostelName), true);
+      assert.strictEqual(checkBlockAuthorized(authorizedComplaint, wardenObj), true);
+      assert.strictEqual(isHostelMatch(foreignHostelComplaint.hostelName, wardenObj.hostelName), false);
+      assert.strictEqual(checkBlockAuthorized(mismatchBlockComplaint, wardenObj), false);
+    } finally {
+      User.findById = origFindById;
+      User.find = origUserFind;
+      Complaint.countDocuments = origCountDocuments;
+      Complaint.find = origComplaintFind;
+    }
+  });
+
+  // 38. Warden Notification Creation on Complaint Submission with Flexible Hostel Format
+  await testAsync("Complaint Submission: Student in BH-1 triggers notification for Warden in BH1 with block matching", async () => {
+    const origFindByIdUser = User.findById;
+    const origFindUser = User.find;
+    const origCreateComplaint = Complaint.create;
+    const origFindOneNotif = Notification.findOne;
+    const origCreateNotif = Notification.create;
+
+    try {
+      const studentId = new mongoose.Types.ObjectId();
+      const wardenId = new mongoose.Types.ObjectId();
+      const otherBlockWardenId = new mongoose.Types.ObjectId();
+
+      User.findById = (id) => {
+        if (id.toString() === studentId.toString()) {
+          return Promise.resolve({
+            _id: studentId,
+            role: "student",
+            hostelName: "BH-1",
+            hostelBlock: "B",
+            roomNumber: "927"
+          });
+        }
+        return Promise.resolve(null);
+      };
+
+      User.find = (q) => {
+        if (q.role === "warden") {
+          assert(q.hostelName.$regex.test("BH-1"), "Must search wardens with regex matching BH-1");
+          assert(q.hostelName.$regex.test("BH1"), "Must also match warden BH1");
+          return Promise.resolve([
+            { _id: wardenId, role: "warden", hostelName: "BH1", hostelBlock: "B" },
+            { _id: otherBlockWardenId, role: "warden", hostelName: "BH1", hostelBlock: "C" }
+          ]);
+        }
+        return Promise.resolve([]);
+      };
+
+      const complaintId = new mongoose.Types.ObjectId();
+      Complaint.create = (doc) => {
+        return Promise.resolve({
+          _id: complaintId,
+          ticketId: "HC-928758",
+          title: doc.title,
+          hostelName: doc.hostelName,
+          hostelBlock: doc.hostelBlock,
+          roomNumber: doc.roomNumber,
+          category: doc.category,
+          priority: doc.priority,
+          student: doc.student
+        });
+      };
+
+      const createdNotifications = [];
+      Notification.findOne = () => Promise.resolve(null);
+      Notification.create = (n) => {
+        createdNotifications.push(n);
+        return Promise.resolve({ _id: new mongoose.Types.ObjectId(), ...n });
+      };
+
+      const complaintsRouter = require("../routes/complaints");
+      const routeLayer = complaintsRouter.stack.find(s => s.route && s.route.path === "/" && s.route.methods.post);
+      const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+      const mockReq = {
+        user: { userId: studentId.toString(), role: "student" },
+        body: {
+          title: "Table damage",
+          description: "study table damage",
+          category: "furniture",
+          priority: "medium",
+          hostelBlock: "B",
+          roomNumber: "927"
+        }
+      };
+
+      let resData = null;
+      await handler(mockReq, {
+        status: () => ({ json: (d) => { resData = d; } }),
+        json: (d) => { resData = d; }
+      });
+
+      assert(resData && resData.complaint, "Complaint creation should succeed");
+      // Notifications: 1 for student confirmation + 1 for warden of Block B (Block C warden is skipped)
+      assert.strictEqual(createdNotifications.length, 2, "Should create 2 notifications (1 student, 1 block-matched warden)");
+      assert.strictEqual(createdNotifications[0].recipient.toString(), studentId.toString());
+      assert.strictEqual(createdNotifications[1].recipient.toString(), wardenId.toString());
+      assert.strictEqual(createdNotifications[1].type, "complaint_created");
+      assert(createdNotifications[1].title.includes("Table damage"));
+    } finally {
+      User.findById = origFindByIdUser;
+      User.find = origFindUser;
+      Complaint.create = origCreateComplaint;
+      Notification.findOne = origFindOneNotif;
+      Notification.create = origCreateNotif;
+    }
+  });
+
+  // 13. Gender and Hostel Pairing Validation Tests
+  await testAsync("Gender Validation: Registration validates Male with BH-1 and Female with GH-2, and rejects mismatches", async () => {
+    const authRouter = require("../routes/auth");
+    const routeLayer = authRouter.stack.find(s => s.route && s.route.path === "/register");
+    const handler = routeLayer.route.stack[routeLayer.route.stack.length - 1].handle;
+
+    const baseBody = {
+      name: "Test Student",
+      studentId: "99887766",
+      email: "test.student@gmail.com",
+      phone: "+91 9999999999",
+      collegeName: "Tech Univ",
+      course: "CS",
+      admissionYear: "2024",
+      hostelBlock: "A",
+      roomNumber: "101",
+      password: "SecurePassword123!",
+      confirmPassword: "SecurePassword123!",
+      acceptedTerms: true,
+      role: "student"
+    };
+
+    const origFindOne = User.findOne;
+    const origCreate = User.create;
+
+    try {
+      User.findOne = () => Promise.resolve(null);
+      User.create = (doc) => Promise.resolve({ _id: "new_id", ...doc });
+
+      // Test 1: Male with BH-1 (Valid)
+      let status1 = 0;
+      await handler({ body: { ...baseBody, gender: "Male", hostelName: "BH-1" } }, {
+        status: (code) => { status1 = code; return { json: () => {} }; },
+        json: () => {}
+      });
+      assert.strictEqual(status1, 201, "Male with BH-1 must succeed");
+
+      // Test 2: Female with GH-2 (Valid)
+      let status2 = 0;
+      await handler({ body: { ...baseBody, email: "female@gmail.com", studentId: "99887767", gender: "Female", hostelName: "GH-2" } }, {
+        status: (code) => { status2 = code; return { json: () => {} }; },
+        json: () => {}
+      });
+      assert.strictEqual(status2, 201, "Female with GH-2 must succeed");
+
+      // Test 3: Male with GH-1 (Invalid mismatch)
+      let status3 = 0;
+      let msg3 = "";
+      await handler({ body: { ...baseBody, gender: "Male", hostelName: "GH-1" } }, {
+        status: (code) => { status3 = code; return { json: (d) => { msg3 = d.message; } }; },
+        json: (d) => { msg3 = d.message; }
+      });
+      assert.strictEqual(status3, 400, "Male with GH-1 must be rejected with 400");
+      assert(msg3.includes("Invalid hostel for Male student"), "Expected descriptive error message");
+
+      // Test 4: Female with BH-2 (Invalid mismatch)
+      let status4 = 0;
+      let msg4 = "";
+      await handler({ body: { ...baseBody, gender: "Female", hostelName: "BH-2" } }, {
+        status: (code) => { status4 = code; return { json: (d) => { msg4 = d.message; } }; },
+        json: (d) => { msg4 = d.message; }
+      });
+      assert.strictEqual(status4, 400, "Female with BH-2 must be rejected with 400");
+      assert(msg4.includes("Invalid hostel for Female student"), "Expected descriptive error message");
+
+      // Test 5: Missing or invalid gender
+      let status5 = 0;
+      await handler({ body: { ...baseBody, gender: "Unknown", hostelName: "BH-1" } }, {
+        status: (code) => { status5 = code; return { json: () => {} }; },
+        json: () => {}
+      });
+      assert.strictEqual(status5, 400, "Invalid gender must be rejected with 400");
+    } finally {
+      User.findOne = origFindOne;
+      User.create = origCreate;
+    }
+  });
+
+  // 14. Collision-safe ID Generator Tests
+  await testAsync("ID Generator: Collision-safe Warden ID sequence generates WRD-0001, WRD-0002", async () => {
+    const { generateUniqueWardenId } = require("../utils/idGenerator");
+    const mockModel = {
+      find: () => Promise.resolve([
+        { wardenId: "WRD-0001" },
+        { wardenId: "WRD-0002" }
+      ]),
+      findOne: () => Promise.resolve(null)
+    };
+
+    const nextId = await generateUniqueWardenId(mockModel);
+    assert.strictEqual(nextId, "WRD-0003", "Next warden ID should be WRD-0003");
+
+    // Empty DB starts at WRD-0001
+    const emptyModel = {
+      find: () => Promise.resolve([]),
+      findOne: () => Promise.resolve(null)
+    };
+    const firstId = await generateUniqueWardenId(emptyModel);
+    assert.strictEqual(firstId, "WRD-0001", "Initial warden ID should be WRD-0001");
+  });
+
+  await testAsync("ID Generator: Collision-safe Staff ID sequence generates STF-1001, STF-1002", async () => {
+    const { generateUniqueStaffId } = require("../utils/idGenerator");
+    const mockModel = {
+      find: () => Promise.resolve([
+        { staffId: "STF-1001" },
+        { staffId: "STF-1005" }
+      ]),
+      findOne: () => Promise.resolve(null)
+    };
+
+    const nextId = await generateUniqueStaffId(mockModel);
+    assert.strictEqual(nextId, "STF-1006", "Next staff ID should be STF-1006");
+
+    // Empty DB starts at STF-1001
+    const emptyModel = {
+      find: () => Promise.resolve([]),
+      findOne: () => Promise.resolve(null)
+    };
+    const firstId = await generateUniqueStaffId(emptyModel);
+    assert.strictEqual(firstId, "STF-1001", "Initial staff ID should be STF-1001");
+  });
+
+  // 15. Warden Management Route Tests
+  await testAsync("Warden Management: Protected POST /wardens creates warden with WRD ID, no block restriction, and returns temp password", async () => {
+    const origFindOne = User.findOne;
+    const origCreate = User.create;
+    const origFind = User.find;
+
+    try {
+      User.find = () => Promise.resolve([{ wardenId: "WRD-0004" }]);
+      User.findOne = () => Promise.resolve(null); // No existing email duplicate
+
+      let createdWarden = null;
+      User.create = (doc) => {
+        createdWarden = doc;
+        return Promise.resolve({ _id: "new_warden_999", ...doc, createdAt: new Date() });
+      };
+
+      const wardenRouter = require("../routes/warden");
+      const postWardensLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/wardens" && s.route.methods.post);
+      assert(postWardensLayer, "POST /wardens route must exist");
+      const handler = postWardensLayer.route.stack[postWardensLayer.route.stack.length - 1].handle;
+
+      let statusCode = 0;
+      let resData = null;
+      const mockReq = {
+        user: { userId: "warden123", role: "warden" },
+        body: {
+          name: "Dr. Vikram Singh",
+          email: "vikram.warden@hostelcare.com",
+          gender: "Male",
+          hostelName: "BH-2",
+          phone: "+91 9123456789"
+        }
+      };
+
+      await handler(mockReq, {
+        status: (code) => { statusCode = code; return { json: (d) => { resData = d; } }; },
+        json: (d) => { resData = d; }
+      });
+
+      assert.strictEqual(statusCode, 201, "POST /wardens should return 201 Created");
+      assert(resData && resData.warden, "Response must include warden object");
+      assert.strictEqual(resData.warden.wardenId, "WRD-0005", "Should assign sequential WRD-0005");
+      assert.strictEqual(resData.warden.hostelName, "BH-2");
+      assert.strictEqual(createdWarden.hostelBlock, "", "Warden must have NO block restriction (empty block)");
+      assert(resData.temporaryPassword, "Response must provide temporary password");
+      assert(resData.temporaryPassword.length >= 8, "Temporary password must meet length policy");
+    } finally {
+      User.findOne = origFindOne;
+      User.create = origCreate;
+      User.find = origFind;
+    }
+  });
+
+  await testAsync("Warden Management: Protected GET /wardens returns all wardens with IDs and assigned hostels", async () => {
+    const origFind = User.find;
+    try {
+      User.find = () => ({
+        select: () => ({
+          sort: () => ({
+            lean: () => Promise.resolve([
+              {
+                _id: "w1",
+                wardenId: "WRD-0001",
+                name: "Dr. Sharma",
+                email: "sharma@hostelcare.com",
+                gender: "Male",
+                hostelName: "BH-1",
+                phone: "9876543210",
+                createdAt: new Date()
+              }
+            ])
+          })
+        })
+      });
+
+      const wardenRouter = require("../routes/warden");
+      const getWardensLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/wardens" && s.route.methods.get);
+      assert(getWardensLayer, "GET /wardens route must exist");
+      const handler = getWardensLayer.route.stack[getWardensLayer.route.stack.length - 1].handle;
+
+      let resData = null;
+      await handler({ user: { userId: "w1", role: "warden" } }, {
+        json: (d) => { resData = d; }
+      });
+
+      assert(resData && resData.success, "GET /wardens should return success: true");
+      assert(Array.isArray(resData.wardens), "Response must contain wardens array");
+      assert.strictEqual(resData.wardens.length, 1);
+      assert.strictEqual(resData.wardens[0].wardenId, "WRD-0001");
+      assert.strictEqual(resData.wardens[0].gender, "Male");
+      assert.strictEqual(resData.wardens[0].hostelName, "BH-1");
+    } finally {
+      User.find = origFind;
     }
   });
 

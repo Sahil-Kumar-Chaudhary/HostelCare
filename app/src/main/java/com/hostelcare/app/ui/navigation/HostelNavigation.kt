@@ -45,6 +45,7 @@ object Routes {
     const val WARDEN_REPORTS = "warden_reports"
     const val WARDEN_PROFILE = "warden_profile"
     const val WARDEN_NOTIFICATIONS = "warden_notifications"
+    const val WARDEN_MANAGEMENT = "warden_management"
 
     // Staff Portal Routes (Screens 1 - 8)
     const val STAFF_HOME = "staff_home"
@@ -187,6 +188,9 @@ fun HostelCareAppNavHost(
         }
         composable(Routes.WARDEN_NOTIFICATIONS) {
             com.hostelcare.app.ui.screens.warden.WardenNotificationsScreen(navController, appContainer)
+        }
+        composable(Routes.WARDEN_MANAGEMENT) {
+            com.hostelcare.app.ui.screens.warden.WardenManagementScreen(navController, appContainer)
         }
 
         // Staff Flow Screens (Screens 1 - 8)

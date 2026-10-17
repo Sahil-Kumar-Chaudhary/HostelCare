@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { isValidHostelForGender, getCanonicalHostelName } = require("../utils/hostelUtils");
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.post("/register", async (req, res) => {
     const {
       name,
       studentId,
+      gender,
       email,
       phone,
       collegeName,
@@ -44,6 +46,13 @@ router.post("/register", async (req, res) => {
         message: "Public registration is only permitted for student accounts"
       });
     }
+
+    if (!gender || typeof gender !== "string" || !["male", "female"].includes(gender.trim().toLowerCase())) {
+      return res.status(400).json({
+        message: "Gender is required and must be either Male or Female"
+      });
+    }
+    const cleanGender = gender.trim().toLowerCase() === "male" ? "Male" : "Female";
 
     const yearValue = admissionYear || currentYear;
 
@@ -101,6 +110,14 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    const hostelCheck = isValidHostelForGender(cleanGender, cleanHostelName);
+    if (!hostelCheck.valid) {
+      return res.status(400).json({
+        message: hostelCheck.message
+      });
+    }
+    const canonicalHostelName = hostelCheck.canonicalHostel;
+
     if (!emailRegex.test(cleanEmail)) {
       return res.status(400).json({
         message: "Please enter a valid email address"
@@ -155,13 +172,14 @@ router.post("/register", async (req, res) => {
     const user = await User.create({
       name: cleanName,
       studentId: cleanStudentId,
+      gender: cleanGender,
       email: cleanEmail,
       phone: cleanPhone,
       collegeName: cleanCollegeName,
       course: cleanCourse,
       currentYear: cleanCurrentYear,
       semester: cleanSemester,
-      hostelName: cleanHostelName,
+      hostelName: canonicalHostelName,
       hostelBlock: cleanHostelBlock,
       roomNumber: cleanRoomNumber,
       password: hashedPassword,
@@ -176,6 +194,7 @@ router.post("/register", async (req, res) => {
         id: user._id,
         name: user.name,
         studentId: user.studentId,
+        gender: user.gender,
         email: user.email,
         phone: user.phone || "",
         collegeName: user.collegeName || "",
@@ -292,6 +311,8 @@ router.post("/login", async (req, res) => {
         name: user.name,
         studentId: user.studentId || "",
         staffId: user.staffId || "",
+        wardenId: user.wardenId || "",
+        gender: user.gender || "",
         department: user.department || "",
         email: user.email,
         phone: user.phone || "",

@@ -247,6 +247,8 @@ fun WardenProfileScreen(
         val phoneStr = warden?.phone ?: currentUser?.phone ?: "Not provided"
         val hostelStr = warden?.hostelName ?: currentUser?.hostelName ?: "Main Hostel"
         val blockStr = warden?.hostelBlock ?: currentUser?.hostelBlock ?: ""
+        val wardenIdStr = warden?.wardenId ?: currentUser?.wardenId ?: ""
+        val genderStr = warden?.gender ?: currentUser?.gender ?: ""
 
         Column(
             modifier = Modifier
@@ -308,7 +310,7 @@ fun WardenProfileScreen(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = "Campus Warden · $hostelStr${if (blockStr.isNotBlank()) " ($blockStr)" else ""}",
+                            text = "Campus Warden · $hostelStr${if (wardenIdStr.isNotBlank()) " · $wardenIdStr" else ""}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
@@ -347,11 +349,87 @@ fun WardenProfileScreen(
 
                     ProfileDetailRow(icon = Icons.Default.Person, label = "Full Name", value = nameStr)
                     Spacer(modifier = Modifier.height(8.dp))
+                    if (wardenIdStr.isNotBlank()) {
+                        ProfileDetailRow(icon = Icons.Default.Badge, label = "Warden ID", value = wardenIdStr)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    if (genderStr.isNotBlank()) {
+                        ProfileDetailRow(icon = Icons.Default.People, label = "Gender", value = genderStr)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     ProfileDetailRow(icon = Icons.Default.Email, label = "Email", value = emailStr)
                     Spacer(modifier = Modifier.height(8.dp))
                     ProfileDetailRow(icon = Icons.Default.Phone, label = "Phone", value = phoneStr)
                     Spacer(modifier = Modifier.height(8.dp))
                     ProfileDetailRow(icon = Icons.Default.Apartment, label = "Authorized Hostel", value = hostelStr)
+                }
+            }
+
+            // Warden Administration Section
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                shadowElevation = 1.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Administration",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Surface(
+                        onClick = { navController.navigate(Routes.WARDEN_MANAGEMENT) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.SupervisorAccount, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("Manage Wardens", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("Provision and view campus wardens", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Surface(
+                        onClick = { navController.navigate(Routes.WARDEN_STAFF) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Engineering, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("Manage Staff", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("Assign and manage hostel maintenance staff", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
 

@@ -20,6 +20,17 @@ const userSchema = new mongoose.Schema(
       sparse: true,
       trim: true
     },
+    wardenId: {
+      type: String,
+      sparse: true,
+      trim: true,
+      unique: true
+    },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "male", "female"],
+      trim: true
+    },
     department: {
       type: String,
       default: "",

@@ -5,46 +5,39 @@ const User = require("../models/User");
 const Complaint = require("../models/Complaint");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+const {
+  escapeRegex,
+  normalizeHostelName,
+  buildHostelRegex,
+  isHostelMatch,
+  buildBlockFilter,
+  checkBlockAuthorized,
+  isValidHostelForGender,
+  getCanonicalHostelName
+} = require("../utils/hostelUtils");
+const {
+  generateUniqueWardenId,
+  generateUniqueStaffId,
+  generateSecureTemporaryPassword
+} = require("../utils/idGenerator");
 
 const router = express.Router();
-
-function escapeRegex(text) {
-  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-}
-
-function buildBlockFilter(wardenBlock) {
-  if (!wardenBlock || !wardenBlock.trim() || wardenBlock.trim().toLowerCase() === "all") {
-    return null;
-  }
-  const clean = wardenBlock.trim();
-  const singleLetterMatch = clean.match(/\b([A-Za-z0-9])\b/);
-  if (singleLetterMatch) {
-    const letter = singleLetterMatch[1];
-    return new RegExp(`(^|\\b|Block[- ]?)${escapeRegex(letter)}(\\b|$)`, "i");
-  }
-  return new RegExp(escapeRegex(clean), "i");
-}
-
-function checkBlockAuthorized(complaint, warden) {
-  if (!warden.hostelBlock || !warden.hostelBlock.trim() || warden.hostelBlock.trim().toLowerCase() === "all") {
-    return true;
-  }
-  const blockRegex = buildBlockFilter(warden.hostelBlock);
-  if (!blockRegex) return true;
-  return blockRegex.test(complaint.hostelBlock || "");
-}
 
 function isComplaintAuthorized(complaint, warden, studentIds) {
   if (!complaint) return false;
 
+  const resolvedHostel = complaint.hostelName && complaint.hostelName.trim()
+    ? complaint.hostelName.trim()
+    : (complaint.student && complaint.student.hostelName ? complaint.student.hostelName.trim() : "");
+
   // 1. If a complaint has no hostel name, it must not be visible to any Warden until properly assigned.
-  if (!complaint.hostelName || !complaint.hostelName.trim()) {
+  if (!resolvedHostel) {
     return false;
   }
 
-  // 2. Direct match on complaint.hostelName:
+  // 2. Direct match on complaint.hostelName with format flexibility (e.g., BH-1 vs BH1):
   // A Warden for "Hostel A" must never see complaints from "Hostel B".
-  if (complaint.hostelName.trim().toLowerCase() !== warden.hostelName.trim().toLowerCase()) {
+  if (!isHostelMatch(resolvedHostel, warden.hostelName)) {
     return false;
   }
 
@@ -72,7 +65,7 @@ async function getWardenScope(wardenId) {
   }
 
   const cleanHostelName = warden.hostelName.trim();
-  const hostelRegex = new RegExp(`^\\s*${escapeRegex(cleanHostelName)}\\s*$`, "i");
+  const hostelRegex = buildHostelRegex(cleanHostelName);
 
   const studentIds = await User.find({
     role: "student",
@@ -84,14 +77,14 @@ async function getWardenScope(wardenId) {
     hostelName: { $regex: hostelRegex }
   };
 
-  if (warden.hostelBlock && warden.hostelBlock.trim()) {
+  if (warden.hostelBlock && warden.hostelBlock.trim() && warden.hostelBlock.trim().toLowerCase() !== "all") {
     const blockRegex = buildBlockFilter(warden.hostelBlock);
     if (blockRegex) {
       complaintQuery.hostelBlock = { $regex: blockRegex };
     }
   }
 
-  return { warden, cleanHostelName, studentIds, complaintQuery };
+  return { warden, cleanHostelName, studentIds, complaintQuery, hostelRegex };
 }
 
 /**
@@ -233,7 +226,7 @@ router.get("/complaints", auth, auth.requireWarden, async (req, res) => {
       // Also find students matching name
       const matchingStudentIds = await User.find({
         role: "student",
-        hostelName: { $regex: new RegExp(`^${escapeRegex(cleanHostelName)}$`, "i") },
+        hostelName: { $regex: buildHostelRegex(cleanHostelName) },
         name: searchRegex
       }).distinct("_id");
 
@@ -525,7 +518,7 @@ router.post("/complaints/:id/assign", auth, auth.requireWarden, async (req, res)
       return res.status(400).json({ message: "Selected staff member is inactive and cannot be assigned tasks" });
     }
 
-    if (staff.hostelName && staff.hostelName.toLowerCase() !== cleanHostelName.toLowerCase()) {
+    if (staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
       return res.status(403).json({ message: "Staff member does not belong to your authorized hostel" });
     }
 
@@ -607,7 +600,7 @@ router.get("/staff", auth, auth.requireWarden, async (req, res) => {
 
     const query = {
       role: "staff",
-      hostelName: { $regex: new RegExp(`^${escapeRegex(cleanHostelName)}$`, "i") }
+      hostelName: { $regex: buildHostelRegex(cleanHostelName) }
     };
 
     if (filter === "active") {
@@ -703,11 +696,17 @@ router.post("/staff", auth, auth.requireWarden, async (req, res) => {
       return res.status(409).json({ message: "An account with this email already exists" });
     }
 
-    // Generate unique staff ID
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const generatedStaffId = `STF-${randomSuffix}`;
+    // Generate collision-safe unique staff ID
+    const generatedStaffId = await generateUniqueStaffId(User);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    let tempPassword = password ? password.trim() : "";
+    if (!tempPassword) {
+      tempPassword = generateSecureTemporaryPassword(12);
+    } else if (tempPassword.length < 8) {
+      return res.status(400).json({ message: "Temporary password must be at least 8 characters" });
+    }
+
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const staff = await User.create({
       name: cleanName,
@@ -737,10 +736,137 @@ router.post("/staff", auth, auth.requireWarden, async (req, res) => {
         hostelName: staff.hostelName,
         hostelBlock: staff.hostelBlock,
         isActive: staff.isActive
-      }
+      },
+      temporaryPassword: tempPassword
     });
   } catch (error) {
     console.error("Warden create staff error:", error.message);
+    res.status(error.status || 500).json({ message: error.message || "Server error" });
+  }
+});
+
+/**
+ * 7B. GET /api/warden/wardens
+ * List all wardens
+ */
+router.get("/wardens", auth, auth.requireWarden, async (req, res) => {
+  try {
+    const wardens = await User.find({ role: "warden" })
+      .select("_id wardenId name email gender hostelName phone createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formatted = wardens.map(w => ({
+      id: w._id.toString(),
+      wardenId: w.wardenId || "",
+      name: w.name,
+      email: w.email,
+      gender: w.gender || "",
+      hostelName: w.hostelName || "",
+      phone: w.phone || "",
+      createdAt: w.createdAt
+    }));
+
+    res.json({
+      success: true,
+      wardens: formatted
+    });
+  } catch (error) {
+    console.error("Get wardens error:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * 7C. POST /api/warden/wardens
+ * Create a new warden account (protected, public registration forbidden)
+ */
+router.post("/wardens", auth, auth.requireWarden, async (req, res) => {
+  try {
+    const { name, email, phone, gender, hostelName, password } = req.body;
+
+    if (!name || !email || !gender || !hostelName) {
+      return res.status(400).json({
+        message: "Full Name, Email, Gender, and Assigned Hostel are required"
+      });
+    }
+
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone ? phone.trim() : "";
+    const cleanGenderRaw = gender.trim().toLowerCase();
+
+    if (!["male", "female"].includes(cleanGenderRaw)) {
+      return res.status(400).json({
+        message: "Gender must be either Male or Female"
+      });
+    }
+    const cleanGender = cleanGenderRaw === "male" ? "Male" : "Female";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    // Validate hostel matches gender
+    const hostelCheck = isValidHostelForGender(cleanGender, hostelName);
+    if (!hostelCheck.valid) {
+      return res.status(400).json({ message: hostelCheck.message });
+    }
+    const cleanHostelName = hostelCheck.canonicalHostel;
+
+    // Email uniqueness check
+    const existingUser = await User.findOne({ email: cleanEmail });
+    if (existingUser) {
+      return res.status(409).json({ message: "An account with this email already exists" });
+    }
+
+    // Generate collision-safe sequential Warden ID: WRD-0001, WRD-0002...
+    const generatedWardenId = await generateUniqueWardenId(User);
+
+    // Password handling: use provided or generate secure temporary password
+    let tempPassword = password ? password.trim() : "";
+    if (!tempPassword) {
+      tempPassword = generateSecureTemporaryPassword(12);
+    } else if (tempPassword.length < 8) {
+      return res.status(400).json({ message: "Temporary password must be at least 8 characters" });
+    }
+
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const warden = await User.create({
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      gender: cleanGender,
+      wardenId: generatedWardenId,
+      hostelName: cleanHostelName,
+      hostelBlock: "", // No block restriction: assigned to whole hostel
+      password: hashedPassword,
+      role: "warden",
+      isActive: true,
+      mustChangePassword: true,
+      acceptedTerms: true,
+      acceptedTermsAt: new Date()
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Warden account created successfully",
+      warden: {
+        id: warden._id.toString(),
+        wardenId: warden.wardenId,
+        name: warden.name,
+        email: warden.email,
+        gender: warden.gender,
+        hostelName: warden.hostelName,
+        phone: warden.phone,
+        createdAt: warden.createdAt
+      },
+      temporaryPassword: tempPassword
+    });
+  } catch (error) {
+    console.error("Warden create warden error:", error.message);
     res.status(error.status || 500).json({ message: error.message || "Server error" });
   }
 });
@@ -758,7 +884,7 @@ router.get("/staff/:id", auth, auth.requireWarden, async (req, res) => {
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    if (staff.hostelName && staff.hostelName.toLowerCase() !== cleanHostelName.toLowerCase()) {
+    if (staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
       return res.status(403).json({ message: "Access denied. Staff member belongs to another hostel." });
     }
 
@@ -824,7 +950,7 @@ router.put("/staff/:id", auth, auth.requireWarden, async (req, res) => {
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    if (staff.hostelName && staff.hostelName.toLowerCase() !== cleanHostelName.toLowerCase()) {
+    if (staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
       return res.status(403).json({ message: "Access denied. Staff member belongs to another hostel." });
     }
 
@@ -872,7 +998,7 @@ router.patch("/staff/:id/status", auth, auth.requireWarden, async (req, res) => 
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    if (staff.hostelName && staff.hostelName.toLowerCase() !== cleanHostelName.toLowerCase()) {
+    if (staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
       return res.status(403).json({ message: "Access denied. Staff member belongs to another hostel." });
     }
 
@@ -987,8 +1113,10 @@ router.get("/profile", auth, auth.requireWarden, async (req, res) => {
       success: true,
       warden: {
         id: warden._id.toString(),
+        wardenId: warden.wardenId || "",
         name: warden.name,
         email: warden.email,
+        gender: warden.gender || "",
         phone: warden.phone || "",
         hostelName: warden.hostelName,
         hostelBlock: warden.hostelBlock || "",

@@ -60,6 +60,13 @@ sealed class WardenNotificationsUiState {
     data class Error(val message: String) : WardenNotificationsUiState()
 }
 
+sealed class WardenListUiState {
+    object Loading : WardenListUiState()
+    data class Success(val wardens: List<WardenItem>) : WardenListUiState()
+    data class Empty(val message: String = "No wardens registered.") : WardenListUiState()
+    data class Error(val message: String) : WardenListUiState()
+}
+
 class WardenViewModel(private val repository: HostelRepository) : ViewModel() {
     val currentUser = repository.currentUserFlow()
 
@@ -387,6 +394,45 @@ class WardenViewModel(private val repository: HostelRepository) : ViewModel() {
         viewModelScope.launch {
             repository.markAllInAppNotificationsRead()
             loadNotifications()
+        }
+    }
+
+    // 9. Warden Management
+    private val _wardensState = MutableStateFlow<WardenListUiState>(WardenListUiState.Loading)
+    val wardensState: StateFlow<WardenListUiState> = _wardensState.asStateFlow()
+
+    fun loadWardens() {
+        viewModelScope.launch {
+            _wardensState.value = WardenListUiState.Loading
+            val result = repository.getWardens()
+            if (result.isSuccess) {
+                val wardens = result.getOrNull() ?: emptyList()
+                if (wardens.isEmpty()) {
+                    _wardensState.value = WardenListUiState.Empty()
+                } else {
+                    _wardensState.value = WardenListUiState.Success(wardens)
+                }
+            } else {
+                _wardensState.value = WardenListUiState.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to load wardens"
+                )
+            }
+        }
+    }
+
+    fun createWarden(
+        request: CreateWardenRequest,
+        onComplete: (Boolean, String?, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = repository.createWarden(request)
+            if (result.isSuccess) {
+                val res = result.getOrNull()
+                loadWardens()
+                onComplete(true, res?.temporaryPassword, null)
+            } else {
+                onComplete(false, null, result.exceptionOrNull()?.message ?: "Failed to create warden")
+            }
         }
     }
 

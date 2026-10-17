@@ -6,6 +6,7 @@ import com.hostelcare.app.data.model.Role
 data class RegisterRequest(
     val name: String,
     val studentId: String,
+    val gender: String,
     val email: String,
     val phone: String,
     val collegeName: String,
@@ -54,6 +55,9 @@ data class NetworkUser(
     val id: String,
     val name: String,
     val studentId: String? = null,
+    val staffId: String? = null,
+    val wardenId: String? = null,
+    val gender: String? = null,
     val email: String,
     val phone: String = "",
     val collegeName: String? = null,
@@ -72,6 +76,9 @@ data class NetworkUser(
         name = name,
         email = email,
         studentId = studentId ?: "",
+        staffId = staffId ?: "",
+        wardenId = wardenId ?: "",
+        gender = gender ?: "",
         phone = phone,
         collegeName = collegeName ?: "",
         course = course ?: "",
@@ -418,13 +425,47 @@ data class WardenProfileResponse(
 
 data class WardenProfileData(
     val id: String,
+    val wardenId: String? = null,
     val name: String,
     val email: String,
+    val gender: String? = null,
     val phone: String?,
     val hostelName: String,
     val hostelBlock: String?,
     val profilePhoto: String?,
     val role: String
+)
+
+data class WardenItem(
+    val id: String,
+    val wardenId: String,
+    val name: String,
+    val email: String,
+    val gender: String,
+    val hostelName: String,
+    val phone: String = "",
+    val createdAt: String? = null
+)
+
+data class WardenListResponse(
+    val success: Boolean,
+    val wardens: List<WardenItem>
+)
+
+data class CreateWardenRequest(
+    val name: String,
+    val email: String,
+    val gender: String,
+    val hostelName: String,
+    val phone: String? = null,
+    val password: String? = null
+)
+
+data class CreateWardenResponse(
+    val success: Boolean,
+    val message: String,
+    val warden: WardenItem,
+    val temporaryPassword: String? = null
 )
 
 data class UpdateWardenProfileRequest(

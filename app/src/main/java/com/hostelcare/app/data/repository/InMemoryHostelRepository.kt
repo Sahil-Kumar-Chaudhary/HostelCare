@@ -118,6 +118,7 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
             val req = com.hostelcare.app.data.remote.RegisterRequest(
                 name = user.name,
                 studentId = user.studentId,
+                gender = user.gender,
                 email = user.email,
                 phone = user.phone,
                 collegeName = user.collegeName,
@@ -690,6 +691,38 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
                 Result.success(Unit)
             } else {
                 val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to update profile: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWardens(): Result<List<com.hostelcare.app.data.remote.WardenItem>> {
+        return try {
+            val response = apiService.getWardens()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.wardens)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to load wardens: ${response.message()}")
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Unable to connect to the server. Please check your connection and try again."))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createWarden(request: com.hostelcare.app.data.remote.CreateWardenRequest): Result<com.hostelcare.app.data.remote.CreateWardenResponse> {
+        return try {
+            val response = apiService.createWarden(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMsg = extractErrorMessage(response.errorBody()?.string(), "Failed to create warden: ${response.message()}")
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: java.io.IOException) {
