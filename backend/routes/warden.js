@@ -13,7 +13,10 @@ const {
   buildBlockFilter,
   checkBlockAuthorized,
   isValidHostelForGender,
-  getCanonicalHostelName
+  getCanonicalHostelName,
+  ALL_CAMPUS_HOSTELS,
+  CHIEF_WARDEN_EMAIL,
+  isChiefWardenUser
 } = require("../utils/hostelUtils");
 const {
   generateUniqueWardenId,
@@ -25,6 +28,11 @@ const router = express.Router();
 
 function isComplaintAuthorized(complaint, warden, studentIds) {
   if (!complaint) return false;
+
+  // Campus-wide authorization: Chief Warden has unrestricted access to all complaints across all 20 hostels
+  if (isChiefWardenUser(warden)) {
+    return true;
+  }
 
   const resolvedHostel = complaint.hostelName && complaint.hostelName.trim()
     ? complaint.hostelName.trim()
@@ -56,6 +64,22 @@ async function getWardenScope(wardenId) {
     throw error;
   }
 
+  const isChief = isChiefWardenUser(warden);
+
+  if (isChief) {
+    // Explicit server-side campus-wide scope: Chief Warden manages all 20 hostels across all blocks
+    const studentIds = await User.find({ role: "student" }).distinct("_id");
+    const complaintQuery = {}; // Unrestricted campus-wide complaint query
+    return {
+      warden,
+      isChiefWarden: true,
+      cleanHostelName: "All Hostels (Campus-Wide)",
+      studentIds,
+      complaintQuery,
+      hostelRegex: null
+    };
+  }
+
   if (!warden.hostelName || !warden.hostelName.trim()) {
     const error = new Error(
       "Warden account does not have an authorized hostel assignment. Scoped access cannot be determined."
@@ -84,7 +108,7 @@ async function getWardenScope(wardenId) {
     }
   }
 
-  return { warden, cleanHostelName, studentIds, complaintQuery, hostelRegex };
+  return { warden, isChiefWarden: false, cleanHostelName, studentIds, complaintQuery, hostelRegex };
 }
 
 /**
@@ -93,7 +117,7 @@ async function getWardenScope(wardenId) {
  */
 router.get("/dashboard", auth, auth.requireWarden, async (req, res) => {
   try {
-    const { warden, complaintQuery } = await getWardenScope(req.user.userId);
+    const { warden, isChiefWarden, complaintQuery } = await getWardenScope(req.user.userId);
 
     const [
       totalCount,
@@ -121,7 +145,7 @@ router.get("/dashboard", auth, auth.requireWarden, async (req, res) => {
         .limit(10)
         .populate({
           path: "student",
-          select: "name studentId email phone hostelBlock roomNumber"
+          select: "name studentId email phone hostelName hostelBlock roomNumber"
         })
         .populate({
           path: "assignedStaff",
@@ -140,6 +164,7 @@ router.get("/dashboard", auth, auth.requireWarden, async (req, res) => {
       category: c.category,
       priority: c.priority,
       status: c.status,
+      hostelName: c.hostelName || (c.student && c.student.hostelName) || "",
       hostelBlock: c.hostelBlock,
       roomNumber: c.roomNumber,
       photoUrl: c.photoUrl || "",
@@ -151,7 +176,8 @@ router.get("/dashboard", auth, auth.requireWarden, async (req, res) => {
             name: c.student.name || "Student",
             studentId: c.student.studentId || "",
             roomNumber: c.roomNumber,
-            hostelBlock: c.hostelBlock
+            hostelBlock: c.hostelBlock,
+            hostelName: c.hostelName || c.student.hostelName || ""
           }
         : null,
       assignedStaff: c.assignedStaff
@@ -168,8 +194,9 @@ router.get("/dashboard", auth, auth.requireWarden, async (req, res) => {
       warden: {
         name: warden.name,
         email: warden.email,
-        hostelName: warden.hostelName,
-        hostelBlock: warden.hostelBlock || ""
+        hostelName: isChiefWarden ? "All Hostels (Campus-Wide)" : warden.hostelName,
+        hostelBlock: isChiefWarden ? "All Blocks" : (warden.hostelBlock || ""),
+        isChiefWarden: !!isChiefWarden
       },
       stats: {
         total: totalCount,
@@ -192,10 +219,15 @@ router.get("/dashboard", auth, auth.requireWarden, async (req, res) => {
  */
 router.get("/complaints", auth, auth.requireWarden, async (req, res) => {
   try {
-    const { complaintQuery, cleanHostelName } = await getWardenScope(req.user.userId);
-    const { search, status, category, priority } = req.query;
+    const { complaintQuery, isChiefWarden, cleanHostelName } = await getWardenScope(req.user.userId);
+    const { search, status, category, priority, hostelName } = req.query;
 
     const query = { ...complaintQuery };
+
+    // Explicit hostel filter (e.g., Chief Warden filtering to a specific hostel)
+    if (hostelName && hostelName !== "all") {
+      query.hostelName = { $regex: buildHostelRegex(hostelName) };
+    }
 
     // Status filter
     if (status && status !== "all") {
@@ -218,17 +250,17 @@ router.get("/complaints", auth, auth.requireWarden, async (req, res) => {
       query.priority = priority.toLowerCase();
     }
 
-    // Search filter across title, ticketId, roomNumber, hostelBlock
+    // Search filter across title, ticketId, roomNumber, hostelBlock, hostelName
     if (search && search.trim()) {
       const cleanSearch = search.trim();
       const searchRegex = new RegExp(escapeRegex(cleanSearch), "i");
 
       // Also find students matching name
-      const matchingStudentIds = await User.find({
-        role: "student",
-        hostelName: { $regex: buildHostelRegex(cleanHostelName) },
-        name: searchRegex
-      }).distinct("_id");
+      const studentFilter = { role: "student", name: searchRegex };
+      if (!isChiefWarden) {
+        studentFilter.hostelName = { $regex: buildHostelRegex(cleanHostelName) };
+      }
+      const matchingStudentIds = await User.find(studentFilter).distinct("_id");
 
       query.$and = [
         {
@@ -237,6 +269,7 @@ router.get("/complaints", auth, auth.requireWarden, async (req, res) => {
             { ticketId: searchRegex },
             { roomNumber: searchRegex },
             { hostelBlock: searchRegex },
+            { hostelName: searchRegex },
             { category: searchRegex },
             { student: { $in: matchingStudentIds } }
           ]
@@ -595,13 +628,15 @@ router.post("/complaints/:id/assign", auth, auth.requireWarden, async (req, res)
  */
 router.get("/staff", auth, auth.requireWarden, async (req, res) => {
   try {
-    const { cleanHostelName } = await getWardenScope(req.user.userId);
-    const { filter, search } = req.query;
+    const { isChiefWarden, cleanHostelName } = await getWardenScope(req.user.userId);
+    const { filter, search, hostelName } = req.query;
 
-    const query = {
-      role: "staff",
-      hostelName: { $regex: buildHostelRegex(cleanHostelName) }
-    };
+    const query = { role: "staff" };
+    if (!isChiefWarden) {
+      query.hostelName = { $regex: buildHostelRegex(cleanHostelName) };
+    } else if (hostelName && hostelName !== "all") {
+      query.hostelName = { $regex: buildHostelRegex(hostelName) };
+    }
 
     if (filter === "active") {
       query.isActive = { $ne: false };
@@ -615,6 +650,7 @@ router.get("/staff", auth, auth.requireWarden, async (req, res) => {
         { name: searchRegex },
         { department: searchRegex },
         { staffId: searchRegex },
+        { hostelName: searchRegex },
         { email: searchRegex }
       ];
     }
@@ -662,12 +698,12 @@ router.get("/staff", auth, auth.requireWarden, async (req, res) => {
 
 /**
  * 7. POST /api/warden/staff
- * Warden creates a staff account scoped to their authorized hostel
+ * Warden creates a staff account scoped to their authorized hostel (or any campus hostel for Chief Warden)
  */
 router.post("/staff", auth, auth.requireWarden, async (req, res) => {
   try {
-    const { warden, cleanHostelName } = await getWardenScope(req.user.userId);
-    const { name, email, phone, department, hostelBlock, password } = req.body;
+    const { warden, isChiefWarden, cleanHostelName } = await getWardenScope(req.user.userId);
+    const { name, email, phone, department, hostelBlock, hostelName, password } = req.body;
 
     if (!name || !email || !password || !department) {
       return res.status(400).json({
@@ -680,6 +716,21 @@ router.post("/staff", auth, auth.requireWarden, async (req, res) => {
     const cleanDept = department.trim();
     const cleanPhone = phone ? phone.trim() : "";
     const cleanBlock = hostelBlock ? hostelBlock.trim() : warden.hostelBlock || "";
+
+    let targetHostel = cleanHostelName;
+    if (isChiefWarden) {
+      if (hostelName && hostelName.trim()) {
+        const canonical = getCanonicalHostelName(hostelName.trim());
+        if (!ALL_CAMPUS_HOSTELS.includes(canonical)) {
+          return res.status(400).json({
+            message: `Invalid hostel name. Allowed campus hostels: ${ALL_CAMPUS_HOSTELS.join(", ")}`
+          });
+        }
+        targetHostel = canonical;
+      } else {
+        targetHostel = "BH-1";
+      }
+    }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(cleanEmail)) {
@@ -714,7 +765,7 @@ router.post("/staff", auth, auth.requireWarden, async (req, res) => {
       phone: cleanPhone,
       department: cleanDept,
       staffId: generatedStaffId,
-      hostelName: cleanHostelName,
+      hostelName: targetHostel,
       hostelBlock: cleanBlock,
       password: hashedPassword,
       role: "staff",
@@ -746,129 +797,25 @@ router.post("/staff", auth, auth.requireWarden, async (req, res) => {
 });
 
 /**
- * 7B. GET /api/warden/wardens
- * List all wardens
+ * 7B. GET /api/warden/wardens (Retired)
+ * Retired in Single Chief Warden architecture
  */
 router.get("/wardens", auth, auth.requireWarden, async (req, res) => {
-  try {
-    const wardens = await User.find({ role: "warden" })
-      .select("_id wardenId name email gender hostelName phone createdAt")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const formatted = wardens.map(w => ({
-      id: w._id.toString(),
-      wardenId: w.wardenId || "",
-      name: w.name,
-      email: w.email,
-      gender: w.gender || "",
-      hostelName: w.hostelName || "",
-      phone: w.phone || "",
-      createdAt: w.createdAt
-    }));
-
-    res.json({
-      success: true,
-      wardens: formatted
-    });
-  } catch (error) {
-    console.error("Get wardens error:", error.message);
-    res.status(500).json({ message: "Server error" });
-  }
+  return res.status(410).json({
+    success: false,
+    message: "Warden listing endpoint has been retired. Single Chief Warden architecture is in effect."
+  });
 });
 
 /**
- * 7C. POST /api/warden/wardens
- * Create a new warden account (protected, public registration forbidden)
+ * 7C. POST /api/warden/wardens (Retired)
+ * Retired in Single Chief Warden architecture
  */
 router.post("/wardens", auth, auth.requireWarden, async (req, res) => {
-  try {
-    const { name, email, phone, gender, hostelName, password } = req.body;
-
-    if (!name || !email || !gender || !hostelName) {
-      return res.status(400).json({
-        message: "Full Name, Email, Gender, and Assigned Hostel are required"
-      });
-    }
-
-    const cleanName = name.trim();
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPhone = phone ? phone.trim() : "";
-    const cleanGenderRaw = gender.trim().toLowerCase();
-
-    if (!["male", "female"].includes(cleanGenderRaw)) {
-      return res.status(400).json({
-        message: "Gender must be either Male or Female"
-      });
-    }
-    const cleanGender = cleanGenderRaw === "male" ? "Male" : "Female";
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      return res.status(400).json({ message: "Invalid email format" });
-    }
-
-    // Validate hostel matches gender
-    const hostelCheck = isValidHostelForGender(cleanGender, hostelName);
-    if (!hostelCheck.valid) {
-      return res.status(400).json({ message: hostelCheck.message });
-    }
-    const cleanHostelName = hostelCheck.canonicalHostel;
-
-    // Email uniqueness check
-    const existingUser = await User.findOne({ email: cleanEmail });
-    if (existingUser) {
-      return res.status(409).json({ message: "An account with this email already exists" });
-    }
-
-    // Generate collision-safe sequential Warden ID: WRD-0001, WRD-0002...
-    const generatedWardenId = await generateUniqueWardenId(User);
-
-    // Password handling: use provided or generate secure temporary password
-    let tempPassword = password ? password.trim() : "";
-    if (!tempPassword) {
-      tempPassword = generateSecureTemporaryPassword(12);
-    } else if (tempPassword.length < 8) {
-      return res.status(400).json({ message: "Temporary password must be at least 8 characters" });
-    }
-
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-    const warden = await User.create({
-      name: cleanName,
-      email: cleanEmail,
-      phone: cleanPhone,
-      gender: cleanGender,
-      wardenId: generatedWardenId,
-      hostelName: cleanHostelName,
-      hostelBlock: "", // No block restriction: assigned to whole hostel
-      password: hashedPassword,
-      role: "warden",
-      isActive: true,
-      mustChangePassword: true,
-      acceptedTerms: true,
-      acceptedTermsAt: new Date()
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Warden account created successfully",
-      warden: {
-        id: warden._id.toString(),
-        wardenId: warden.wardenId,
-        name: warden.name,
-        email: warden.email,
-        gender: warden.gender,
-        hostelName: warden.hostelName,
-        phone: warden.phone,
-        createdAt: warden.createdAt
-      },
-      temporaryPassword: tempPassword
-    });
-  } catch (error) {
-    console.error("Warden create warden error:", error.message);
-    res.status(error.status || 500).json({ message: error.message || "Server error" });
-  }
+  return res.status(410).json({
+    success: false,
+    message: "Multiple warden provisioning has been retired. A single Chief Warden manages the campus."
+  });
 });
 
 /**
@@ -877,14 +824,14 @@ router.post("/wardens", auth, auth.requireWarden, async (req, res) => {
  */
 router.get("/staff/:id", auth, auth.requireWarden, async (req, res) => {
   try {
-    const { cleanHostelName } = await getWardenScope(req.user.userId);
+    const { isChiefWarden, cleanHostelName } = await getWardenScope(req.user.userId);
 
     const staff = await User.findById(req.params.id).select("-password");
     if (!staff || staff.role !== "staff") {
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    if (staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
+    if (!isChiefWarden && staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
       return res.status(403).json({ message: "Access denied. Staff member belongs to another hostel." });
     }
 
@@ -942,7 +889,7 @@ router.get("/staff/:id", auth, auth.requireWarden, async (req, res) => {
  */
 router.put("/staff/:id", auth, auth.requireWarden, async (req, res) => {
   try {
-    const { cleanHostelName } = await getWardenScope(req.user.userId);
+    const { isChiefWarden, cleanHostelName } = await getWardenScope(req.user.userId);
     const { name, phone, department, hostelBlock } = req.body;
 
     const staff = await User.findById(req.params.id);
@@ -950,7 +897,7 @@ router.put("/staff/:id", auth, auth.requireWarden, async (req, res) => {
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    if (staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
+    if (!isChiefWarden && staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
       return res.status(403).json({ message: "Access denied. Staff member belongs to another hostel." });
     }
 
@@ -986,7 +933,7 @@ router.put("/staff/:id", auth, auth.requireWarden, async (req, res) => {
  */
 router.patch("/staff/:id/status", auth, auth.requireWarden, async (req, res) => {
   try {
-    const { cleanHostelName } = await getWardenScope(req.user.userId);
+    const { isChiefWarden, cleanHostelName } = await getWardenScope(req.user.userId);
     const { isActive } = req.body;
 
     if (typeof isActive !== "boolean") {
@@ -998,7 +945,7 @@ router.patch("/staff/:id/status", auth, auth.requireWarden, async (req, res) => 
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    if (staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
+    if (!isChiefWarden && staff.hostelName && !isHostelMatch(staff.hostelName, cleanHostelName)) {
       return res.status(403).json({ message: "Access denied. Staff member belongs to another hostel." });
     }
 
@@ -1109,6 +1056,7 @@ router.get("/profile", auth, auth.requireWarden, async (req, res) => {
   try {
     const warden = await User.findById(req.user.userId).select("-password");
     if (!warden) return res.status(404).json({ message: "Warden not found" });
+    const isChief = isChiefWardenUser(warden);
     res.json({
       success: true,
       warden: {
@@ -1118,8 +1066,9 @@ router.get("/profile", auth, auth.requireWarden, async (req, res) => {
         email: warden.email,
         gender: warden.gender || "",
         phone: warden.phone || "",
-        hostelName: warden.hostelName,
-        hostelBlock: warden.hostelBlock || "",
+        hostelName: isChief ? "Campus-Wide (BH-1 to BH-10 & GH-1 to GH-10)" : warden.hostelName,
+        hostelBlock: isChief ? "All Blocks" : (warden.hostelBlock || ""),
+        isChiefWarden: isChief,
         profilePhoto: warden.profilePhoto || "",
         role: warden.role
       }

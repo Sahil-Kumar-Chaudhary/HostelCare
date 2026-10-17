@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const { isValidHostelForGender, getCanonicalHostelName } = require("../utils/hostelUtils");
+const { isValidHostelForGender, getCanonicalHostelName, isChiefWardenUser } = require("../utils/hostelUtils");
 
 const router = express.Router();
 
@@ -325,6 +325,7 @@ router.post("/login", async (req, res) => {
         roomNumber: user.roomNumber || "",
         profilePhoto: user.profilePhoto || "",
         role: user.role,
+        isChiefWarden: isChiefWardenUser(user),
         isActive: user.isActive !== false,
         mustChangePassword: !!user.mustChangePassword
       }

@@ -4,7 +4,7 @@ const Complaint = require("../models/Complaint");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
-const { buildHostelRegex, buildBlockFilter } = require("../utils/hostelUtils");
+const { buildHostelRegex, buildBlockFilter, isChiefWardenUser, CHIEF_WARDEN_EMAIL } = require("../utils/hostelUtils");
 
 const router = express.Router();
 
@@ -249,12 +249,22 @@ router.post("/tasks/:id/complete", auth, auth.requireStaff, async (req, res) => 
         const hostelName = task.hostelName || (student && student.hostelName);
         if (hostelName) {
           const hostelRegex = buildHostelRegex(hostelName);
-          const wardens = await User.find({ role: "warden", hostelName: { $regex: hostelRegex } });
+          const wardens = await User.find({
+            role: "warden",
+            $or: [
+              { isChiefWarden: true },
+              { email: CHIEF_WARDEN_EMAIL },
+              { hostelName: { $regex: hostelRegex } }
+            ]
+          });
           for (const w of wardens) {
-            if (w.hostelBlock && w.hostelBlock.trim() && w.hostelBlock.trim().toLowerCase() !== "all") {
-              const blockRegex = buildBlockFilter(w.hostelBlock);
-              if (blockRegex && !blockRegex.test(task.hostelBlock || "")) {
-                continue;
+            const isChief = isChiefWardenUser(w);
+            if (!isChief) {
+              if (w.hostelBlock && w.hostelBlock.trim() && w.hostelBlock.trim().toLowerCase() !== "all") {
+                const blockRegex = buildBlockFilter(w.hostelBlock);
+                if (blockRegex && !blockRegex.test(task.hostelBlock || "")) {
+                  continue;
+                }
               }
             }
 
@@ -267,7 +277,7 @@ router.post("/tasks/:id/complete", auth, auth.requireStaff, async (req, res) => 
               await Notification.create({
                 recipient: w._id,
                 title: `Completion Review: ${task.title}`,
-                message: `Staff member completed work on ${task.ticketId} in Room ${task.roomNumber}. Review and resolve.`,
+                message: `Staff member completed work on ${task.ticketId} in ${task.hostelName || hostelName}, Room ${task.roomNumber}. Review and resolve.`,
                 type: "completion_requested",
                 complaintId: task._id
               });

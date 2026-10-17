@@ -1,6 +1,7 @@
 const express = require("express");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const { isChiefWardenUser } = require("../utils/hostelUtils");
 
 const multer = require('multer');
 const upload = multer({
@@ -33,6 +34,9 @@ router.get("/", auth, async (req, res) => {
         id: user._id,
         name: user.name,
         studentId: user.studentId || "",
+        staffId: user.staffId || "",
+        wardenId: user.wardenId || "",
+        gender: user.gender || "",
         email: user.email,
         phone: user.phone || "",
         collegeName: user.collegeName || "",
@@ -43,7 +47,8 @@ router.get("/", auth, async (req, res) => {
         hostelBlock: user.hostelBlock || "",
         roomNumber: user.roomNumber || "",
         profilePhoto: user.profilePhoto || "",
-        role: user.role
+        role: user.role,
+        isChiefWarden: isChiefWardenUser(user)
       }
     });
   } catch (error) {

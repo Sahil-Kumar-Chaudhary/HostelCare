@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema(
       enum: ["Male", "Female", "male", "female"],
       trim: true
     },
+    isChiefWarden: {
+      type: Boolean,
+      default: false
+    },
     department: {
       type: String,
       default: "",

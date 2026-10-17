@@ -141,6 +141,21 @@ function isValidHostelForGender(gender, hostelName) {
   return { valid: false, message: "Gender must be either Male or Female" };
 }
 
+const ALL_CAMPUS_HOSTELS = [...MALE_HOSTELS, ...FEMALE_HOSTELS];
+
+const CHIEF_WARDEN_EMAIL = (process.env.CHIEF_WARDEN_EMAIL || "warden@hostelcare.com").trim().toLowerCase();
+
+/**
+ * Validates whether an authenticated user is the designated Chief Warden with campus-wide authority.
+ * Relies strictly on server-side model/environment properties, never trusting client parameters.
+ */
+function isChiefWardenUser(user) {
+  if (!user || user.role !== "warden") return false;
+  if (user.isChiefWarden === true) return true;
+  if (user.email && user.email.trim().toLowerCase() === CHIEF_WARDEN_EMAIL) return true;
+  return false;
+}
+
 module.exports = {
   escapeRegex,
   normalizeHostelName,
@@ -150,6 +165,9 @@ module.exports = {
   checkBlockAuthorized,
   MALE_HOSTELS,
   FEMALE_HOSTELS,
+  ALL_CAMPUS_HOSTELS,
+  CHIEF_WARDEN_EMAIL,
+  isChiefWardenUser,
   getCanonicalHostelName,
   isValidHostelForGender
 };

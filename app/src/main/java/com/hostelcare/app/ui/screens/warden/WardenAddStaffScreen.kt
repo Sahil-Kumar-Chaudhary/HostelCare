@@ -57,6 +57,12 @@ fun WardenAddStaffScreen(
         "General Maintenance"
     )
 
+    val campusHostels = remember {
+        (1..10).map { "BH-$it" } + (1..10).map { "GH-$it" }
+    }
+    var selectedHostel by remember { mutableStateOf("BH-1") }
+    var expandedHostelDropdown by remember { mutableStateOf(false) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -127,6 +133,7 @@ fun WardenAddStaffScreen(
                                     email = email.trim().toLowerCase(java.util.Locale.ROOT),
                                     phone = phone.trim(),
                                     department = department,
+                                    hostelName = selectedHostel,
                                     hostelBlock = hostelBlock.trim().ifBlank { null },
                                     password = password
                                 ),
@@ -181,7 +188,7 @@ fun WardenAddStaffScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "New staff members will be scoped to your assigned hostel and can log in via the Maintenance Staff portal.",
+                        text = "New staff members can be assigned across any of the 20 campus hostels and can log in via the Maintenance Staff portal.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 18.sp
@@ -282,6 +289,48 @@ fun WardenAddStaffScreen(
                                 onClick = {
                                     department = dept
                                     expandedDeptDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Assigned Hostel
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Assigned Hostel *", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                Box {
+                    Surface(
+                        onClick = { expandedHostelDropdown = true },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Apartment, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(selectedHostel, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = expandedHostelDropdown,
+                        onDismissRequest = { expandedHostelDropdown = false }
+                    ) {
+                        campusHostels.forEach { h ->
+                            DropdownMenuItem(
+                                text = { Text(h) },
+                                onClick = {
+                                    selectedHostel = h
+                                    expandedHostelDropdown = false
                                 }
                             )
                         }

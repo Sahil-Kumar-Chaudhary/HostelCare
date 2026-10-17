@@ -310,7 +310,7 @@ fun WardenProfileScreen(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = "Campus Warden · $hostelStr${if (wardenIdStr.isNotBlank()) " · $wardenIdStr" else ""}",
+                            text = "Chief Warden · Campus-Wide (20 Hostels)${if (wardenIdStr.isNotBlank()) " · $wardenIdStr" else ""}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
@@ -361,7 +361,11 @@ fun WardenProfileScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     ProfileDetailRow(icon = Icons.Default.Phone, label = "Phone", value = phoneStr)
                     Spacer(modifier = Modifier.height(8.dp))
-                    ProfileDetailRow(icon = Icons.Default.Apartment, label = "Authorized Hostel", value = hostelStr)
+                    ProfileDetailRow(
+                        icon = Icons.Default.Apartment,
+                        label = "Authorized Hostel",
+                        value = if (warden?.isChiefWarden == true || emailStr.equals("warden@hostelcare.com", ignoreCase = true) || hostelStr.contains("All Hostels", ignoreCase = true)) "All Hostels (Campus-Wide)" else hostelStr
+                    )
                 }
             }
 
@@ -384,31 +388,6 @@ fun WardenProfileScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Surface(
-                        onClick = { navController.navigate(Routes.WARDEN_MANAGEMENT) },
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.SupervisorAccount, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text("Manage Wardens", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                    Text("Provision and view campus wardens", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Surface(
                         onClick = { navController.navigate(Routes.WARDEN_STAFF) },
                         shape = RoundedCornerShape(10.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
@@ -424,7 +403,7 @@ fun WardenProfileScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text("Manage Staff", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                    Text("Assign and manage hostel maintenance staff", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Assign and manage hostel maintenance staff across all hostels", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

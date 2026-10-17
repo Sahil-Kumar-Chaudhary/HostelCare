@@ -435,7 +435,7 @@ async function runTests() {
         select: () => Promise.resolve({
           _id: "warden123",
           name: "Dr. Sharma",
-          email: "warden@hostelcare.com",
+          email: "warden.tagore@hostelcare.com",
           role: "warden",
           hostelName: "Tagore Hostel",
           hostelBlock: "A"
@@ -539,7 +539,7 @@ async function runTests() {
         select: () => Promise.resolve({
           _id: "warden123",
           name: "Dr. Sharma",
-          email: "warden@hostelcare.com",
+          email: "warden.tagore@hostelcare.com",
           role: "warden",
           hostelName: "Tagore Hostel",
           hostelBlock: "A"
@@ -1446,8 +1446,8 @@ async function runTests() {
       User.findById = () => ({
         select: () => Promise.resolve({
           _id: mockWardenId,
-          name: "Chief Warden",
-          email: "warden@hostelcare.com",
+          name: "Warden BH1",
+          email: "warden.bh1@hostelcare.com",
           role: "warden",
           hostelName: "BH1",
           hostelBlock: "B"
@@ -1579,8 +1579,9 @@ async function runTests() {
 
       User.find = (q) => {
         if (q.role === "warden") {
-          assert(q.hostelName.$regex.test("BH-1"), "Must search wardens with regex matching BH-1");
-          assert(q.hostelName.$regex.test("BH1"), "Must also match warden BH1");
+          const regexObj = q.hostelName?.$regex || (q.$or && q.$or.find(c => c.hostelName)?.hostelName?.$regex);
+          assert(regexObj && regexObj.test("BH-1"), "Must search wardens with regex matching BH-1");
+          assert(regexObj.test("BH1"), "Must also match warden BH1");
           return Promise.resolve([
             { _id: wardenId, role: "warden", hostelName: "BH1", hostelBlock: "B" },
             { _id: otherBlockWardenId, role: "warden", hostelName: "BH1", hostelBlock: "C" }
@@ -1772,99 +1773,216 @@ async function runTests() {
     assert.strictEqual(firstId, "STF-1001", "Initial staff ID should be STF-1001");
   });
 
-  // 15. Warden Management Route Tests
-  await testAsync("Warden Management: Protected POST /wardens creates warden with WRD ID, no block restriction, and returns temp password", async () => {
-    const origFindOne = User.findOne;
-    const origCreate = User.create;
+  // 15. Single Chief Warden Architecture & Scope Tests
+  await testAsync("Warden Management: Retired POST /wardens and GET /wardens return 410 Gone preventing multiple warden creation", async () => {
+    const wardenRouter = require("../routes/warden");
+    const postWardensLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/wardens" && s.route.methods.post);
+    const getWardensLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/wardens" && s.route.methods.get);
+
+    assert(postWardensLayer, "POST /wardens route must exist (as retired endpoint)");
+    assert(getWardensLayer, "GET /wardens route must exist (as retired endpoint)");
+
+    const postHandler = postWardensLayer.route.stack[postWardensLayer.route.stack.length - 1].handle;
+    const getHandler = getWardensLayer.route.stack[getWardensLayer.route.stack.length - 1].handle;
+
+    let postStatus = 0;
+    let postData = null;
+    await postHandler({ user: { userId: "w1", role: "warden" }, body: {} }, {
+      status: (code) => { postStatus = code; return { json: (d) => { postData = d; } }; },
+      json: (d) => { postData = d; }
+    });
+    assert.strictEqual(postStatus, 410, "POST /wardens must return 410 Gone");
+    assert(postData && postData.message.includes("retired"), "POST /wardens message must state endpoint is retired");
+
+    let getStatus = 0;
+    let getData = null;
+    await getHandler({ user: { userId: "w1", role: "warden" } }, {
+      status: (code) => { getStatus = code; return { json: (d) => { getData = d; } }; },
+      json: (d) => { getData = d; }
+    });
+    assert.strictEqual(getStatus, 410, "GET /wardens must return 410 Gone");
+    assert(getData && getData.message.includes("retired"), "GET /wardens message must state endpoint is retired");
+  });
+
+  await testAsync("Chief Warden: Campus-wide authorization scope grants access to complaints from all BH and GH hostels across all blocks", async () => {
+    const origFindById = User.findById;
     const origFind = User.find;
-
     try {
-      User.find = () => Promise.resolve([{ wardenId: "WRD-0004" }]);
-      User.findOne = () => Promise.resolve(null); // No existing email duplicate
-
-      let createdWarden = null;
-      User.create = (doc) => {
-        createdWarden = doc;
-        return Promise.resolve({ _id: "new_warden_999", ...doc, createdAt: new Date() });
-      };
+      // Chief Warden identified by trusted email
+      User.findById = () => ({
+        select: () => Promise.resolve({
+          _id: "chief123",
+          name: "Chief Warden",
+          email: "warden@hostelcare.com",
+          role: "warden",
+          hostelName: "BH1",
+          hostelBlock: "B",
+          isChiefWarden: true
+        })
+      });
+      User.find = () => ({
+        distinct: () => Promise.resolve(["s1", "s2"])
+      });
 
       const wardenRouter = require("../routes/warden");
-      const postWardensLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/wardens" && s.route.methods.post);
-      assert(postWardensLayer, "POST /wardens route must exist");
-      const handler = postWardensLayer.route.stack[postWardensLayer.route.stack.length - 1].handle;
+      const dashLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/dashboard" && s.route.methods.get);
+      assert(dashLayer, "GET /dashboard must exist");
 
-      let statusCode = 0;
-      let resData = null;
-      const mockReq = {
-        user: { userId: "warden123", role: "warden" },
-        body: {
-          name: "Dr. Vikram Singh",
-          email: "vikram.warden@hostelcare.com",
-          gender: "Male",
-          hostelName: "BH-2",
-          phone: "+91 9123456789"
-        }
+      // Verify complaints endpoint for Chief Warden with GH-1 complaint
+      const compDetailLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/complaints/:id" && s.route.methods.get);
+      assert(compDetailLayer, "GET /complaints/:id must exist");
+      const compHandler = compDetailLayer.route.stack[compDetailLayer.route.stack.length - 1].handle;
+
+      // Mock complaint in GH-1 Block C
+      const origComplaintFindById = Complaint.findById;
+      const mockComplaintDoc = {
+        _id: "gh_complaint_1",
+        ticketId: "HC-GH1-001",
+        title: "Fan issue in GH-1",
+        hostelName: "GH-1",
+        hostelBlock: "C",
+        roomNumber: "302",
+        status: "submitted",
+        student: { _id: "s_female", name: "Pooja", hostelName: "GH-1" }
       };
+      const queryMock = {
+        populate: () => queryMock,
+        then: (resolve, reject) => Promise.resolve(mockComplaintDoc).then(resolve, reject)
+      };
+      Complaint.findById = () => queryMock;
 
-      await handler(mockReq, {
+      let resData = null;
+      let statusCode = 0;
+      await compHandler({ user: { userId: "chief123", role: "warden" }, params: { id: "gh_complaint_1" } }, {
         status: (code) => { statusCode = code; return { json: (d) => { resData = d; } }; },
         json: (d) => { resData = d; }
       });
 
-      assert.strictEqual(statusCode, 201, "POST /wardens should return 201 Created");
-      assert(resData && resData.warden, "Response must include warden object");
-      assert.strictEqual(resData.warden.wardenId, "WRD-0005", "Should assign sequential WRD-0005");
-      assert.strictEqual(resData.warden.hostelName, "BH-2");
-      assert.strictEqual(createdWarden.hostelBlock, "", "Warden must have NO block restriction (empty block)");
-      assert(resData.temporaryPassword, "Response must provide temporary password");
-      assert(resData.temporaryPassword.length >= 8, "Temporary password must meet length policy");
+      assert.strictEqual(statusCode, 0, "Chief Warden must not receive error code");
+      assert(resData && resData.success, "Chief Warden must successfully access GH-1 complaint");
+      assert.strictEqual(resData.complaint.hostelName, "GH-1", "Should return complaint in GH-1");
+
+      Complaint.findById = origComplaintFindById;
     } finally {
-      User.findOne = origFindOne;
-      User.create = origCreate;
+      User.findById = origFindById;
       User.find = origFind;
     }
   });
 
-  await testAsync("Warden Management: Protected GET /wardens returns all wardens with IDs and assigned hostels", async () => {
+  await testAsync("Chief Warden: Campus-wide notification routing notifies Chief Warden for complaints lodged in any hostel (e.g. GH-1, BH-2)", async () => {
+    const origFindById = User.findById;
     const origFind = User.find;
+    const origCreateComplaint = Complaint.create;
+    const origFindOneNotification = Notification.findOne;
+    const origCreateNotification = Notification.create;
+
     try {
-      User.find = () => ({
-        select: () => ({
-          sort: () => ({
-            lean: () => Promise.resolve([
-              {
-                _id: "w1",
-                wardenId: "WRD-0001",
-                name: "Dr. Sharma",
-                email: "sharma@hostelcare.com",
-                gender: "Male",
-                hostelName: "BH-1",
-                phone: "9876543210",
-                createdAt: new Date()
-              }
-            ])
-          })
+      const mockStudentId = new mongoose.Types.ObjectId();
+      const mockChiefId = new mongoose.Types.ObjectId();
+      const mockComplaintId = new mongoose.Types.ObjectId();
+
+      // Mock student lodging complaint in GH-2
+      User.findById = () => Promise.resolve({
+        _id: mockStudentId,
+        name: "Ananya",
+        role: "student",
+        hostelName: "GH-2",
+        hostelBlock: "Tagore Block A",
+        roomNumber: "405"
+      });
+
+      // User.find for wardens returns Chief Warden
+      User.find = (query) => {
+        if (query.role === "warden") {
+          return Promise.resolve([
+            {
+              _id: mockChiefId,
+              name: "Chief Warden",
+              email: "warden@hostelcare.com",
+              role: "warden",
+              isChiefWarden: true,
+              hostelName: "BH1" // Old single hostel assignment
+            }
+          ]);
+        }
+        return Promise.resolve([]);
+      };
+
+      Complaint.create = (doc) => Promise.resolve({
+        _id: mockComplaintId,
+        ticketId: "HC-778899",
+        ...doc
+      });
+
+      Notification.findOne = () => Promise.resolve(null);
+      const createdNotifications = [];
+      Notification.create = (notif) => {
+        createdNotifications.push(notif);
+        return Promise.resolve(notif);
+      };
+
+      const complaintsRouter = require("../routes/complaints");
+      const postComplaintLayer = complaintsRouter.stack.find(s => s.route && s.route.path === "/" && s.route.methods.post);
+      const handler = postComplaintLayer.route.stack[postComplaintLayer.route.stack.length - 1].handle;
+
+      let statusCode = 0;
+      await handler({
+        user: { userId: mockStudentId.toString(), role: "student" },
+        body: {
+          title: "Water leakage",
+          description: "Water tap is dripping in bathroom",
+          category: "plumbing",
+          hostelBlock: "Tagore Block A",
+          roomNumber: "405"
+        }
+      }, {
+        status: (code) => { statusCode = code; return { json: () => {} }; },
+        json: () => {}
+      });
+
+      assert.strictEqual(statusCode, 201, "Complaint in GH-2 must be created successfully");
+      const chiefNotif = createdNotifications.find(n => n.recipient.toString() === mockChiefId.toString());
+      assert(chiefNotif, "Chief Warden must receive notification for GH-2 complaint even with old BH1 assignment");
+      assert(chiefNotif.message.includes("GH-2"), "Chief Warden notification message must mention GH-2");
+    } finally {
+      User.findById = origFindById;
+      User.find = origFind;
+      Complaint.create = origCreateComplaint;
+      Notification.findOne = origFindOneNotification;
+      Notification.create = origCreateNotification;
+    }
+  });
+
+  await testAsync("Warden Authorization: Non-chief warden without explicit assignment is rejected and does NOT receive campus-wide access", async () => {
+    const origFindById = User.findById;
+    try {
+      // Mock an ordinary warden who is NOT the Chief Warden and has NO hostel assignment
+      User.findById = () => ({
+        select: () => Promise.resolve({
+          _id: "rogue_warden_1",
+          name: "Rogue Warden",
+          email: "rogue@hostelcare.com",
+          role: "warden",
+          hostelName: "", // Missing assignment
+          isChiefWarden: false
         })
       });
 
       const wardenRouter = require("../routes/warden");
-      const getWardensLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/wardens" && s.route.methods.get);
-      assert(getWardensLayer, "GET /wardens route must exist");
-      const handler = getWardensLayer.route.stack[getWardensLayer.route.stack.length - 1].handle;
+      const dashLayer = wardenRouter.stack.find(s => s.route && s.route.path === "/dashboard" && s.route.methods.get);
+      const handler = dashLayer.route.stack[dashLayer.route.stack.length - 1].handle;
 
-      let resData = null;
-      await handler({ user: { userId: "w1", role: "warden" } }, {
-        json: (d) => { resData = d; }
+      let statusCode = 0;
+      let resMsg = "";
+      await handler({ user: { userId: "rogue_warden_1", role: "warden" } }, {
+        status: (code) => { statusCode = code; return { json: (d) => { resMsg = d.message; } }; },
+        json: (d) => { resMsg = d.message; }
       });
 
-      assert(resData && resData.success, "GET /wardens should return success: true");
-      assert(Array.isArray(resData.wardens), "Response must contain wardens array");
-      assert.strictEqual(resData.wardens.length, 1);
-      assert.strictEqual(resData.wardens[0].wardenId, "WRD-0001");
-      assert.strictEqual(resData.wardens[0].gender, "Male");
-      assert.strictEqual(resData.wardens[0].hostelName, "BH-1");
+      assert.strictEqual(statusCode, 400, "Non-chief warden lacking assignment must be rejected with 400");
+      assert(resMsg.includes("Scoped access cannot be determined"), "Should explain missing hostel assignment");
     } finally {
-      User.find = origFind;
+      User.findById = origFindById;
     }
   });
 

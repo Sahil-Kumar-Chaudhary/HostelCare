@@ -30,7 +30,8 @@ data class User(
     val hostelBlock: String = "",
     val roomNumber: String = "",
     val profilePhotoUri: String? = null,
-    val role: Role = Role.STUDENT
+    val role: Role = Role.STUDENT,
+    val isChiefWarden: Boolean = false
 )
 
 enum class ComplaintCategory {

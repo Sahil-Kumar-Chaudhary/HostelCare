@@ -4,7 +4,7 @@ const Complaint = require("../models/Complaint");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
-const { buildHostelRegex, isHostelMatch, buildBlockFilter } = require("../utils/hostelUtils");
+const { buildHostelRegex, isHostelMatch, buildBlockFilter, isChiefWardenUser, CHIEF_WARDEN_EMAIL } = require("../utils/hostelUtils");
 
 const multer = require("multer");
 const upload = multer({
@@ -166,15 +166,27 @@ router.post(
             });
           }
 
-          // 2. Warden notifications for this hostel
+          // 2. Warden notifications: notify Chief Warden campus-wide, plus any hostel-assigned warden
           const hostelRegex = buildHostelRegex(resolvedHostelName);
-          const wardens = await User.find({ role: "warden", hostelName: { $regex: hostelRegex } });
+          const wardens = await User.find({
+            role: "warden",
+            $or: [
+              { isChiefWarden: true },
+              { email: CHIEF_WARDEN_EMAIL },
+              { hostelName: { $regex: hostelRegex } }
+            ]
+          });
+
           for (const w of wardens) {
-            // Check block authorization if warden has a specific block assigned
-            if (w.hostelBlock && w.hostelBlock.trim() && w.hostelBlock.trim().toLowerCase() !== "all") {
-              const blockRegex = buildBlockFilter(w.hostelBlock);
-              if (blockRegex && !blockRegex.test(complaint.hostelBlock || "")) {
-                continue; // Skip warden who does not cover this block
+            const isChief = isChiefWardenUser(w);
+
+            // Check block authorization if non-chief warden has a specific block assigned
+            if (!isChief) {
+              if (w.hostelBlock && w.hostelBlock.trim() && w.hostelBlock.trim().toLowerCase() !== "all") {
+                const blockRegex = buildBlockFilter(w.hostelBlock);
+                if (blockRegex && !blockRegex.test(complaint.hostelBlock || "")) {
+                  continue; // Skip warden who does not cover this block
+                }
               }
             }
 
@@ -187,7 +199,7 @@ router.post(
               await Notification.create({
                 recipient: w._id,
                 title: `New Complaint: ${complaint.title}`,
-                message: `New complaint ${complaint.ticketId || ""} lodged in Room ${complaint.roomNumber}, Block ${complaint.hostelBlock}.`,
+                message: `New complaint ${complaint.ticketId || ""} lodged in ${complaint.hostelName}, Room ${complaint.roomNumber}, Block ${complaint.hostelBlock}.`,
                 type: "complaint_created",
                 complaintId: complaint._id
               });

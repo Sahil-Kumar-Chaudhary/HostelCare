@@ -123,12 +123,6 @@ interface ApiService {
     @PUT("api/warden/profile")
     suspend fun updateWardenProfile(@Body request: UpdateWardenProfileRequest): Response<SimpleSuccessResponse>
 
-    @GET("api/warden/wardens")
-    suspend fun getWardens(): Response<WardenListResponse>
-
-    @POST("api/warden/wardens")
-    suspend fun createWarden(@Body request: CreateWardenRequest): Response<CreateWardenResponse>
-
     // Staff Endpoints
     @GET("api/staff/tasks")
     suspend fun getStaffTasks(@Query("status") status: String? = null): Response<StaffTasksResponse>

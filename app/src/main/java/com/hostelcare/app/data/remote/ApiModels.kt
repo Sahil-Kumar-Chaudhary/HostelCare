@@ -69,7 +69,8 @@ data class NetworkUser(
     val roomNumber: String? = null,
     @SerializedName("profilePhoto")
     val profilePhotoUri: String? = null,
-    val role: String
+    val role: String,
+    val isChiefWarden: Boolean? = null
 ) {
     fun toLocalUser() = com.hostelcare.app.data.model.User(
         id = id,
@@ -93,7 +94,8 @@ data class NetworkUser(
             "staff" -> Role.STAFF
             "admin" -> Role.STAFF
             else -> Role.STUDENT
-        }
+        },
+        isChiefWarden = isChiefWarden == true || email.equals("warden@hostelcare.com", ignoreCase = true)
     )
 }
 
@@ -199,7 +201,8 @@ data class NetworkWardenScope(
     val name: String,
     val email: String,
     val hostelName: String,
-    val hostelBlock: String? = null
+    val hostelBlock: String? = null,
+    val isChiefWarden: Boolean? = null
 )
 
 data class WardenStatsData(
@@ -338,6 +341,7 @@ data class CreateStaffRequest(
     val email: String,
     val phone: String,
     val department: String,
+    val hostelName: String? = null,
     val hostelBlock: String? = null,
     val password: String
 )
@@ -433,39 +437,8 @@ data class WardenProfileData(
     val hostelName: String,
     val hostelBlock: String?,
     val profilePhoto: String?,
-    val role: String
-)
-
-data class WardenItem(
-    val id: String,
-    val wardenId: String,
-    val name: String,
-    val email: String,
-    val gender: String,
-    val hostelName: String,
-    val phone: String = "",
-    val createdAt: String? = null
-)
-
-data class WardenListResponse(
-    val success: Boolean,
-    val wardens: List<WardenItem>
-)
-
-data class CreateWardenRequest(
-    val name: String,
-    val email: String,
-    val gender: String,
-    val hostelName: String,
-    val phone: String? = null,
-    val password: String? = null
-)
-
-data class CreateWardenResponse(
-    val success: Boolean,
-    val message: String,
-    val warden: WardenItem,
-    val temporaryPassword: String? = null
+    val role: String,
+    val isChiefWarden: Boolean? = null
 )
 
 data class UpdateWardenProfileRequest(
