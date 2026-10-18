@@ -1,299 +1,207 @@
-# 🏠 HostelCare Backend
+# 🏠 HostelCare — Campus Hostel Complaint & Facility Management System
 
-Backend API for **HostelCare**, a student hostel complaint management Android application. 📱
+HostelCare is a full-stack, enterprise-grade hostel management and complaint resolution platform built for universities and educational institutions. It seamlessly connects **Students**, **Hostel Staff**, and the **Chief Warden** into a unified, transparent workflow powered by automated AI issue triage.
 
-HostelCare is designed to make hostel issue reporting and resolution easier by connecting students with hostel staff through a secure backend. 🤝 The backend handles authentication, student profiles, and persistent data using **Node.js, Express, MongoDB Atlas, and JWT authentication**.
+---
 
-> **🚧 Project status:** Authentication and profile APIs are currently implemented. Complaint, notification, feedback, and AI services can be added as the project progresses.
+## 🌟 Key Highlights & Features
 
-## ✨ Features
+- 🎓 **Three Specialized Portals:**
+  - **Student Portal:** Report hostel complaints with photo references, track real-time resolution progress via ticket IDs (`HC-XXXXXX`), receive push updates, and rate completed maintenance work.
+  - **Single Chief Warden Portal:** Campus-wide administrative jurisdiction across all 20 hostels (**BH-1 to BH-10** and **GH-1 to GH-10**). Monitor campus-wide analytics, assign staff members to open complaints, and oversee facility maintenance.
+  - **Staff Portal:** Field technicians and maintenance personnel view assigned work orders, update task statuses (Assigned → In Progress → Resolved), and provide resolution remarks.
+- 🤖 **Resilient AI Triage Pipeline:**
+  - Instant category classification, priority assignment (Urgent, High, Medium, Low), turnaround estimation, and automated executive summarization.
+  - **High-availability multi-model failover:** Primary provider **Google Gemini** (`gemini-1.5-flash` / `gemini-pro`) with automated fallback to **OpenRouter** (`deepseek-chat` / `meta-llama`).
+  - **Idempotent persistence:** Completed AI analyses are stored persistently in the canonical database—avoiding redundant API calls unless explicitly retried by an administrator.
+- 🏛️ **Campus Jurisdiction & Gender-Aware Scoping:**
+  - Gender-filtered hostel assignment during student registration (Boys: `BH-1` through `BH-10`; Girls: `GH-1` through `GH-10`).
+  - Flexible manual block identifiers accommodating diverse campus architectures.
+  - Unified Chief Warden architecture governing all campus accommodations under a single administrative umbrella.
+- 🗄️ **Single Canonical Database (`HostelCareDB`):**
+  - All roles, complaints, and operational data are housed exclusively in `HostelCareDB` on MongoDB Atlas.
+  - Strictly retired legacy test databases for total consistency across development, staging, and production.
 
-- 📝 Student registration
-- 🔐 Secure password hashing with bcrypt
-- 🔑 Student login
-- 🛡️ JWT-based authentication
-- 🔒 Protected API routes
-- 👤 Get logged-in student profile
-- ✏️ Update student profile
-- ☁️ MongoDB Atlas persistence
-- 🌐 CORS support
-- ⚙️ Environment-based configuration
-- 🚀 Ready for deployment on Render
+---
 
-## 🧰 Tech Stack
-
-| Technology | Purpose |
-|---|---|
-| Node.js | Backend runtime |
-| Express.js | REST API framework |
-| MongoDB Atlas | Cloud database |
-| Mongoose | MongoDB ODM |
-| JWT | Authentication |
-| bcryptjs | Password hashing |
-| dotenv | Environment variables |
-| CORS | Cross-origin API access |
-
-## 📁 Project Structure
+## 🏗️ Architecture & Tech Stack
 
 ```text
-backend/
-├── middleware/
-│   └── auth.js
-├── models/
-│   └── User.js
-├── routes/
-│   ├── auth.js
-│   └── profile.js
-├── .env
-├── .gitignore
-├── package.json
-├── package-lock.json
-└── server.js
+┌─────────────────────────────────────────────────────────────┐
+│                   HostelCare Android App                    │
+│      (Kotlin, Jetpack Compose, Material 3, Coroutines)       │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ HTTPS / REST API
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   HostelCare Node.js API                    │
+│             (Express, Mongoose, JWT, Bcrypt)                │
+└──────────────┬───────────────────────────────┬──────────────┘
+               │                               │
+               ▼                               ▼
+┌─────────────────────────────┐ ┌─────────────────────────────┐
+│      MongoDB Atlas          │ │      AI Triage Engine       │
+│      (HostelCareDB)         │ │  Gemini 1.5 ──► OpenRouter  │
+└─────────────────────────────┘ └─────────────────────────────┘
 ```
 
-## 🔌 API Endpoints
+| Component | Technologies & Frameworks | Description |
+|---|---|---|
+| **Android Client** | Kotlin, Jetpack Compose, Navigation Compose, Material 3 | Modern declarative Android UI with MVVM architecture, StateFlow, and Coroutines |
+| **Networking & API** | Retrofit 2, OkHttp 3, Gson, Coil | Resilient HTTP networking with auth token interceptors and asynchronous image caching |
+| **Backend Runtime** | Node.js (v18+), Express.js | High-throughput asynchronous REST API server |
+| **Database & ODM** | MongoDB Atlas, Mongoose | Cloud-native document storage using canonical database `HostelCareDB` |
+| **Authentication** | JWT (JSON Web Tokens), Bcrypt.js | Stateless authentication with cryptographic password hashing and role-based access control (RBAC) |
+| **AI Assessment** | Google Gemini SDK, OpenRouter REST API | Multi-provider fallback engine for complaint categorization, severity scoring, and summary generation |
+| **Cloud Hosting** | Render Web Services | Auto-deploying production backend with SSL/TLS termination |
 
-### 🔐 Authentication
+---
 
-#### 📝 Register
+## 📁 Repository Structure
 
-```http
-POST /api/auth/register
+```text
+HostelCare/
+├── app/                                # Android Application
+│   ├── src/main/
+│   │   ├── java/com/hostelcare/app/
+│   │   │   ├── data/                   # Models, Retrofit API services, Repositories
+│   │   │   ├── ui/
+│   │   │   │   ├── components/         # Shared Jetpack Compose components
+│   │   │   │   ├── navigation/         # NavHost and App Routes
+│   │   │   │   ├── screens/
+│   │   │   │   │   ├── auth/           # Login, Register, Role selector
+│   │   │   │   │   ├── student/        # Complaint form, Student dashboard, Tracking
+│   │   │   │   │   ├── warden/         # Chief Warden dashboard, Staff mgmt, Analytics
+│   │   │   │   │   └── staff/          # Staff work orders, Task completion
+│   │   │   │   └── theme/              # Color palettes, typography, theme definition
+│   │   │   └── MainActivity.kt         # Entry Activity with splash screen
+│   │   └── res/                        # Drawables, mipmaps, values
+│   └── build.gradle.kts                # Android build configuration & dependencies
+├── backend/                            # Node.js Express Backend
+│   ├── middleware/
+│   │   └── auth.js                     # JWT validation and role authorization
+│   ├── models/
+│   │   ├── User.js                     # Unified user schema (Student, Warden, Staff)
+│   │   ├── Complaint.js                # Complaint schema with AI metadata & history
+│   │   └── Notification.js             # User alert notifications
+│   ├── routes/
+│   │   ├── auth.js                     # Register, Login, Verification
+│   │   ├── profile.js                  # User profile retrieval and updates
+│   │   ├── complaints.js               # Complaint lifecycle, filtering, AI analysis
+│   │   ├── warden.js                   # Chief Warden campus overview & oversight
+│   │   └── staff.js                    # Staff provisioning, tasks, work orders
+│   ├── services/
+│   │   └── aiService.js                # Gemini + OpenRouter failover logic
+│   ├── tests/                          # Automated backend test suites
+│   ├── server.js                       # Express application bootstrap
+│   └── package.json
+└── README.md
 ```
 
-Example request:
+---
 
-```json
-{
-  "name": "Test Student",
-  "studentId": "TEST1001",
-  "email": "teststudent@example.com",
-  "password": "Test@12345",
-  "hostelBlock": "Block B",
-  "roomNumber": "B-204",
-  "phone": "9876543210"
-}
-```
+## 🔌 Core API Endpoints
 
-#### 🔑 Login
+### 🔐 Authentication & Profile
 
-```http
-POST /api/auth/login
-```
+| Method | Endpoint | Authorization | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Public | Register a new Student account (with gender, hostel, block validation) |
+| `POST` | `/api/auth/login` | Public | Authenticate user and receive JWT bearer token + profile summary |
+| `GET` | `/api/profile` | Bearer Token | Fetch the authenticated user's profile details |
+| `PUT` | `/api/profile` | Bearer Token | Update contact and profile preferences |
 
-Example request:
+### 📝 Complaints & Lifecycle
 
-```json
-{
-  "email": "teststudent@example.com",
-  "password": "Test@12345"
-}
-```
+| Method | Endpoint | Authorization | Description |
+|---|---|---|---|
+| `POST` | `/api/complaints` | Student | Submit a new complaint (triggers automated AI assessment) |
+| `GET` | `/api/complaints` | Authenticated | List complaints scoped to role (Student: own; Staff: assigned; Chief Warden: campus-wide) |
+| `GET` | `/api/complaints/:id` | Authenticated | Retrieve detailed complaint information, timeline, and AI insights |
+| `PUT` | `/api/complaints/:id/status` | Staff / Warden | Transition status (`SUBMITTED` → `IN_PROGRESS` → `RESOLVED`) |
+| `POST` | `/api/complaints/:id/assign` | Chief Warden | Assign an open complaint to a designated staff member |
+| `POST` | `/api/complaints/:id/retry-ai`| Chief Warden | Force re-evaluation of complaint by AI assessment engine |
 
-The successful response returns a JWT token and basic user information.
+### 👷 Staff & Campus Administration
 
-### 👤 Profile
+| Method | Endpoint | Authorization | Description |
+|---|---|---|---|
+| `GET` | `/api/staff` | Chief Warden | Retrieve list of all maintenance staff across hostels |
+| `POST` | `/api/staff` | Chief Warden | Provision a new staff member for a specific department and hostel |
+| `GET` | `/api/warden/overview` | Chief Warden | Campus-wide complaint statistics across all 20 hostels |
 
-The following endpoints require a JWT token in the request header:
+---
 
-```http
-Authorization: Bearer <token>
-```
+## ⚙️ Environment Configuration
 
-#### 📄 Get Profile
-
-```http
-GET /api/profile
-```
-
-#### ✏️ Update Profile
-
-```http
-PUT /api/profile
-```
-
-Example request:
-
-```json
-{
-  "name": "Test Student Updated",
-  "email": "teststudent@example.com",
-  "hostelBlock": "Block A",
-  "roomNumber": "A-101",
-  "phone": "9999999999"
-}
-```
-
-### 🛡️ Protected Route
-
-A development test route is currently available:
-
-```http
-GET /api/protected
-```
-
-It requires a valid JWT token.
-
-## 🛠️ Local Setup
-
-### 1️⃣ Clone the repository
-
-```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
-cd HostelCare-backend
-```
-
-### 2️⃣ Install dependencies
-
-```bash
-npm install
-```
-
-### 3️⃣ Create environment variables
-
-Create a `.env` file in the backend root:
+Create a `.env` file inside the `backend/` directory:
 
 ```env
-MONGO_URI=your_mongodb_atlas_connection_string
+# Server
 PORT=5000
-JWT_SECRET=your_long_random_secret
+NODE_ENV=development
+
+# Database (Canonical)
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/HostelCareDB?retryWrites=true&w=majority
+
+# Security
+JWT_SECRET=your_super_secret_jwt_signing_key_here
+
+# AI Assessment Providers
+GEMINI_API_KEY=your_google_gemini_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
-⚠️ Never commit `.env` to GitHub.
+> [!IMPORTANT]
+> Never commit `.env` or sensitive credentials to version control. The repository `.gitignore` automatically prevents `.env` and credential files from being tracked.
 
-### 4️⃣ Start the server
+---
 
-Development:
+## 🚀 Getting Started
+
+### 1. Backend Server
 
 ```bash
-npm run dev
-```
-
-Production-style local start:
-
-```bash
-npm start
-```
-
-The API will run on: 🌐
-
-```text
-http://localhost:5000
-```
-
-## 📱 Android Emulator
-
-When the Android app is running on the Android Emulator and the backend is running on the development PC, use:
-
-```text
-http://10.0.2.2:5000/
-```
-
-Do not use `localhost` from inside the Android Emulator to reach the PC backend.
-
-## 🗄️ Database
-
-HostelCare uses MongoDB Atlas for cloud database storage.
-
-The current user model stores:
-
-- 👤 Name
-- 🆔 Student ID
-- 📧 Email
-- 🔐 Hashed password
-- 🏢 Hostel / Block
-- 🚪 Room number
-- 📞 Phone
-- 🖼️ Profile photo reference
-- 👥 User role
-- 🕒 Created/updated timestamps
-
-Passwords are hashed before being stored. 🔐
-
-## 🔒 Security
-
-The backend follows several basic security practices:
-
-- 🔐 Passwords are hashed with bcryptjs.
-- 🛡️ JWTs are used for protected routes.
-- 🔒 Protected routes verify the `Authorization: Bearer <token>` header.
-- 🚫 Passwords are excluded from profile responses.
-- 🔑 MongoDB credentials and JWT secrets are stored in environment variables.
-- 🚫 `.env` and `node_modules` are excluded from Git.
-
-## 🗺️ Planned Modules
-
-```text
-Authentication
-    ├── 📝 Register
-    └── 🔑 Login
-
-Student Profile
-    ├── 👤 View Profile
-    └── ✏️ Update Profile
-
-Complaints
-    ├── 📝 Create Complaint
-    ├── 📋 View Complaints
-    ├── 🔎 Complaint Details
-    ├── 📊 Status Tracking
-    └── 👷 Staff Assignment
-
-AI Assistance
-    ├── 🧠 Category Detection
-    ├── 🚨 Priority Detection
-    └── 📝 Complaint Summary
-
-Notifications
-    ├── 🔔 Complaint Updates
-    └── ✅ Resolution Notifications
-
-Feedback
-    └── ⭐ Resolution Rating / Feedback
-```
-
-## 🚀 Deployment
-
-The backend is designed to be deployed as a Node.js Web Service on **Render** and connected to **MongoDB Atlas**. ☁️
-
-For Render, use:
-
-```text
-Build Command: npm install
-Start Command: npm start
-```
-
-Set the following environment variables in Render:
-
-```text
-MONGO_URI
-JWT_SECRET
-```
-
-The `PORT` should be provided by the hosting platform through the environment.
-
-## 💻 Development
-
-Useful commands:
-
-```bash
+cd backend
 npm install
-npm run dev
-npm start
+npm run dev      # Starts development server with nodemon on port 5000
 ```
 
-Before deployment, verify that:
+To run test suites:
 
-- ✅ `.env` is not committed
-- ✅ the server starts successfully
-- ✅ MongoDB Atlas connection works
-- ✅ authentication endpoints work
-- ✅ protected routes reject missing/invalid tokens
+```bash
+# Run role & authorization regression tests
+node tests/run_tests.js
 
-## 🎯 Project Goal
+# Run AI engine failover tests
+node tests/test_ai_failover.js
+```
 
-HostelCare aims to provide a simple and reliable way for students to report hostel problems, track their complaints, and receive updates while helping hostel staff manage and resolve issues efficiently.
+### 2. Android Application
 
-## 📜 License
+1. Open the project root in **Android Studio Ladybug (or newer)**.
+2. Ensure JDK 17 or JDK 21 is configured as the Gradle JDK.
+3. Synchronize Gradle files and build the project:
+   ```bash
+   ./gradlew testDebugUnitTest    # Run unit tests
+   ./gradlew assembleDebug        # Build debug APK
+   ```
+4. Connect a physical Android device (via USB debugging) or start an Android Emulator.
+5. Deploy and run the `app` configuration.
 
-This project is developed for academic/project purposes.
+---
+
+## 🏛️ Campus Hostels Reference
+
+HostelCare supports 20 institutional residence halls across campus:
+
+| Boys' Hostels (BH) | Girls' Hostels (GH) |
+|:---:|:---:|
+| `BH-1` · `BH-2` · `BH-3` · `BH-4` · `BH-5` | `GH-1` · `GH-2` · `GH-3` · `GH-4` · `GH-5` |
+| `BH-6` · `BH-7` · `BH-8` · `BH-9` · `BH-10` | `GH-6` · `GH-7` · `GH-8` · `GH-9` · `GH-10` |
+
+---
+
+## 📄 License
+
+This project is developed for institutional hostel facility management and academic research. All rights reserved.

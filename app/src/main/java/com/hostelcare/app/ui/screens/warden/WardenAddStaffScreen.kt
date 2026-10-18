@@ -130,7 +130,7 @@ fun WardenAddStaffScreen(
                             viewModel.createStaff(
                                 request = CreateStaffRequest(
                                     name = name.trim(),
-                                    email = email.trim().toLowerCase(java.util.Locale.ROOT),
+                                    email = email.trim().lowercase(),
                                     phone = phone.trim(),
                                     department = department,
                                     hostelName = selectedHostel,
