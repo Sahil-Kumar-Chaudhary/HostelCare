@@ -21,8 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,26 +55,25 @@ fun PortalSelectionScreen(navController: NavController, app: HostelCareApp) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         val totalHeight = maxHeight
         val totalWidth = maxWidth
         val isNarrow = totalWidth < 360.dp
-        val isShort = totalHeight < 680.dp
-        val extraHeight = (totalHeight - 620.dp).coerceAtLeast(0.dp)
+        val isShort = totalHeight < 700.dp
+        val isCompact = totalHeight < 780.dp
 
-        // Dynamic vertical spacing that expands proportionally on tall phones while compressing safely on short phones
-        val topToBannerSpacer = (10.dp + extraHeight * 0.03f).coerceIn(8.dp, 16.dp)
-        val bannerToBrandingSpacer = (12.dp + extraHeight * 0.04f).coerceIn(10.dp, 20.dp)
-        val brandingToWelcomeSpacer = (20.dp + extraHeight * 0.10f).coerceIn(16.dp, 36.dp)
-        val welcomeToCardsSpacer = (16.dp + extraHeight * 0.07f).coerceIn(14.dp, 26.dp)
-        val cardSpacing = (14.dp + extraHeight * 0.05f).coerceIn(12.dp, 18.dp)
-        val cardsToFooterSpacer = (28.dp + extraHeight * 0.20f).coerceIn(22.dp, 60.dp)
-        val bottomSpacer = (14.dp + extraHeight * 0.08f).coerceIn(12.dp, 32.dp)
+        // Adaptive vertical spacing that fits standard screens naturally and allows smooth scrolling on short screens
+        val topToBannerSpacer = if (isShort) 4.dp else if (isCompact) 8.dp else 12.dp
+        val bannerToBrandingSpacer = if (isShort) 6.dp else if (isCompact) 10.dp else 14.dp
+        val brandingToWelcomeSpacer = if (isShort) 8.dp else if (isCompact) 12.dp else 16.dp
+        val welcomeToCardsSpacer = if (isShort) 8.dp else if (isCompact) 12.dp else 16.dp
+        val cardSpacing = if (isShort) 8.dp else if (isCompact) 10.dp else 12.dp
+        val cardsToFooterSpacer = if (isShort) 12.dp else if (isCompact) 16.dp else 22.dp
+        val bottomSpacer = if (isShort) 16.dp else 20.dp
 
-        val bannerHeight = if (isShort) 96.dp else 118.dp
-        val bannerWidth = if (isNarrow) 196.dp else 226.dp
-        val cardMinHeight = if (isShort) 82.dp else 90.dp
+        val bannerHeight = if (isShort) 74.dp else if (isCompact) 84.dp else 96.dp
+        val bannerWidth = if (isNarrow) 184.dp else if (isShort) 200.dp else 226.dp
+        val cardMinHeight = if (isShort) 66.dp else if (isCompact) 72.dp else 78.dp
 
         Column(
             modifier = Modifier
@@ -80,175 +82,227 @@ fun PortalSelectionScreen(navController: NavController, app: HostelCareApp) {
                 .padding(horizontal = if (isNarrow) 14.dp else 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            AdaptivePortalLayout(
+                minViewportHeight = totalHeight,
+                minSpacingBetween = cardsToFooterSpacer,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 480.dp)
-                    .padding(top = if (isShort) 8.dp else 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Top action bar with "About App"
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        onClick = { showAboutDialog = true },
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        shadowElevation = 1.dp
+                    .widthIn(max = 480.dp),
+                content = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = if (isShort) 8.dp else 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        // Top action bar with "About App"
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
-                                contentAlignment = Alignment.Center
+                            Surface(
+                                onClick = { showAboutDialog = true },
+                                shape = RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                shadowElevation = 1.dp
                             ) {
-                                Text(
-                                    text = "?",
-                                    color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "?",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "About App",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
-                            Spacer(modifier = Modifier.width(6.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(topToBannerSpacer))
+
+                        // Campus Building Illustration Banner
+                        CampusIllustrationBanner(
+                            bannerHeight = bannerHeight,
+                            bannerWidth = bannerWidth
+                        )
+
+                        Spacer(modifier = Modifier.height(bannerToBrandingSpacer))
+
+                        // Branding Title and Tagline
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "About App",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
+                                text = "Hostel",
+                                fontSize = if (isNarrow) 24.sp else 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "Care",
+                                fontSize = if (isNarrow) 24.sp else 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Safe Hostel. Happy Students.",
+                            fontSize = if (isNarrow) 13.sp else 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(brandingToWelcomeSpacer))
+
+                        // Welcome Headline & Subtitle
+                        Text(
+                            text = "Welcome to HostelCare",
+                            fontSize = if (isNarrow) 20.sp else 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(5.dp))
+                        Text(
+                            text = "Choose your portal to continue",
+                            fontSize = if (isNarrow) 13.5.sp else 14.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(welcomeToCardsSpacer))
+
+                        // Portal Card 1: Student Portal
+                        PortalCard(
+                            title = "Student Portal",
+                            description = "Submit complaints and track progress",
+                            icon = Icons.Default.School,
+                            iconTint = Color(0xFF2563EB),
+                            iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFEBF2FE) else Color(0xFF1E3A8A).copy(alpha = 0.35f),
+                            onClick = {
+                                navController.navigate(Routes.LOGIN)
+                            },
+                            isNarrow = isNarrow,
+                            cardMinHeight = cardMinHeight
+                        )
+
+                        Spacer(modifier = Modifier.height(cardSpacing))
+
+                        // Portal Card 2: Warden Portal
+                        PortalCard(
+                            title = "Warden Portal",
+                            description = "Manage complaints, assign staff and monitor work",
+                            icon = Icons.Default.Security,
+                            iconTint = Color(0xFFD97706),
+                            iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFFEF3C7) else Color(0xFF78350F).copy(alpha = 0.35f),
+                            onClick = {
+                                navController.navigate(Routes.WARDEN_LOGIN)
+                            },
+                            isNarrow = isNarrow,
+                            cardMinHeight = cardMinHeight
+                        )
+
+                        Spacer(modifier = Modifier.height(cardSpacing))
+
+                        // Portal Card 3: Maintenance Staff Portal
+                        PortalCard(
+                            title = "Maintenance Staff Portal",
+                            description = "View assigned tasks and update repair progress",
+                            icon = Icons.Default.Build,
+                            iconTint = Color(0xFF16A34A),
+                            iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFDCFCE7) else Color(0xFF064E3B).copy(alpha = 0.35f),
+                            onClick = {
+                                navController.navigate(Routes.STAFF_LOGIN)
+                            },
+                            isNarrow = isNarrow,
+                            cardMinHeight = cardMinHeight
+                        )
+                    }
+                },
+                footer = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Footer note
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Groups,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "One app for a better hostel experience",
+                                fontSize = if (isNarrow) 11.5.sp else 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(bottomSpacer))
                     }
                 }
+            )
+        }
+    }
+}
 
-                Spacer(modifier = Modifier.height(topToBannerSpacer))
+/**
+ * Adaptive layout helper that positions the footer at the bottom of the safe screen area
+ * when vertical space is sufficient, while allowing smooth natural scrolling with minimum
+ * spacing when vertical space is constrained.
+ */
+@Composable
+private fun AdaptivePortalLayout(
+    minViewportHeight: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+    minSpacingBetween: androidx.compose.ui.unit.Dp = 16.dp,
+    content: @Composable () -> Unit,
+    footer: @Composable () -> Unit
+) {
+    val density = LocalDensity.current
+    val minViewportHeightPx = with(density) { minViewportHeight.roundToPx() }
+    val minSpacingPx = with(density) { minSpacingBetween.roundToPx() }
 
-                // Campus Building Illustration Banner
-                CampusIllustrationBanner(
-                    bannerHeight = bannerHeight,
-                    bannerWidth = bannerWidth
-                )
+    Layout(
+        content = {
+            Box(modifier = Modifier.fillMaxWidth()) { content() }
+            Box(modifier = Modifier.fillMaxWidth()) { footer() }
+        },
+        modifier = modifier
+    ) { measurables, constraints ->
+        val looseConstraints = constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+        val contentPlaceable = measurables[0].measure(looseConstraints)
+        val footerPlaceable = measurables[1].measure(looseConstraints)
 
-                Spacer(modifier = Modifier.height(bannerToBrandingSpacer))
+        val totalContentHeight = contentPlaceable.height + minSpacingPx + footerPlaceable.height
+        val layoutHeight = maxOf(totalContentHeight, minViewportHeightPx)
+        val layoutWidth = maxOf(constraints.minWidth, maxOf(contentPlaceable.width, footerPlaceable.width))
 
-                // Branding Title and Tagline
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Hostel",
-                        fontSize = if (isNarrow) 24.sp else 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "Care",
-                        fontSize = if (isNarrow) 24.sp else 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Safe Hostel. Happy Students.",
-                    fontSize = if (isNarrow) 13.sp else 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(brandingToWelcomeSpacer))
-
-                // Welcome Headline & Subtitle
-                Text(
-                    text = "Welcome to HostelCare",
-                    fontSize = if (isNarrow) 20.sp else 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    text = "Choose your portal to continue",
-                    fontSize = if (isNarrow) 13.5.sp else 14.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(welcomeToCardsSpacer))
-
-                // Portal Card 1: Student Portal
-                PortalCard(
-                    title = "Student Portal",
-                    description = "Submit complaints and track progress",
-                    icon = Icons.Default.School,
-                    iconTint = Color(0xFF2563EB),
-                    iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFEBF2FE) else Color(0xFF1E3A8A).copy(alpha = 0.35f),
-                    onClick = {
-                        navController.navigate(Routes.LOGIN)
-                    },
-                    isNarrow = isNarrow,
-                    cardMinHeight = cardMinHeight
-                )
-
-                Spacer(modifier = Modifier.height(cardSpacing))
-
-                // Portal Card 2: Warden Portal
-                PortalCard(
-                    title = "Warden Portal",
-                    description = "Manage complaints, assign staff and monitor work",
-                    icon = Icons.Default.Security,
-                    iconTint = Color(0xFFD97706),
-                    iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFFEF3C7) else Color(0xFF78350F).copy(alpha = 0.35f),
-                    onClick = {
-                        navController.navigate(Routes.WARDEN_LOGIN)
-                    },
-                    isNarrow = isNarrow,
-                    cardMinHeight = cardMinHeight
-                )
-
-                Spacer(modifier = Modifier.height(cardSpacing))
-
-                // Portal Card 3: Maintenance Staff Portal
-                PortalCard(
-                    title = "Maintenance Staff Portal",
-                    description = "View assigned tasks and update repair progress",
-                    icon = Icons.Default.Build,
-                    iconTint = Color(0xFF16A34A),
-                    iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFDCFCE7) else Color(0xFF064E3B).copy(alpha = 0.35f),
-                    onClick = {
-                        navController.navigate(Routes.STAFF_LOGIN)
-                    },
-                    isNarrow = isNarrow,
-                    cardMinHeight = cardMinHeight
-                )
-
-                Spacer(modifier = Modifier.height(cardsToFooterSpacer))
-
-                // Footer note
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Groups,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "One app for a better hostel experience",
-                        fontSize = if (isNarrow) 11.5.sp else 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(bottomSpacer))
-            }
+        layout(layoutWidth, layoutHeight) {
+            contentPlaceable.placeRelative(0, 0)
+            val footerY = layoutHeight - footerPlaceable.height
+            footerPlaceable.placeRelative(0, footerY)
         }
     }
 }
@@ -266,14 +320,15 @@ fun PortalCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isNarrow: Boolean = false,
-    cardMinHeight: androidx.compose.ui.unit.Dp = 88.dp
+    cardMinHeight: androidx.compose.ui.unit.Dp = 74.dp
 ) {
+    val isCompact = cardMinHeight <= 72.dp
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.75f)),
-        shadowElevation = 1.5.dp,
+        shadowElevation = 1.dp,
         modifier = modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = cardMinHeight)
@@ -282,15 +337,15 @@ fun PortalCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = if (isNarrow) 14.dp else 18.dp,
-                    vertical = if (isNarrow) 14.dp else 18.dp
+                    horizontal = if (isNarrow) 12.dp else 16.dp,
+                    vertical = if (isCompact) 10.dp else 13.dp
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(if (isNarrow) 48.dp else 56.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(if (isCompact || isNarrow) 44.dp else 50.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(iconContainerColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -298,34 +353,34 @@ fun PortalCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = iconTint,
-                    modifier = Modifier.size(if (isNarrow) 24.dp else 28.dp)
+                    modifier = Modifier.size(if (isCompact || isNarrow) 22.dp else 26.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(if (isNarrow) 12.dp else 16.dp))
+            Spacer(modifier = Modifier.width(if (isNarrow) 10.dp else 14.dp))
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = title,
-                    fontSize = if (isNarrow) 15.5.sp else 16.5.sp,
+                    fontSize = if (isNarrow) 15.sp else 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = description,
-                    fontSize = if (isNarrow) 12.5.sp else 13.5.sp,
+                    fontSize = if (isNarrow) 12.sp else 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = if (isNarrow) 16.sp else 18.5.sp
+                    lineHeight = if (isNarrow) 15.5.sp else 17.5.sp
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -336,13 +391,18 @@ fun PortalCard(
  */
 @Composable
 private fun CampusIllustrationBanner(
-    bannerHeight: androidx.compose.ui.unit.Dp = 118.dp,
+    bannerHeight: androidx.compose.ui.unit.Dp = 88.dp,
     bannerWidth: androidx.compose.ui.unit.Dp = 226.dp
 ) {
+    val treeSize = if (bannerHeight < 80.dp) 18.dp else if (bannerHeight < 95.dp) 22.dp else 26.dp
+    val buildingSize = if (bannerHeight < 80.dp) 38.dp else if (bannerHeight < 95.dp) 46.dp else 56.dp
+    val cloudSize = if (bannerHeight < 80.dp) 12.dp else 14.dp
+    val cornerRadius = if (bannerHeight < 80.dp) 18.dp else 22.dp
+
     Box(
         modifier = Modifier
             .size(width = bannerWidth, height = bannerHeight)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .background(
                 if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFF0F6FE)
                 else MaterialTheme.colorScheme.surface
@@ -350,7 +410,7 @@ private fun CampusIllustrationBanner(
             .border(
                 1.dp,
                 MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                RoundedCornerShape(24.dp)
+                RoundedCornerShape(cornerRadius)
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -364,40 +424,42 @@ private fun CampusIllustrationBanner(
                     imageVector = Icons.Default.Park,
                     contentDescription = null,
                     tint = Color(0xFF4ADE80),
-                    modifier = Modifier.size(if (bannerHeight < 100.dp) 22.dp else 28.dp)
+                    modifier = Modifier.size(treeSize)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 // Central Campus Building
                 Icon(
                     imageVector = Icons.Default.Apartment,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(if (bannerHeight < 100.dp) 48.dp else 62.dp)
+                    modifier = Modifier.size(buildingSize)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 // Right tree accent
                 Icon(
                     imageVector = Icons.Default.Park,
                     contentDescription = null,
                     tint = Color(0xFF22C55E),
-                    modifier = Modifier.size(if (bannerHeight < 100.dp) 22.dp else 28.dp)
+                    modifier = Modifier.size(treeSize)
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Cloud,
-                    contentDescription = null,
-                    tint = Color(0xFF93C5FD).copy(alpha = 0.6f),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Icon(
-                    imageVector = Icons.Default.Cloud,
-                    contentDescription = null,
-                    tint = Color(0xFF93C5FD).copy(alpha = 0.6f),
-                    modifier = Modifier.size(14.dp)
-                )
+            if (bannerHeight >= 76.dp) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Cloud,
+                        contentDescription = null,
+                        tint = Color(0xFF93C5FD).copy(alpha = 0.6f),
+                        modifier = Modifier.size(cloudSize)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Icon(
+                        imageVector = Icons.Default.Cloud,
+                        contentDescription = null,
+                        tint = Color(0xFF93C5FD).copy(alpha = 0.6f),
+                        modifier = Modifier.size(cloudSize - 2.dp)
+                    )
+                }
             }
         }
     }
@@ -573,7 +635,10 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text(
                     text = "HostelCare is a comprehensive digital living platform designed to modernize hostel maintenance and community living.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -689,13 +754,12 @@ fun WardenLoginScreen(navController: NavController, app: HostelCareApp) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         val totalWidth = maxWidth
         val totalHeight = maxHeight
         val isNarrow = totalWidth < 360.dp
-        val isShort = totalHeight < 680.dp
-        val badgeSize = if (isShort) 88.dp else 104.dp
+        val isShort = totalHeight < 700.dp
+        val badgeSize = if (isShort) 76.dp else 92.dp
 
         Column(
             modifier = Modifier
@@ -876,7 +940,7 @@ fun WardenLoginScreen(navController: NavController, app: HostelCareApp) {
                     message = "If you don't have an account, please contact the hostel administration."
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -931,13 +995,12 @@ fun StaffLoginScreen(navController: NavController, app: HostelCareApp) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         val totalWidth = maxWidth
         val totalHeight = maxHeight
         val isNarrow = totalWidth < 360.dp
-        val isShort = totalHeight < 680.dp
-        val badgeSize = if (isShort) 88.dp else 104.dp
+        val isShort = totalHeight < 700.dp
+        val badgeSize = if (isShort) 76.dp else 92.dp
 
         Column(
             modifier = Modifier
@@ -1118,7 +1181,7 @@ fun StaffLoginScreen(navController: NavController, app: HostelCareApp) {
                     message = "If you don't have an account, please contact your warden."
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
