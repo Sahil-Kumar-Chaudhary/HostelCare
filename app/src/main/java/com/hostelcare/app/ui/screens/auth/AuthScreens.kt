@@ -232,14 +232,8 @@ fun LoginScreen(navController: NavController, app: HostelCareApp) {
                     .padding(vertical = if (isShort) 8.dp else 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top navigation bar with Back and Switch Portal
+                // Top navigation bar with Switch Portal
                 AuthTopBar(
-                    onBack = {
-                        viewModel.resetState()
-                        navController.navigate(Routes.PORTAL_SELECTION) {
-                            popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
-                        }
-                    },
                     onSwitchPortal = {
                         viewModel.resetState()
                         navController.navigate(Routes.PORTAL_SELECTION) {

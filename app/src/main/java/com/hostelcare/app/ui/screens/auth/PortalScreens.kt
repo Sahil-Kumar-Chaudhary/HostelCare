@@ -466,28 +466,21 @@ private fun CampusIllustrationBanner(
 }
 
 /**
- * Shared top navigation bar with Back and Switch Portal buttons
+ * Shared top navigation bar with Switch Portal action button aligned to the top-right
  */
 @Composable
 fun AuthTopBar(
-    onBack: () -> Unit,
     onSwitchPortal: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
         TextButton(
             onClick = onSwitchPortal,
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
@@ -776,14 +769,8 @@ fun WardenLoginScreen(navController: NavController, app: HostelCareApp) {
                     .padding(vertical = if (isShort) 8.dp else 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top navigation bar
+                // Top navigation bar with Switch Portal
                 AuthTopBar(
-                    onBack = {
-                        viewModel.resetState()
-                        navController.navigate(Routes.PORTAL_SELECTION) {
-                            popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
-                        }
-                    },
                     onSwitchPortal = {
                         viewModel.resetState()
                         navController.navigate(Routes.PORTAL_SELECTION) {
@@ -1017,14 +1004,8 @@ fun StaffLoginScreen(navController: NavController, app: HostelCareApp) {
                     .padding(vertical = if (isShort) 8.dp else 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top navigation bar
+                // Top navigation bar with Switch Portal
                 AuthTopBar(
-                    onBack = {
-                        viewModel.resetState()
-                        navController.navigate(Routes.PORTAL_SELECTION) {
-                            popUpTo(Routes.PORTAL_SELECTION) { inclusive = true }
-                        }
-                    },
                     onSwitchPortal = {
                         viewModel.resetState()
                         navController.navigate(Routes.PORTAL_SELECTION) {
