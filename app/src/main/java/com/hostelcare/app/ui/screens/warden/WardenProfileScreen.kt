@@ -105,7 +105,12 @@ fun WardenProfileScreen(
                 onDismissRequest = { if (!isSaving) showEditProfileDialog = false },
                 title = { Text("Edit Profile Details", fontWeight = FontWeight.Bold) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Text("Full Name", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         CustomTextField(value = editName, onValueChange = { editName = it }, placeholder = "Full Name")
 
@@ -155,7 +160,12 @@ fun WardenProfileScreen(
                 onDismissRequest = { if (!isChanging) showChangePasswordDialog = false },
                 title = { Text("Change Password", fontWeight = FontWeight.Bold) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         if (passwordError != null) {
                             Text(passwordError!!, color = DangerRed, fontSize = 12.sp)
                         }
@@ -311,7 +321,7 @@ fun WardenProfileScreen(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = "Chief Warden · Campus-Wide (20 Hostels)${if (wardenIdStr.isNotBlank()) " · $wardenIdStr" else ""}",
+                            text = "Chief Warden Â· Campus-Wide (20 Hostels)${if (wardenIdStr.isNotBlank()) " Â· $wardenIdStr" else ""}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
@@ -513,7 +523,7 @@ fun WardenProfileScreen(
                 Text("Log Out from Warden Portal", color = DangerRed, fontWeight = FontWeight.SemiBold)
             }
 
-            Spacer(modifier = Modifier.height(72.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

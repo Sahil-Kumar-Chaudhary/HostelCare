@@ -122,7 +122,12 @@ fun WardenStaffProfileScreen(
                         onDismissRequest = { if (!isSaving) showEditDialog = false },
                         title = { Text("Edit Staff Details", fontWeight = FontWeight.Bold) },
                         text = {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
                                 Text("Department", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 CustomTextField(value = editDept, onValueChange = { editDept = it }, placeholder = "Department")
 
@@ -444,7 +449,7 @@ fun WardenStaffProfileScreen(
                                                         color = MaterialTheme.colorScheme.onSurface
                                                     )
                                                     Text(
-                                                        text = "${task.ticketId ?: "#CMP"} · Room ${task.roomNumber ?: "-"}",
+                                                        text = "${task.ticketId ?: "#CMP"} Â· Room ${task.roomNumber ?: "-"}",
                                                         fontSize = 11.sp,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )

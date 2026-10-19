@@ -62,7 +62,6 @@ fun StaffTasksScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -293,9 +292,9 @@ fun StaffDetailedTaskCard(
     val location = buildString {
         append(task.hostelName ?: "BH1")
         if (!task.hostelBlock.isNullOrBlank()) {
-            append(" • B-${task.roomNumber ?: ""}")
+            append(" â€¢ B-${task.roomNumber ?: ""}")
         } else if (!task.roomNumber.isNullOrBlank()) {
-            append(" • ${task.roomNumber}")
+            append(" â€¢ ${task.roomNumber}")
         }
     }
     val timeAgo = formatTimeAgo(task.createdAt)

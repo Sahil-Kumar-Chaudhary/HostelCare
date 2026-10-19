@@ -61,7 +61,6 @@ fun StaffHomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .padding(horizontal = 20.dp, vertical = 14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -183,7 +182,7 @@ fun StaffHomeScreen(
                                 color = Color(0xFF0F172A)
                             )
                             Text(
-                                text = "Maintenance Staff • ${currentUser?.hostelName ?: "BH1"}",
+                                text = "Maintenance Staff â€¢ ${currentUser?.hostelName ?: "BH1"}",
                                 fontSize = 13.sp,
                                 color = Color(0xFF64748B)
                             )
@@ -413,9 +412,9 @@ fun StaffTaskRowCard(
     val location = buildString {
         append(task.hostelName ?: "BH1")
         if (!task.hostelBlock.isNullOrBlank()) {
-            append(" • B-${task.roomNumber ?: ""}")
+            append(" â€¢ B-${task.roomNumber ?: ""}")
         } else if (!task.roomNumber.isNullOrBlank()) {
-            append(" • ${task.roomNumber}")
+            append(" â€¢ ${task.roomNumber}")
         }
     }
 
@@ -491,7 +490,7 @@ fun StaffTaskRowCard(
 fun PriorityBadge(priority: String) {
     val norm = priority.lowercase().trim()
     val (bgColor, textColor, text) = when (norm) {
-        "high", "emergency" -> Triple(Color(0xFFFEE2E2), Color(0xFFDC2626), "♥ High")
+        "high", "emergency" -> Triple(Color(0xFFFEE2E2), Color(0xFFDC2626), "â™¥ High")
         "low" -> Triple(Color(0xFFDCFCE7), Color(0xFF16A34A), "Low")
         else -> Triple(Color(0xFFFEF3C7), Color(0xFFD97706), "Medium")
     }

@@ -112,7 +112,7 @@ fun WardenStaffListScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.padding(bottom = 72.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         }
     ) { paddingValues ->
@@ -369,7 +369,7 @@ fun WardenStaffListCard(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                 ) {
                     Text(
-                        text = "$activeTasks Active · ${staff.completedCount} Completed",
+                        text = "$activeTasks Active Â· ${staff.completedCount} Completed",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,

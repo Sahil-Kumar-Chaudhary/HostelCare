@@ -210,13 +210,12 @@ fun LoginScreen(navController: NavController, app: HostelCareApp) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         val totalWidth = maxWidth
         val totalHeight = maxHeight
         val isNarrow = totalWidth < 360.dp
-        val isShort = totalHeight < 680.dp
-        val badgeSize = if (isShort) 88.dp else 104.dp
+        val isShort = totalHeight < 700.dp
+        val badgeSize = if (isShort) 76.dp else 92.dp
 
         Column(
             modifier = Modifier
@@ -459,7 +458,7 @@ fun LoginScreen(navController: NavController, app: HostelCareApp) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

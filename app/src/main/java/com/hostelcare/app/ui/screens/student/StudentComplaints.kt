@@ -301,7 +301,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             )
         },
         bottomBar = {
-            Box(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
+            Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 OutlinedButton(
                     onClick = { navController.popBackStack() },
                     modifier = Modifier.fillMaxWidth().height(50.dp),

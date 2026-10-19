@@ -42,7 +42,6 @@ fun StudentBottomNavigation(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
     ) {
         Surface(
@@ -95,7 +94,6 @@ fun AdminBottomNavigation(navController: NavController, currentRoute: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
     ) {
         Surface(
@@ -152,7 +150,6 @@ fun WardenBottomNavigation(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(start = 12.dp, end = 12.dp, bottom = 10.dp)
     ) {
         Surface(
@@ -213,7 +210,6 @@ fun StaffBottomNavigation(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
     ) {
         Surface(

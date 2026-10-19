@@ -62,7 +62,6 @@ fun StaffUpdateStatusScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -278,7 +277,6 @@ fun StaffUpdateStatusScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .navigationBarsPadding()
                                 .padding(16.dp)
                         ) {
                             val buttonText = if (currentStatus == "assigned") "Update to In Progress" else "Submit for Review"

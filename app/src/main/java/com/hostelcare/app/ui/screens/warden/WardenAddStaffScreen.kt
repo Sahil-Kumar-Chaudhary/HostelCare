@@ -106,7 +106,6 @@ fun WardenAddStaffScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding()
                         .padding(16.dp)
                 ) {
                     Button(

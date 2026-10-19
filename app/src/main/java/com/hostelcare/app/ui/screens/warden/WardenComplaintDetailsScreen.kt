@@ -126,7 +126,6 @@ fun WardenComplaintDetailsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .navigationBarsPadding()
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -554,7 +553,7 @@ fun WardenComplaintDetailsScreen(
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
-                                        val staffIdText = if (!c.assignedStaff.staffId.isNullOrBlank()) "Staff ID: ${c.assignedStaff.staffId} · " else ""
+                                        val staffIdText = if (!c.assignedStaff.staffId.isNullOrBlank()) "Staff ID: ${c.assignedStaff.staffId} Â· " else ""
                                         Text(
                                             text = "$staffIdText${c.assignedStaff.department ?: "Maintenance Department"}",
                                             fontSize = 12.sp,

@@ -72,7 +72,6 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -743,7 +742,7 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
                             Icon(Icons.Default.Check, null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
                         }
                     }
-                    listOf("Hindi (हिंदी)", "Spanish (Español)", "French (Français)").forEach { lang ->
+                    listOf("Hindi (à¤¹à¤¿à¤‚à¤¦à¥€)", "Spanish (EspaÃ±ol)", "French (FranÃ§ais)").forEach { lang ->
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                             shape = RoundedCornerShape(10.dp)
@@ -1152,7 +1151,7 @@ fun ProfileScreen(navController: NavController, app: HostelCareApp) {
                 // Version Footer
                 item {
                     Text(
-                        "HostelCare • Version 1.0.0",
+                        "HostelCare â€¢ Version 1.0.0",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Normal,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1433,7 +1432,7 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
         topBar = { TopAppBar(title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, actions = { IconButton(onClick = {}) { Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) } ; IconButton(onClick = {}) { Box(modifier = Modifier.size(32.dp).background(PrimaryBlue, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp)) } } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Button(
                     onClick = { 
                         if (!com.hostelcare.app.utils.NetworkUtils.isNetworkAvailable(context)) {
@@ -1571,7 +1570,7 @@ fun ChangePasswordScreen(navController: NavController) {
         topBar = { TopAppBar(title = { Text("Change Password", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding()) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Button(
                     onClick = { 
                         if (newPassword == confirmPassword && newPassword.length >= 6) {
@@ -1628,7 +1627,14 @@ fun FeedbackScreen(navController: NavController, app: HostelCareApp, complaintId
         topBar = { TopAppBar(title = { Text("Resolution Feedback", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(complaint?.title ?: "", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(8.dp))
             Text("Resolved", color = SuccessGreen, fontWeight = FontWeight.Bold)

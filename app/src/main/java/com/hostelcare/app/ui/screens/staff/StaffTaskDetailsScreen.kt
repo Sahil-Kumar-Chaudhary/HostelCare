@@ -59,7 +59,6 @@ fun StaffTaskDetailsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -129,10 +128,10 @@ fun StaffTaskDetailsScreen(
                 val fullLocation = buildString {
                     append(task.hostelName ?: "BH1")
                     if (!task.hostelBlock.isNullOrBlank()) {
-                        append(" • Block ${task.hostelBlock}")
+                        append(" â€¢ Block ${task.hostelBlock}")
                     }
                     if (!task.roomNumber.isNullOrBlank()) {
-                        append(" • Room ${task.roomNumber}")
+                        append(" â€¢ Room ${task.roomNumber}")
                     }
                 }
 
@@ -421,7 +420,6 @@ fun StaffTaskDetailsScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .navigationBarsPadding()
                                 .padding(16.dp)
                         ) {
                             when (task.status.lowercase()) {
