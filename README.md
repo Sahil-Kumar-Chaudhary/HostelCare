@@ -18,6 +18,10 @@ HostelCare is a full-stack, enterprise-grade hostel management and complaint res
   - Gender-filtered hostel assignment during student registration (Boys: `BH-1` through `BH-10`; Girls: `GH-1` through `GH-10`).
   - Flexible manual block identifiers accommodating diverse campus architectures.
   - Unified Chief Warden architecture governing all campus accommodations under a single administrative umbrella.
+- 🛡️ **Adaptive UI & Safe Complaint Lifecycle Actions:**
+  - Instant ticket ID copying to Android clipboard and in-place complaint details refresh without re-running AI assessment.
+  - Safe student complaint withdrawal workflow restricting cancellations to unassigned, submitted requests while preserving full timeline history and AI triage metadata.
+  - Streamlined portal header layouts with redundant profile icons removed in favor of persistent bottom navigation.
 - 🗄️ **Single Canonical Database (`HostelCareDB`):**
   - All roles, complaints, and operational data are housed exclusively in `HostelCareDB` on MongoDB Atlas.
   - Strictly retired legacy test databases for total consistency across development, staging, and production.
@@ -118,6 +122,7 @@ HostelCare/
 | `POST` | `/api/complaints` | Student | Submit a new complaint (triggers automated AI assessment) |
 | `GET` | `/api/complaints` | Authenticated | List complaints scoped to role (Student: own; Staff: assigned; Chief Warden: campus-wide) |
 | `GET` | `/api/complaints/:id` | Authenticated | Retrieve detailed complaint information, timeline, and AI insights |
+| `POST` | `/api/complaints/:id/withdraw` | Student | Safely withdraw an unassigned complaint in submitted status |
 | `PUT` | `/api/complaints/:id/status` | Staff / Warden | Transition status (`SUBMITTED` → `IN_PROGRESS` → `RESOLVED`) |
 | `POST` | `/api/complaints/:id/assign` | Chief Warden | Assign an open complaint to a designated staff member |
 | `POST` | `/api/complaints/:id/retry-ai`| Chief Warden | Force re-evaluation of complaint by AI assessment engine |
