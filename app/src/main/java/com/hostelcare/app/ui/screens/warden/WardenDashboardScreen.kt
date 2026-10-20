@@ -168,26 +168,7 @@ fun WardenDashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(4.dp))
 
-                // Profile Avatar
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
-                        .clickable { navController.navigate(Routes.WARDEN_PROFILE) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    val initials = currentUser?.name?.take(2)?.uppercase() ?: "W"
-                    Text(
-                        text = initials,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
             }
 
             // Main Content Area

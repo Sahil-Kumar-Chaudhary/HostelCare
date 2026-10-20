@@ -1429,7 +1429,7 @@ fun EditProfileScreen(navController: NavController, app: HostelCareApp) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { TopAppBar(title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, actions = { IconButton(onClick = {}) { Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) } ; IconButton(onClick = {}) { Box(modifier = Modifier.size(32.dp).background(PrimaryBlue, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp)) } } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, actions = { IconButton(onClick = {}) { Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
