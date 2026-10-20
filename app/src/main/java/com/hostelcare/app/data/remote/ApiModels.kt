@@ -110,6 +110,10 @@ data class ComplaintRequest(
     val aiSummary: String?
 )
 
+data class WithdrawComplaintRequest(
+    val reason: String? = null
+)
+
 data class ComplaintResponse(
     val message: String?,
     val complaint: NetworkComplaint

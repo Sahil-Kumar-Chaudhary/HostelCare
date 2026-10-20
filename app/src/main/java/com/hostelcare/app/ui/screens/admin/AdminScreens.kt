@@ -42,7 +42,7 @@ fun AdminHomeScreen(navController: NavController, app: HostelCareApp) {
     val pendingCount = complaints.count { it.status == ComplaintStatus.SUBMITTED || it.status == ComplaintStatus.UNDER_REVIEW }
     val inProgressCount = complaints.count { it.status == ComplaintStatus.ASSIGNED || it.status == ComplaintStatus.IN_PROGRESS }
     val resolvedCount = complaints.count { it.status == ComplaintStatus.RESOLVED }
-    val needsAttention = complaints.filter { (it.priority.name == "HIGH" || it.priority.name == "EMERGENCY") && it.status != ComplaintStatus.RESOLVED }
+    val needsAttention = complaints.filter { (it.priority.name == "HIGH" || it.priority.name == "EMERGENCY") && it.status != ComplaintStatus.RESOLVED && it.status != ComplaintStatus.WITHDRAWN }
 
     Scaffold(
         bottomBar = { com.hostelcare.app.ui.components.AdminBottomNavigation(navController, Routes.ADMIN_HOME) },

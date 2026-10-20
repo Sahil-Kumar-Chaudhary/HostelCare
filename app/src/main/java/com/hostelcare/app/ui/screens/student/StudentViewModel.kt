@@ -140,6 +140,31 @@ class StudentViewModel(
         }
     }
 
+suspend fun refreshComplaintDetails(id: String): Boolean {
+        val result = repository.fetchComplaint(id)
+        if (result.isSuccess) {
+            _complaintDetailsState.value = ComplaintDetailsState.Success(result.getOrNull()!!)
+            repository.refreshComplaints()
+            return true
+        }
+        return false
+    }
+
+    fun withdrawComplaint(complaintId: String, reason: String? = null, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.withdrawComplaint(complaintId, reason)
+            if (result.isSuccess) {
+                val updated = result.getOrNull()!!
+                _complaintDetailsState.value = ComplaintDetailsState.Success(updated)
+                repository.refreshComplaints()
+                onResult(true, "Complaint withdrawn successfully")
+            } else {
+                val msg = result.exceptionOrNull()?.message ?: "Failed to withdraw complaint"
+                onResult(false, msg)
+            }
+        }
+    }
+
     fun resetComplaintState() {
         _newComplaintState.value = NewComplaintState.Idle
         _draftComplaint.value = null

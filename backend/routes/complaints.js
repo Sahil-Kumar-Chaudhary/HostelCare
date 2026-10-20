@@ -255,4 +255,103 @@ router.get("/:id", auth, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/complaints/:id/withdraw
+ * PATCH /api/complaints/:id/withdraw
+ * Allows an authenticated student to safely withdraw an unassigned complaint (status === "submitted").
+ */
+const withdrawComplaintHandler = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    // Ensure only the owning student can withdraw
+    if (complaint.student.toString() !== req.user.userId) {
+      return res.status(403).json({ message: "You are not authorized to withdraw this complaint" });
+    }
+
+    // Double-withdrawal check
+    if (complaint.status === "withdrawn") {
+      return res.status(400).json({ message: "Complaint is already withdrawn" });
+    }
+
+    // Transition rule: only submitted (unassigned, not yet in progress) can be withdrawn
+    if (complaint.status !== "submitted") {
+      return res.status(400).json({
+        message: "Only unassigned complaints in submitted status can be withdrawn. Assigned or in-progress complaints cannot be withdrawn."
+      });
+    }
+
+    const reason = (req.body && req.body.reason && req.body.reason.trim()) || "Complaint withdrawn by student";
+
+    complaint.status = "withdrawn";
+    complaint.timeline.push({
+      status: "withdrawn",
+      note: reason,
+      updatedBy: req.user.userId
+    });
+
+    await complaint.save();
+
+    // Create notifications for student and wardens
+    try {
+      if (mongoose.Types.ObjectId.isValid(req.user.userId) && mongoose.Types.ObjectId.isValid(complaint._id)) {
+        await Notification.create({
+          recipient: req.user.userId,
+          title: "Complaint Withdrawn",
+          message: `Your complaint "${complaint.title}" (${complaint.ticketId}) has been successfully withdrawn.`,
+          type: "complaint_withdrawn",
+          complaintId: complaint._id
+        });
+
+        const hostelRegex = buildHostelRegex(complaint.hostelName || "");
+        const wardens = await User.find({
+          role: "warden",
+          $or: [
+            { isChiefWarden: true },
+            { email: CHIEF_WARDEN_EMAIL },
+            { hostelName: { $regex: hostelRegex } }
+          ]
+        });
+
+        for (const w of wardens) {
+          const isChief = isChiefWardenUser(w);
+          if (!isChief && w.hostelBlock && w.hostelBlock.trim() && w.hostelBlock.trim().toLowerCase() !== "all") {
+            const blockRegex = buildBlockFilter(w.hostelBlock);
+            if (blockRegex && !blockRegex.test(complaint.hostelBlock || "")) {
+              continue;
+            }
+          }
+
+          await Notification.create({
+            recipient: w._id,
+            title: `Complaint Withdrawn: ${complaint.title}`,
+            message: `Complaint ${complaint.ticketId || ""} in ${complaint.hostelName || "hostel"}, Block ${complaint.hostelBlock}, Room ${complaint.roomNumber} has been withdrawn by student.`,
+            type: "complaint_withdrawn",
+            complaintId: complaint._id
+          });
+        }
+      }
+    } catch (nErr) {
+      console.warn("Withdrawal notification warning:", nErr.message);
+    }
+
+    res.json({
+      message: "Complaint withdrawn successfully",
+      complaint
+    });
+  } catch (error) {
+    console.error("Withdraw complaint error:", error.message);
+    if (error.kind === "ObjectId") {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+router.post("/:id/withdraw", auth, auth.requireStudent, withdrawComplaintHandler);
+router.patch("/:id/withdraw", auth, auth.requireStudent, withdrawComplaintHandler);
+
 module.exports = router;

@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hostelcare.app.utils.NetworkUtils
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -52,7 +54,7 @@ fun MyComplaintsScreen(navController: NavController, app: HostelCareApp) {
     
     val filtered = complaints.filter {
         when (filter) {
-            "Active" -> it.status != com.hostelcare.app.data.model.ComplaintStatus.RESOLVED && it.status != com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED
+            "Active" -> it.status != com.hostelcare.app.data.model.ComplaintStatus.RESOLVED && it.status != com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED && it.status != com.hostelcare.app.data.model.ComplaintStatus.WITHDRAWN
             "Pending" -> it.status == com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED
             "Resolved" -> it.status == com.hostelcare.app.data.model.ComplaintStatus.RESOLVED
             else -> true
@@ -150,6 +152,7 @@ fun ComplaintCard(c: com.hostelcare.app.data.model.Complaint, onClick: () -> Uni
         com.hostelcare.app.data.model.ComplaintStatus.UNDER_REVIEW -> Pair(Color(0xFF9333EA), Color(0xFF9333EA).copy(alpha = 0.15f))
         com.hostelcare.app.data.model.ComplaintStatus.ASSIGNED, com.hostelcare.app.data.model.ComplaintStatus.IN_PROGRESS -> Pair(Color(0xFFD97706), Color(0xFFD97706).copy(alpha = 0.15f))
         com.hostelcare.app.data.model.ComplaintStatus.RESOLVED -> Pair(Color(0xFF16A34A), Color(0xFF16A34A).copy(alpha = 0.15f))
+        com.hostelcare.app.data.model.ComplaintStatus.WITHDRAWN -> Pair(Color(0xFF64748B), Color(0xFF64748B).copy(alpha = 0.15f))
     }
 
     Card(
@@ -234,6 +237,12 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
     val detailsState by viewModel.complaintDetailsState.collectAsStateWithLifecycle()
     
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showWithdrawDialog by remember { mutableStateOf(false) }
+    var isWithdrawing by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
     var isAnalyzing by remember { mutableStateOf(false) }
     var aiError by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -286,17 +295,142 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
         return
     }
 
+if (showWithdrawDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isWithdrawing) showWithdrawDialog = false },
+            icon = {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
+            },
+            title = {
+                Text("Withdraw Complaint?", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    "Are you sure you want to withdraw this complaint? This request will be canceled and staff will not be assigned. This action cannot be undone.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isWithdrawing = true
+                        viewModel.withdrawComplaint(complaintId) { success, msg ->
+                            isWithdrawing = false
+                            showWithdrawDialog = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(msg ?: if (success) "Complaint withdrawn successfully" else "Failed to withdraw complaint")
+                            }
+                        }
+                    },
+                    enabled = !isWithdrawing,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    if (isWithdrawing) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onError, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text("Withdraw Complaint")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showWithdrawDialog = false },
+                    enabled = !isWithdrawing
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     val complaint = (detailsState as ComplaintDetailsState.Success).complaint
     val dStr = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date(complaint.createdAt))
     val timeStr = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(complaint.createdAt))
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
-                actions = { IconButton(onClick = { }) { Icon(Icons.Filled.MoreVert, "More", tint = MaterialTheme.colorScheme.onSurface) } },
+                actions = {
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Filled.MoreVert, "More options", tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Copy Ticket ID") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(20.dp))
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    val tId = complaint.ticketId.ifBlank { "HC-${complaint.id.take(6).uppercase()}" }
+                                    clipboardManager.setText(AnnotatedString(tId))
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Ticket ID $tId copied to clipboard")
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Refresh Details") },
+                                leadingIcon = {
+                                    if (isRefreshing) {
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    }
+                                },
+                                enabled = !isRefreshing,
+                                onClick = {
+                                    menuExpanded = false
+                                    isRefreshing = true
+                                    coroutineScope.launch {
+                                        val ok = viewModel.refreshComplaintDetails(complaintId)
+                                        isRefreshing = false
+                                        if (ok) {
+                                            snackbarHostState.showSnackbar("Complaint details refreshed")
+                                        } else {
+                                            snackbarHostState.showSnackbar("Failed to refresh complaint details")
+                                        }
+                                    }
+                                }
+                            )
+                            HorizontalDivider()
+                            val canWithdraw = complaint.status == ComplaintStatus.SUBMITTED
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        when {
+                                            complaint.status == ComplaintStatus.WITHDRAWN -> "Complaint Withdrawn"
+                                            canWithdraw -> "Withdraw Complaint"
+                                            else -> "Withdraw (Not Eligible)"
+                                        },
+                                        color = if (canWithdraw) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Cancel,
+                                        contentDescription = null,
+                                        tint = if (canWithdraw) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                },
+                                enabled = canWithdraw,
+                                onClick = {
+                                    menuExpanded = false
+                                    showWithdrawDialog = true
+                                }
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
@@ -599,27 +733,35 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        val statuses = listOf(
-                            com.hostelcare.app.data.model.ComplaintStatus.SUBMITTED to "Submitted",
-                            com.hostelcare.app.data.model.ComplaintStatus.UNDER_REVIEW to "Under Review",
-                            com.hostelcare.app.data.model.ComplaintStatus.ASSIGNED to "Assigned",
-                            com.hostelcare.app.data.model.ComplaintStatus.IN_PROGRESS to "In Progress",
-                            com.hostelcare.app.data.model.ComplaintStatus.RESOLVED to "Resolved"
-                        )
+                        val statuses = if (complaint.status == ComplaintStatus.WITHDRAWN) {
+                            listOf(
+                                ComplaintStatus.SUBMITTED to "Submitted",
+                                ComplaintStatus.WITHDRAWN to "Withdrawn"
+                            )
+                        } else {
+                            listOf(
+                                ComplaintStatus.SUBMITTED to "Submitted",
+                                ComplaintStatus.UNDER_REVIEW to "Under Review",
+                                ComplaintStatus.ASSIGNED to "Assigned",
+                                ComplaintStatus.IN_PROGRESS to "In Progress",
+                                ComplaintStatus.RESOLVED to "Resolved"
+                            )
+                        }
                         
                         val currentIdx = statuses.indexOfFirst { it.first == complaint.status }
+                        val activeColor = if (complaint.status == ComplaintStatus.WITHDRAWN) Color(0xFF64748B) else PrimaryBlue
                         statuses.forEachIndexed { idx, pair ->
                             val isPast = idx <= currentIdx
                             val isCurrent = idx == currentIdx
                             Row(verticalAlignment = Alignment.Top) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(modifier = Modifier.size(18.dp).background(if (isCurrent) Color.Transparent else if (isPast) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape).border(if (isCurrent) BorderStroke(4.dp, PrimaryBlue) else BorderStroke(0.dp, Color.Transparent), CircleShape), contentAlignment = Alignment.Center) {
+                                    Box(modifier = Modifier.size(18.dp).background(if (isCurrent) Color.Transparent else if (isPast) activeColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape).border(if (isCurrent) BorderStroke(4.dp, activeColor) else BorderStroke(0.dp, Color.Transparent), CircleShape), contentAlignment = Alignment.Center) {
                                         if (isPast && !isCurrent) {
                                             Box(modifier = Modifier.size(8.dp).background(Color.White, CircleShape))
                                         }
                                     }
                                     if (idx < statuses.size - 1) {
-                                        Box(modifier = Modifier.padding(vertical = 4.dp).width(2.dp).height(24.dp).background(if (idx < currentIdx) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+                                        Box(modifier = Modifier.padding(vertical = 4.dp).width(2.dp).height(24.dp).background(if (idx < currentIdx) activeColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))

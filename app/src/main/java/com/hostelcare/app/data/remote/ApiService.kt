@@ -60,6 +60,12 @@ interface ApiService {
     @GET("api/complaints/{id}")
     suspend fun getComplaint(@Path("id") id: String): Response<ComplaintResponse>
 
+    @POST("api/complaints/{id}/withdraw")
+    suspend fun withdrawComplaint(
+        @Path("id") id: String,
+        @Body request: WithdrawComplaintRequest = WithdrawComplaintRequest()
+    ): Response<ComplaintResponse>
+
     @POST("api/ai/analyze-complaint")
     suspend fun analyzeComplaint(@Body request: AiAnalyzeRequest): Response<AiAnalyzeResponse>
 

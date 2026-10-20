@@ -9,7 +9,8 @@ const timelineSchema = new mongoose.Schema(
         "under_review",
         "assigned",
         "in_progress",
-        "resolved"
+        "resolved",
+        "withdrawn"
       ],
       required: true
     },
@@ -140,7 +141,8 @@ const complaintSchema = new mongoose.Schema(
         "under_review",
         "assigned",
         "in_progress",
-        "resolved"
+        "resolved",
+        "withdrawn"
       ],
       default: "submitted"
     },

@@ -123,41 +123,60 @@ fun WardenComplaintDetailsScreen(
                     shadowElevation = 8.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                navController.navigate(Routes.wardenAssignStaff(complaint.id))
-                            },
+                    if (complaint.status.equals("withdrawn", ignoreCase = true)) {
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (complaint.assignedStaff != null) "Reassign" else "Assign Staff",
-                                fontWeight = FontWeight.SemiBold
+                                text = "Complaint withdrawn by student — no action required",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
                             )
                         }
-
-                        Button(
-                            onClick = { showUpdateStatusDialog = true },
+                    } else {
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Update Status", fontWeight = FontWeight.SemiBold)
+                            OutlinedButton(
+                                onClick = {
+                                    navController.navigate(Routes.wardenAssignStaff(complaint.id))
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (complaint.assignedStaff != null) "Reassign" else "Assign Staff",
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            Button(
+                                onClick = { showUpdateStatusDialog = true },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Update Status", fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                 }
@@ -206,6 +225,7 @@ fun WardenComplaintDetailsScreen(
                     "resolved" -> SuccessGreen
                     "assigned", "in_progress" -> PrimaryBlue
                     "under_review" -> Color(0xFFD97706)
+                    "withdrawn" -> Color(0xFF64748B)
                     else -> PendingAmber
                 }
 
@@ -215,6 +235,7 @@ fun WardenComplaintDetailsScreen(
                     "assigned" -> "Assigned"
                     "in_progress" -> "In Progress"
                     "resolved" -> "Resolved"
+                    "withdrawn" -> "Withdrawn"
                     "rejected" -> "Rejected"
                     else -> c.status.replace("_", " ").replaceFirstChar { it.uppercase() }
                 }

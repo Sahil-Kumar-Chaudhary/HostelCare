@@ -30,6 +30,7 @@ const notificationSchema = new mongoose.Schema(
         "complaint_resolved",
         "complaint_reopened",
         "status_updated",
+        "complaint_withdrawn",
         "system"
       ],
       default: "system"

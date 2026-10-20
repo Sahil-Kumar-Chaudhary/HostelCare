@@ -304,6 +304,7 @@ fun WardenComplaintListItemCard(
         "resolved" -> SuccessGreen
         "assigned", "in_progress" -> PrimaryBlue
         "under_review" -> Color(0xFFD97706)
+        "withdrawn" -> Color(0xFF64748B)
         else -> PendingAmber
     }
 
@@ -313,6 +314,7 @@ fun WardenComplaintListItemCard(
         "assigned" -> "Assigned"
         "in_progress" -> "In Progress"
         "resolved" -> "Resolved"
+        "withdrawn" -> "Withdrawn"
         "rejected" -> "Rejected"
         else -> complaint.status.replace("_", " ").replaceFirstChar { it.uppercase() }
     }

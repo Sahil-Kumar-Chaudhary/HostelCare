@@ -138,7 +138,7 @@ router.get("/dashboard", auth, auth.requireWarden, async (req, res) => {
       Complaint.countDocuments({
         ...complaintQuery,
         priority: { $in: ["high", "emergency"] },
-        status: { $ne: "resolved" }
+        status: { $nin: ["resolved", "withdrawn"] }
       }),
       Complaint.find(complaintQuery)
         .sort({ createdAt: -1 })

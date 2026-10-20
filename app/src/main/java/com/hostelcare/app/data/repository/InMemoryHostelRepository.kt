@@ -308,6 +308,34 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
         }
     }
 
+override suspend fun withdrawComplaint(complaintId: String, reason: String?): Result<Complaint> {
+        return try {
+            val response = apiService.withdrawComplaint(complaintId, com.hostelcare.app.data.remote.WithdrawComplaintRequest(reason))
+            if (response.isSuccessful && response.body() != null) {
+                val updated = response.body()!!.complaint.toLocalComplaint()
+                val current = _complaints.value.toMutableList()
+                val index = current.indexOfFirst { it.id == complaintId }
+                if (index != -1) current[index] = updated else current.add(0, updated)
+                _complaints.value = current
+                Result.success(updated)
+            } else {
+                val errorJsonMsg = try {
+                    response.errorBody()?.string()?.let { org.json.JSONObject(it).optString("message", "") }
+                } catch (e: Exception) { null }
+                val code = response.code()
+                val msg = errorJsonMsg?.takeIf { it.isNotBlank() } ?: when (code) {
+                    400 -> "Complaint cannot be withdrawn in its current state."
+                    403 -> "You are not authorized to withdraw this complaint."
+                    404 -> "Complaint not found."
+                    else -> "Failed to withdraw complaint ($code)"
+                }
+                Result.failure(Exception(msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun submitComplaint(complaint: Complaint, photoBytes: ByteArray?, mimeType: String?): Result<Complaint> {
         return try {
             if (photoBytes != null && mimeType != null) {

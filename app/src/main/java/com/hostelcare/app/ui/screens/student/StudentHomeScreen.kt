@@ -117,17 +117,7 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(MaterialTheme.colorScheme.surface, CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                        .clickable { navController.navigate(Routes.PROFILE) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+
             }
             
             LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
@@ -177,6 +167,7 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                     val (icon, bg, fg) = when(c.status) {
                         ComplaintStatus.RESOLVED -> Triple(Icons.Default.Build, SuccessGreen.copy(alpha = 0.15f), SuccessGreen)
                         ComplaintStatus.SUBMITTED -> Triple(Icons.Default.Wifi, WarningOrange.copy(alpha = 0.15f), WarningOrange)
+                        ComplaintStatus.WITHDRAWN -> Triple(Icons.Default.Cancel, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
                         else -> Triple(Icons.Default.WaterDrop, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primary)
                     }
                     val dateStr = SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(c.createdAt))

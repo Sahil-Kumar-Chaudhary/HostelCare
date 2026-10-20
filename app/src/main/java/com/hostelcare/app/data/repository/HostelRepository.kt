@@ -23,6 +23,7 @@ interface HostelRepository {
     suspend fun refreshComplaints()
     suspend fun triggerAiAnalysis(complaintId: String, forceRetry: Boolean = false): Result<Unit>
     suspend fun fetchComplaint(id: String): Result<Complaint>
+    suspend fun withdrawComplaint(complaintId: String, reason: String? = null): Result<Complaint>
     fun getAllComplaints(): Flow<List<Complaint>>
     fun getComplaint(id: String): Flow<Complaint?>
     suspend fun submitComplaint(complaint: Complaint, photoBytes: ByteArray? = null, mimeType: String? = null): Result<Complaint>

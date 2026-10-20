@@ -1986,6 +1986,182 @@ async function runTests() {
     }
   });
 
+  
+  // 12. Complaint Withdrawal Tests
+  test("Complaint Schema: Status and timeline accept 'withdrawn'", () => {
+    const complaint = new Complaint({
+      student: new mongoose.Types.ObjectId(),
+      title: "Broken Fan",
+      description: "Fan is making loud noise",
+      category: "electrical",
+      hostelBlock: "A",
+      roomNumber: "101",
+      status: "withdrawn",
+      timeline: [
+        {
+          status: "submitted",
+          note: "Submitted by student"
+        },
+        {
+          status: "withdrawn",
+          note: "Complaint withdrawn by student"
+        }
+      ]
+    });
+    const err = complaint.validateSync();
+    assert.ifError(err, "Complaint with status 'withdrawn' and timeline 'withdrawn' must be valid");
+  });
+
+  test("Notification Schema: Accepts 'complaint_withdrawn' notification type", () => {
+    const notif = new Notification({
+      recipient: new mongoose.Types.ObjectId(),
+      title: "Complaint Withdrawn",
+      message: "Your complaint has been withdrawn",
+      type: "complaint_withdrawn"
+    });
+    const err = notif.validateSync();
+    assert.ifError(err, "Notification with type 'complaint_withdrawn' must be valid");
+  });
+
+  await testAsync("Complaint Withdrawal: Rejects withdrawal if user is not the owning student", async () => {
+    const complaintsRouter = require("../routes/complaints");
+    const withdrawLayer = complaintsRouter.stack.find(s => s.route && s.route.path === "/:id/withdraw" && s.route.methods.post);
+    assert(withdrawLayer, "POST /:id/withdraw route must exist");
+    const handler = withdrawLayer.route.stack[withdrawLayer.route.stack.length - 1].handle;
+
+    const studentId1 = new mongoose.Types.ObjectId().toString();
+    const studentId2 = new mongoose.Types.ObjectId().toString();
+    const complaintId = new mongoose.Types.ObjectId().toString();
+
+    const origFindById = Complaint.findById;
+    try {
+      Complaint.findById = (id) => Promise.resolve({
+        _id: complaintId,
+        student: studentId1,
+        status: "submitted",
+        timeline: []
+      });
+
+      let statusCode = 0;
+      let resMsg = "";
+      await handler(
+        { params: { id: complaintId }, user: { userId: studentId2, role: "student" }, body: {} },
+        {
+          status: (code) => { statusCode = code; return { json: (d) => { resMsg = d.message; } }; },
+          json: (d) => { resMsg = d.message; }
+        }
+      );
+
+      assert.strictEqual(statusCode, 403, "Non-owner student must be rejected with 403");
+      assert(resMsg.includes("not authorized"), "Error message must indicate lack of authorization");
+    } finally {
+      Complaint.findById = origFindById;
+    }
+  });
+
+  await testAsync("Complaint Withdrawal: Rejects withdrawal if status is not submitted (e.g. assigned, in_progress)", async () => {
+    const complaintsRouter = require("../routes/complaints");
+    const withdrawLayer = complaintsRouter.stack.find(s => s.route && s.route.path === "/:id/withdraw" && s.route.methods.post);
+    const handler = withdrawLayer.route.stack[withdrawLayer.route.stack.length - 1].handle;
+
+    const studentId = new mongoose.Types.ObjectId().toString();
+    const complaintId = new mongoose.Types.ObjectId().toString();
+
+    const origFindById = Complaint.findById;
+    try {
+      Complaint.findById = (id) => Promise.resolve({
+        _id: complaintId,
+        student: studentId,
+        status: "in_progress",
+        timeline: []
+      });
+
+      let statusCode = 0;
+      let resMsg = "";
+      await handler(
+        { params: { id: complaintId }, user: { userId: studentId, role: "student" }, body: {} },
+        {
+          status: (code) => { statusCode = code; return { json: (d) => { resMsg = d.message; } }; },
+          json: (d) => { resMsg = d.message; }
+        }
+      );
+
+      assert.strictEqual(statusCode, 400, "In-progress complaint withdrawal must be rejected with 400");
+      assert(resMsg.includes("submitted status"), "Error message must specify submitted status requirement");
+    } finally {
+      Complaint.findById = origFindById;
+    }
+  });
+
+  await testAsync("Complaint Withdrawal: Successfully transitions submitted complaint to withdrawn with timeline and notification", async () => {
+    const complaintsRouter = require("../routes/complaints");
+    const withdrawLayer = complaintsRouter.stack.find(s => s.route && s.route.path === "/:id/withdraw" && s.route.methods.post);
+    const handler = withdrawLayer.route.stack[withdrawLayer.route.stack.length - 1].handle;
+
+    const studentId = new mongoose.Types.ObjectId();
+    const complaintId = new mongoose.Types.ObjectId();
+
+    let savedComplaint = null;
+    let createdNotifications = [];
+
+    const mockComplaint = {
+      _id: complaintId,
+      ticketId: "HC-999888",
+      title: "Leaky Faucet",
+      student: studentId,
+      hostelName: "BH-1",
+      hostelBlock: "A",
+      roomNumber: "204",
+      status: "submitted",
+      timeline: [
+        { status: "submitted", note: "Complaint submitted" }
+      ],
+      save: async function() {
+        savedComplaint = this;
+        return this;
+      }
+    };
+
+    const origFindById = Complaint.findById;
+    const origCreateNotif = Notification.create;
+    const origFindWardens = User.find;
+
+    try {
+      Complaint.findById = () => Promise.resolve(mockComplaint);
+      Notification.create = async (doc) => {
+        createdNotifications.push(doc);
+        return doc;
+      };
+      User.find = () => Promise.resolve([
+        { _id: new mongoose.Types.ObjectId(), role: "warden", email: "warden@hostelcare.com", isChiefWarden: true }
+      ]);
+
+      let resData = null;
+      await handler(
+        {
+          params: { id: complaintId.toString() },
+          user: { userId: studentId.toString(), role: "student" },
+          body: { reason: "Fixed it myself" }
+        },
+        {
+          status: (code) => ({ json: (d) => { resData = d; } }),
+          json: (d) => { resData = d; }
+        }
+      );
+
+      assert(resData, "Response data must be returned");
+      assert.strictEqual(savedComplaint.status, "withdrawn", "Complaint status must be updated to 'withdrawn'");
+      assert.strictEqual(savedComplaint.timeline.length, 2, "Timeline must contain 2 entries");
+      assert.strictEqual(savedComplaint.timeline[1].status, "withdrawn");
+      assert(savedComplaint.timeline[1].note.includes("Fixed it myself"), "Timeline note must capture withdrawal reason");
+      assert(createdNotifications.some(n => n.type === "complaint_withdrawn" && n.recipient.toString() === studentId.toString()), "Must notify student");
+    } finally {
+      Complaint.findById = origFindById;
+      Notification.create = origCreateNotif;
+      User.find = origFindWardens;
+    }
+  });
+
   console.log("\n==================================================");
   console.log(`Results: ${passed} PASSED, ${failed} FAILED`);
   console.log("==================================================");
