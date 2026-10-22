@@ -92,7 +92,7 @@ fun StudentHomeScreen(navController: NavController, app: HostelCareApp) {
                     Text("Student Portal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = { navController.navigate(Routes.NOTIFICATIONS) }) {
+                IconButton(onClick = { navController.navigate(Routes.NOTIFICATIONS) { launchSingleTop = true } }) {
                     BadgedBox(
                         badge = {
                             if (unreadCount > 0) {

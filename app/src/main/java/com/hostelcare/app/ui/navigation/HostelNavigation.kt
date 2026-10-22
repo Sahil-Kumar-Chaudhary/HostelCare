@@ -112,8 +112,9 @@ fun HostelCareAppNavHost(
             com.hostelcare.app.ui.screens.student.ComplaintDetailsScreen(navController, appContainer, id)
         }
         composable(Routes.NOTIFICATIONS) {
-            val user by appContainer.repository.currentUserFlow().collectAsStateWithLifecycle(null)
-            when (user?.role) {
+            val user by appContainer.repository.currentUserFlow().collectAsStateWithLifecycle(appContainer.repository.getCachedUser())
+            val activeRole = user?.role ?: appContainer.repository.getCachedUser()?.role
+            when (activeRole) {
                 com.hostelcare.app.data.model.Role.WARDEN -> com.hostelcare.app.ui.screens.warden.WardenNotificationsScreen(navController, appContainer)
                 com.hostelcare.app.data.model.Role.STAFF -> com.hostelcare.app.ui.screens.staff.StaffNotificationsScreen(navController, appContainer)
                 else -> com.hostelcare.app.ui.screens.student.NotificationsScreen(navController, appContainer)

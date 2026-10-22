@@ -140,7 +140,9 @@ fun WardenDashboardScreen(
                 // Notification Bell
                 IconButton(
                     onClick = {
-                        navController.navigate(Routes.NOTIFICATIONS)
+                        navController.navigate(Routes.WARDEN_NOTIFICATIONS) {
+                            launchSingleTop = true
+                        }
                     }
                 ) {
                     BadgedBox(

@@ -264,7 +264,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             topBar = {
                 TopAppBar(
                     title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
-                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
+                    navigationIcon = { IconButton(onClick = { if (!navController.popBackStack()) navController.navigate(Routes.MY_COMPLAINTS) }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             },
@@ -282,7 +282,7 @@ fun ComplaintDetailsScreen(navController: NavController, app: HostelCareApp, com
             topBar = {
                 TopAppBar(
                     title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
-                    navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
+                    navigationIcon = { IconButton(onClick = { if (!navController.popBackStack()) navController.navigate(Routes.MY_COMPLAINTS) }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             },
@@ -353,7 +353,7 @@ if (showWithdrawDialog) {
         topBar = {
             TopAppBar(
                 title = { Text("Complaint Details", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
-                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
+                navigationIcon = { IconButton(onClick = { if (!navController.popBackStack()) navController.navigate(Routes.MY_COMPLAINTS) }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } },
                 actions = {
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
@@ -773,6 +773,21 @@ if (showWithdrawDialog) {
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            if (complaint.status == ComplaintStatus.RESOLVED) {
+                item {
+                    Button(
+                        onClick = { navController.navigate(Routes.feedback(complaint.id)) },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Rate Resolution Feedback", fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

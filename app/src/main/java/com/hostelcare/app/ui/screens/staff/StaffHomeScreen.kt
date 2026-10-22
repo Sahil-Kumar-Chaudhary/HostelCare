@@ -55,7 +55,7 @@ fun StaffHomeScreen(
     Scaffold(
         topBar = {
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -69,11 +69,11 @@ fun StaffHomeScreen(
                         text = "HostelCare",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     IconButton(
-                        onClick = { navController.navigate(Routes.STAFF_NOTIFICATIONS) }
+                        onClick = { navController.navigate(Routes.STAFF_NOTIFICATIONS) { launchSingleTop = true } }
                     ) {
                         BadgedBox(
                             badge = {
@@ -94,7 +94,7 @@ fun StaffHomeScreen(
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = "Notifications",
-                                tint = Color(0xFF475569),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -109,7 +109,7 @@ fun StaffHomeScreen(
                 unreadNotificationCount = unreadCount
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -206,6 +206,7 @@ fun StaffHomeScreen(
                         StaffDashboardStatCard(
                             count = stats.pendingCount.toString(),
                             label = "Assigned",
+                            onClick = { navController.navigate(Routes.STAFF_TASKS) { launchSingleTop = true } },
                             icon = Icons.Default.Person,
                             iconTint = Color(0xFF2563EB),
                             iconBg = Color(0xFFEFF6FF),
@@ -214,6 +215,7 @@ fun StaffHomeScreen(
                         StaffDashboardStatCard(
                             count = stats.inProgressCount.toString(),
                             label = "In Progress",
+                            onClick = { navController.navigate(Routes.STAFF_TASKS) { launchSingleTop = true } },
                             icon = Icons.Default.Schedule,
                             iconTint = Color(0xFFD97706),
                             iconBg = Color(0xFFFEF3C7),
@@ -228,6 +230,7 @@ fun StaffHomeScreen(
                         StaffDashboardStatCard(
                             count = stats.pendingReviewCount.toString(),
                             label = "Pending Review",
+                            onClick = { navController.navigate(Routes.STAFF_TASKS) { launchSingleTop = true } },
                             icon = Icons.Default.FactCheck,
                             iconTint = Color(0xFF7C3AED),
                             iconBg = Color(0xFFF3E8FF),
@@ -236,6 +239,7 @@ fun StaffHomeScreen(
                         StaffDashboardStatCard(
                             count = stats.completedCount.toString(),
                             label = "Completed",
+                            onClick = { navController.navigate(Routes.STAFF_TASKS) { launchSingleTop = true } },
                             icon = Icons.Default.CheckCircle,
                             iconTint = Color(0xFF16A34A),
                             iconBg = Color(0xFFDCFCE7),
@@ -356,14 +360,15 @@ fun StaffDashboardStatCard(
     icon: ImageVector,
     iconTint: Color,
     iconBg: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 1.dp,
-        modifier = modifier
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
     ) {
         Row(
             modifier = Modifier

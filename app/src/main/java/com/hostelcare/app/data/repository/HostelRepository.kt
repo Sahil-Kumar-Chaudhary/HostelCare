@@ -12,6 +12,7 @@ interface HostelRepository {
     suspend fun login(email: String, password: String, portal: String? = null): Result<User>
     suspend fun registerStudent(user: User, password: String, confirmPassword: String = password, acceptedTerms: Boolean = true): Result<User>
     suspend fun getCurrentUser(): User?
+    fun getCachedUser(): User? = null
     suspend fun logout()
     suspend fun updateUser(user: User): Result<User>
     suspend fun updateProfilePhoto(photoBytes: ByteArray, mimeType: String): Result<String>

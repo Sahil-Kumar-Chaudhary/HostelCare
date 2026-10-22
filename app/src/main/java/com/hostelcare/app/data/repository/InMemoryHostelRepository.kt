@@ -243,6 +243,7 @@ class InMemoryHostelRepository(private val apiService: ApiService, private val t
     }
 
     override fun currentUserFlow(): Flow<User?> = currentUser
+    override fun getCachedUser(): User? = currentUser.value
 
     override fun getComplaintsForStudent(studentId: String): Flow<List<Complaint>> {
         return _complaints.map { list -> list.filter { it.studentId == studentId }.sortedByDescending { it.createdAt } }

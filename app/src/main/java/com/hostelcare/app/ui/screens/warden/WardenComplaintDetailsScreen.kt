@@ -94,7 +94,11 @@ fun WardenComplaintDetailsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(Routes.WARDEN_COMPLAINTS)
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",

@@ -64,7 +64,11 @@ fun StaffTaskDetailsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = {
+                            if (!navController.popBackStack()) {
+                                navController.navigate(Routes.STAFF_TASKS)
+                            }
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
