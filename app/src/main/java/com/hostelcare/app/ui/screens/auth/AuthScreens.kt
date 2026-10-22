@@ -160,7 +160,7 @@ fun SplashScreen(navController: NavController, app: HostelCareApp) {
                 Text("STUDENT HOUSING NETWORK", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, letterSpacing = 1.sp)
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Tagore Campus", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Lovely Professional University", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -1238,7 +1238,7 @@ fun SignUpScreen(navController: NavController, app: HostelCareApp) {
                 label = "Block",
                 required = true,
                 error = step3Errors["hostelBlock"],
-                helper = "e.g. A or Tagore Block A"
+                helper = "e.g. A or Hostel Number Block A"
             ) {
                 RegistrationTextField(
                     value = hostelBlock,

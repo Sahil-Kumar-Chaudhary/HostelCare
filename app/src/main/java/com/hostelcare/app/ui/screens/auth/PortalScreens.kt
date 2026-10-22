@@ -196,7 +196,7 @@ fun PortalSelectionScreen(navController: NavController, app: HostelCareApp) {
                             iconTint = Color(0xFF2563EB),
                             iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFEBF2FE) else Color(0xFF1E3A8A).copy(alpha = 0.35f),
                             onClick = {
-                                navController.navigate(Routes.LOGIN)
+                                navController.navigate(Routes.LOGIN) { launchSingleTop = true }
                             },
                             isNarrow = isNarrow,
                             cardMinHeight = cardMinHeight
@@ -212,7 +212,7 @@ fun PortalSelectionScreen(navController: NavController, app: HostelCareApp) {
                             iconTint = Color(0xFFD97706),
                             iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFFEF3C7) else Color(0xFF78350F).copy(alpha = 0.35f),
                             onClick = {
-                                navController.navigate(Routes.WARDEN_LOGIN)
+                                navController.navigate(Routes.WARDEN_LOGIN) { launchSingleTop = true }
                             },
                             isNarrow = isNarrow,
                             cardMinHeight = cardMinHeight
@@ -228,7 +228,7 @@ fun PortalSelectionScreen(navController: NavController, app: HostelCareApp) {
                             iconTint = Color(0xFF16A34A),
                             iconContainerColor = if (MaterialTheme.colorScheme.surface == Color.White) Color(0xFFDCFCE7) else Color(0xFF064E3B).copy(alpha = 0.35f),
                             onClick = {
-                                navController.navigate(Routes.STAFF_LOGIN)
+                                navController.navigate(Routes.STAFF_LOGIN) { launchSingleTop = true }
                             },
                             isNarrow = isNarrow,
                             cardMinHeight = cardMinHeight
