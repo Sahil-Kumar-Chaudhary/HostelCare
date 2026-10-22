@@ -66,7 +66,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
     Scaffold(
         topBar = {
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -85,14 +85,14 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color(0xFF0F172A)
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Text(
                             text = "Notifications",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -100,7 +100,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                         Icon(
                             imageVector = Icons.Default.DoneAll,
                             contentDescription = "Mark all read",
-                            tint = Color(0xFF475569)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -113,7 +113,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                 unreadNotificationCount = unreadCount
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -135,8 +135,8 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                 val isAllSelected = selectedTab == "all"
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = if (isAllSelected) Color(0xFF2563EB) else Color.White,
-                    border = BorderStroke(1.dp, if (isAllSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                    color = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedTab = "all" }
@@ -147,7 +147,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                     ) {
                         Text(
                             text = "All ($allCount)",
-                            color = if (isAllSelected) Color.White else Color(0xFF64748B),
+                            color = if (isAllSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium
                         )
@@ -157,8 +157,8 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                 val isUnreadSelected = selectedTab == "unread"
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = if (isUnreadSelected) Color(0xFF2563EB) else Color.White,
-                    border = BorderStroke(1.dp, if (isUnreadSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                    color = if (isUnreadSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (isUnreadSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedTab = "unread" }
@@ -169,7 +169,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                     ) {
                         Text(
                             text = "Unread ($unreadTabCount)",
-                            color = if (isUnreadSelected) Color.White else Color(0xFF64748B),
+                            color = if (isUnreadSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = if (isUnreadSelected) FontWeight.Bold else FontWeight.Medium
                         )
@@ -186,7 +186,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                             .padding(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = Color(0xFF2563EB))
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 is StudentNotificationsUiState.Empty -> {
@@ -201,19 +201,19 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                                 Icons.Default.NotificationsOff,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = Color(0xFF94A3B8)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 "No notifications yet",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "You'll see complaint updates and important hostel announcements here.",
-                                color = Color(0xFF64748B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp,
                                 textAlign = TextAlign.Center,
                                 lineHeight = 20.sp
@@ -229,7 +229,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = state.message, color = Color(0xFFDC2626), fontSize = 14.sp)
+                            Text(text = state.message, color = DangerRed, fontSize = 14.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(onClick = { viewModel.loadNotifications() }) {
                                 Text("Retry")
@@ -253,7 +253,7 @@ fun NotificationsScreen(navController: NavController, app: HostelCareApp) {
                         ) {
                             Text(
                                 text = if (selectedTab == "unread") "No unread notifications." else "No notifications.",
-                                color = Color(0xFF64748B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
                         }
@@ -294,8 +294,8 @@ fun StudentNotificationCard(
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -334,7 +334,7 @@ fun StudentNotificationCard(
                         text = item.title,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     if (!item.isRead) {
                         Box(
@@ -351,7 +351,7 @@ fun StudentNotificationCard(
                 Text(
                     text = item.message,
                     fontSize = 13.sp,
-                    color = Color(0xFF475569),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
 
@@ -360,7 +360,7 @@ fun StudentNotificationCard(
                     Text(
                         text = timeAgo,
                         fontSize = 11.sp,
-                        color = Color(0xFF94A3B8)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -371,24 +371,27 @@ fun StudentNotificationCard(
 fun getStudentNotificationVisuals(type: String, title: String): Triple<androidx.compose.ui.graphics.vector.ImageVector, Color, Color> {
     val t = type.lowercase()
     val tit = title.lowercase()
-    return when {
+    val (icon, tint) = when {
         t == "complaint_created" || tit.contains("registered") ->
-            Triple(Icons.Default.Description, Color(0xFF2563EB), Color(0xFFEFF6FF))
+            Pair(Icons.Default.Description, Color(0xFF2563EB))
         t == "complaint_assigned" || tit.contains("assigned") ->
-            Triple(Icons.Default.Engineering, Color(0xFF7C3AED), Color(0xFFF3E8FF))
+            Pair(Icons.Default.Engineering, Color(0xFF7C3AED))
         t == "work_started" || tit.contains("started") ->
-            Triple(Icons.Default.Build, Color(0xFF0284C7), Color(0xFFE0F2FE))
+            Pair(Icons.Default.Build, Color(0xFF0284C7))
         t == "work_submitted" || tit.contains("submitted") ->
-            Triple(Icons.Default.HourglassTop, Color(0xFFD97706), Color(0xFFFEF3C7))
+            Pair(Icons.Default.HourglassTop, Color(0xFFD97706))
         t == "complaint_resolved" || tit.contains("resolved") ->
-            Triple(Icons.Default.CheckCircle, Color(0xFF16A34A), Color(0xFFDCFCE7))
+            Pair(Icons.Default.CheckCircle, Color(0xFF16A34A))
         t == "complaint_reopened" || tit.contains("reopened") ->
-            Triple(Icons.Default.Replay, Color(0xFFEF4444), Color(0xFFFEE2E2))
+            Pair(Icons.Default.Replay, Color(0xFFEF4444))
+        t == "complaint_withdrawn" || tit.contains("withdrawn") ->
+            Pair(Icons.Default.Cancel, Color(0xFF64748B))
         t == "status_updated" || tit.contains("status") ->
-            Triple(Icons.Default.Settings, Color(0xFF64748B), Color(0xFFF1F5F9))
+            Pair(Icons.Default.Settings, Color(0xFF64748B))
         else ->
-            Triple(Icons.Default.Notifications, Color(0xFF64748B), Color(0xFFF1F5F9))
+            Pair(Icons.Default.Notifications, Color(0xFF64748B))
     }
+    return Triple(icon, tint, tint.copy(alpha = 0.15f))
 }
 
 fun formatStudentTimeAgo(isoString: String?): String {
@@ -1624,7 +1627,7 @@ fun FeedbackScreen(navController: NavController, app: HostelCareApp, complaintId
     val complaint = complaints.find { it.id == complaintId }
     
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Resolution Feedback", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
+        topBar = { TopAppBar(title = { Text("Resolution Feedback", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = { if (!navController.popBackStack()) navController.navigate(Routes.complaintDetails(complaintId)) }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(

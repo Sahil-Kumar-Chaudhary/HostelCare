@@ -51,7 +51,7 @@ fun StaffNotificationsScreen(
     Scaffold(
         topBar = {
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -62,18 +62,22 @@ fun StaffNotificationsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = {
+                            if (!navController.popBackStack()) {
+                                navController.navigate(Routes.STAFF_HOME)
+                            }
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color(0xFF0F172A)
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Text(
                             text = "Notifications",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -81,7 +85,7 @@ fun StaffNotificationsScreen(
                         Icon(
                             imageVector = Icons.Default.DoneAll,
                             contentDescription = "Mark all read",
-                            tint = Color(0xFF475569)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -94,7 +98,7 @@ fun StaffNotificationsScreen(
                 unreadNotificationCount = unreadCount
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -116,8 +120,8 @@ fun StaffNotificationsScreen(
                 val isAllSelected = selectedTab == "all"
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = if (isAllSelected) Color(0xFF2563EB) else Color.White,
-                    border = BorderStroke(1.dp, if (isAllSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                    color = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedTab = "all" }
@@ -128,7 +132,7 @@ fun StaffNotificationsScreen(
                     ) {
                         Text(
                             text = "All ($allCount)",
-                            color = if (isAllSelected) Color.White else Color(0xFF64748B),
+                            color = if (isAllSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium
                         )
@@ -138,8 +142,8 @@ fun StaffNotificationsScreen(
                 val isUnreadSelected = selectedTab == "unread"
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = if (isUnreadSelected) Color(0xFF2563EB) else Color.White,
-                    border = BorderStroke(1.dp, if (isUnreadSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                    color = if (isUnreadSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (isUnreadSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedTab = "unread" }
@@ -150,7 +154,7 @@ fun StaffNotificationsScreen(
                     ) {
                         Text(
                             text = "Unread ($unreadTabCount)",
-                            color = if (isUnreadSelected) Color.White else Color(0xFF64748B),
+                            color = if (isUnreadSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = if (isUnreadSelected) FontWeight.Bold else FontWeight.Medium
                         )
@@ -167,7 +171,7 @@ fun StaffNotificationsScreen(
                             .padding(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = Color(0xFF2563EB))
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 is StaffNotificationsUiState.Empty -> {
@@ -179,7 +183,7 @@ fun StaffNotificationsScreen(
                     ) {
                         Text(
                             text = "No notifications found.",
-                            color = Color(0xFF64748B),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }
@@ -192,7 +196,7 @@ fun StaffNotificationsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = state.message, color = Color(0xFFDC2626), fontSize = 14.sp)
+                            Text(text = state.message, color = Color(0xFFEF4444), fontSize = 14.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(onClick = { viewModel.loadNotifications() }) {
                                 Text("Retry")
@@ -216,7 +220,7 @@ fun StaffNotificationsScreen(
                         ) {
                             Text(
                                 text = if (selectedTab == "unread") "No unread notifications." else "No notifications.",
-                                color = Color(0xFF64748B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
                         }
@@ -257,8 +261,8 @@ fun StaffNotificationCard(
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -297,7 +301,7 @@ fun StaffNotificationCard(
                         text = item.title,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     if (!item.isRead) {
                         Box(
@@ -314,7 +318,7 @@ fun StaffNotificationCard(
                 Text(
                     text = item.message,
                     fontSize = 13.sp,
-                    color = Color(0xFF475569),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
 
@@ -323,7 +327,7 @@ fun StaffNotificationCard(
                     Text(
                         text = timeAgo,
                         fontSize = 11.sp,
-                        color = Color(0xFF94A3B8)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -334,14 +338,19 @@ fun StaffNotificationCard(
 fun getNotificationVisuals(type: String, title: String): Triple<ImageVector, Color, Color> {
     val t = type.lowercase()
     val tit = title.lowercase()
-    return when {
+    val (icon, tint) = when {
         t == "complaint_assigned" || tit.contains("assigned") ->
-            Triple(Icons.Default.Build, Color(0xFF2563EB), Color(0xFFEFF6FF))
+            Pair(Icons.Default.Build, Color(0xFF2563EB))
         t == "status_updated" || tit.contains("status") ->
-            Triple(Icons.Default.CheckCircle, Color(0xFF16A34A), Color(0xFFDCFCE7))
+            Pair(Icons.Default.CheckCircle, Color(0xFF16A34A))
         t == "work_submitted" || t == "completion_requested" || tit.contains("submitted") ->
-            Triple(Icons.Default.Description, Color(0xFFD97706), Color(0xFFFEF3C7))
+            Pair(Icons.Default.Description, Color(0xFFD97706))
+        t == "complaint_reopened" || tit.contains("reopened") ->
+            Pair(Icons.Default.Replay, Color(0xFFEF4444))
+        t == "complaint_withdrawn" || tit.contains("withdrawn") ->
+            Pair(Icons.Default.Cancel, Color(0xFF64748B))
         else ->
-            Triple(Icons.Default.Notifications, Color(0xFF64748B), Color(0xFFF1F5F9))
+            Pair(Icons.Default.Notifications, Color(0xFF64748B))
     }
+    return Triple(icon, tint, tint.copy(alpha = 0.15f))
 }
